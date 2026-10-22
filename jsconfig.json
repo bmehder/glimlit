@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+    "checkJs": true,
+    "strict": true,
+    "noEmit": true,
+    "rootDirs": [
+      "src",
+      "build/dev/javascript/mvu_lit"
+    ],
+    "allowJs": true
+  },
+  "include": [
+    "src/**/*_view.mjs",
+    "src/**/view.mjs",
+    "src/**/effects.mjs",
+    "src/runtime/runner.mjs",
+    "src/runtime/subscriptions.mjs",
+    "src/todos/subscriptions.mjs"
+  ]
+}

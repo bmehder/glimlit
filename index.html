@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="color-scheme" content="dark">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Todos · Glimlet</title>
+  <link rel="stylesheet" href="/src/styles.css">
+</head>
+
+<body class="min-h-screen bg-slate-950 font-sans text-slate-100">
+  <main id="app" class="mx-auto my-12 max-w-2xl px-6"></main>
+  <script type="module">
+    import { main } from './build/dev/javascript/mvu_lit/mvu_lit.mjs'
+    const stop = main()
+    if (import.meta.hot) import.meta.hot.dispose(stop)
+  </script>
+</body>
+
+</html>
