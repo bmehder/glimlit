@@ -88,9 +88,45 @@ pub fn main() -> fn() -> Nil {
 The returned function stops the app and cleans up its subscriptions. The browser
 entry point calls it when Vite disposes the module during development.
 
-## Views are HTML templates
+## Views with lit-html
 
-Views use ordinary lit-html templates:
+Glimlit gives developers who enjoy Gleam's Model–View–Update approach another
+option for writing the view. In Lustre, elements, attributes, and event handlers
+are Gleam function calls. With lit-html, views use JavaScript tagged template
+literals: the `html` tag processes HTML-like markup with `${...}` expressions
+for dynamic content and bindings such as `@click` for event handlers. These are
+JavaScript expressions, rather than standalone HTML documents. See
+[Lit's template syntax](https://lit.dev/docs/templates/overview/).
+
+For example, here is a counter view in Lustre, following its
+[view and event conventions](https://lustre.hexdocs.pm/guide/01-quickstart.html):
+
+```gleam
+import gleam/int
+import lustre/element.{type Element}
+import lustre/element/html
+import lustre/event
+
+pub type Model {
+  Model(count: Int)
+}
+
+pub type Msg {
+  UserClickedIncrement
+}
+
+pub fn view(model: Model) -> Element(Msg) {
+  html.div([], [
+    html.p([], [html.text(int.to_string(model.count))]),
+    html.button([event.on_click(UserClickedIncrement)], [
+      html.text("Increment"),
+    ]),
+  ])
+}
+```
+
+The equivalent Glimlit view imports the message constructor and model accessor
+from Gleam's compiled `counter.mjs` module:
 
 ```js
 import { html, render } from 'lit-html'
@@ -104,17 +140,36 @@ export function view(model, dispatch) {
   if (!app) throw new Error('Missing #app mount element')
 
   render(html`
-    <p>${count(model)}</p>
-    <button @click=${() => dispatch(new UserClickedIncrement())}>
-      Increment
-    </button>
+    <div>
+      <p>${count(model)}</p>
+      <button @click=${() => dispatch(new UserClickedIncrement())}>
+        Increment
+      </button>
+    </div>
   `, app)
 }
 ```
 
-The imported message constructor and model accessor come from Gleam's compiled
-JavaScript. The click handler constructs a Gleam message and dispatches it to
-`update`.
+Both display the count and send a message when the button is clicked. In the
+Glimlit example, the click handler constructs a Gleam message and dispatches it
+to `update`. Gleam still owns the model and update logic.
+
+The difference is how you express the interface. The HTML-like syntax can feel
+familiar to developers coming from web design or JavaScript, and existing HTML
+markup can be adapted by adding lit-html bindings rather than translating each
+tag into a function call.
+
+There is a tradeoff: Lustre keeps the view in Gleam, where the compiler checks
+element and message types together. Glimlit's JavaScript view crosses that
+language boundary, so the Gleam compiler does not check the template or its
+event handlers. The view can still be typed using TypeScript, or JSDoc annotations
+with JavaScript type checking enabled. Those checks can cover model access,
+message construction, and dispatch calls using the generated Gleam declarations;
+they do not automatically validate all markup or lit-html bindings. See
+[TypeScript's JavaScript type checking documentation](https://www.typescriptlang.org/docs/handbook/checking-javascript-files.html).
+
+The choice is about which authoring style and tradeoffs suit your project;
+neither syntax is inherently better.
 
 ## Effects describe work
 
