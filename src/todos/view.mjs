@@ -59,11 +59,7 @@ export function view(model, dispatch) {
 	render(
 		html`
 			<header class="mb-8">
-				<p class="mb-2 text-sm font-medium text-teal-400">
-					A little less to remember
-				</p>
-				<h1 class="text-3xl font-semibold tracking-tight">Todos</h1>
-				<p class="mt-2 text-slate-400">One thing at a time.</p>
+				<h2 class="text-2xl font-semibold tracking-tight">Todos</h2>
 			</header>
 			<form
 				class="flex gap-3"

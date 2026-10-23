@@ -20,7 +20,7 @@ export function view(model, dispatch) {
 
 	render(
 		html`
-			<h1 class="text-xl font-semibold">Counter</h1>
+			<h2 class="text-xl font-semibold">Counter</h2>
 			<p class="my-8">
 				<output class="text-6xl font-medium tabular-nums" aria-live="polite"
 					>${count(model)}</output
