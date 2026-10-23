@@ -28,7 +28,12 @@ export function view(model, dispatch) {
 			</p>
 			${button('−', 'Decrease count', new UserClickedDecrement(), dispatch)}
 			${button('+', 'Increase count', new UserClickedIncrement(), dispatch)}
-			${button('+10', 'Increase count by 10', new UserClickedIncrementBy10(), dispatch)}
+			${button(
+				'+10',
+				'Increase count by 10',
+				new UserClickedIncrementBy10(),
+				dispatch,
+			)}
 			${button('Reset', 'Reset count', new UserClickedReset(), dispatch)}
 		`,
 		app,

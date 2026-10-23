@@ -60,6 +60,12 @@ editing and themes without effects, then introduce saving, restoring, and
 subscriptions. The finished app lives in `src/tutorial/`. The tutorial page is
 also included in production builds and linked from the main demo.
 
+Each chapter explains the ideas first, then provides complete replacement files
+under **Complete checkpoint**, followed by a **Try it** exercise. The short
+snippets illustrate the explanation; readers do not need to paste them in one
+by one. Each checkpoint can also be copied from the checkout or downloaded from
+the tutorial page.
+
 ## The loop
 
 ![The MVU loop: Update produces a Model, the Model is rendered by the View, and user events produce Messages that return to Update with the current Model. Update can also request effects, whose result messages return to Update.](docs/mvu-loop.svg)
@@ -68,6 +74,12 @@ Both `init` and `update` return a model and a list of effects. An empty list mea
 there is no work to perform. The runtime stores the new model, renders it, and then
 runs the effects. View events and effect callbacks send messages back to `update`,
 along with the current model, completing the loop.
+
+Inside `src/runtime/mvu.gleam`, initialisation and message updates share the
+private `render_and_run` function. It stores the model, creates the guarded
+dispatch callback, renders the view, and runs the effects in that order.
+`start` handles setup and returns cleanup; `dispatch` calls `update` with the
+current model. Apps still use the same `mvu.start(init(), update, view)` API.
 
 A minimal Gleam app looks like this:
 
@@ -185,6 +197,15 @@ they do not automatically validate all markup or lit-html bindings. See
 The choice is about which authoring style and tradeoffs suit your project;
 neither syntax is inherently better.
 
+For editor highlighting inside tagged templates, VS Code users can install the
+[lit-html extension](https://marketplace.visualstudio.com/items?itemName=bierner.lit-html).
+It adds HTML highlighting and completions to templates tagged with `html`.
+
+`jsconfig.json` enables strict JavaScript type checking using Gleam's generated
+declarations. Files can opt out with `// @ts-nocheck` on the first line, as the
+tutorial's view, effects, and subscription files do. This editor checking is
+separate from compiling Gleam and building the app.
+
 ## Effects describe work
 
 An effect is an object with a deferred `perform` function and optional callbacks
@@ -257,6 +278,12 @@ export function every(milliseconds, onTick) {
 }
 ```
 
+`onTick` creates a message from the current time; `emit` sends that message back
+into the app's update loop. It is an ordinary callback supplied by the manager,
+which wraps the app's dispatcher with a check that this subscription is still
+active. Subscriptions can therefore produce messages without knowing the model
+or calling `update` themselves.
+
 Starting and stopping a subscription are ordinary effects. The demo defines
 these clock effects in its own `effects.mjs`:
 
@@ -291,6 +318,11 @@ Each app has its own subscription manager, with independent string keys:
 - A start acknowledgement means the subscription's setup function has returned.
 - Stopping disables emissions before cleanup, so late callbacks are ignored.
 
+Setup can emit immediately, and that message can stop the subscription before
+setup returns its cleanup function. The manager still runs that cleanup once
+it becomes available. When stopping all subscriptions, it attempts every cleanup
+even if one fails, then reports the collected errors.
+
 The todo example includes both a clock and a window-resize listener. The resize
 subscription emits the current size during setup and then listens for changes.
 They start and stop independently using the same manager. Timers, browser events,
@@ -323,6 +355,8 @@ src/
     effects.mjs           Saving, restoring, and managing shortcuts
     subscriptions.mjs     Keyboard shortcut listener
     guide.mjs             Tutorial chapters and checkpoint source display
+    examples.json         Explanatory code snippets
+    navigation.mjs        Current-chapter highlighting
     tutorial.css          Tutorial page and postcard styles
   runtime/
     mvu.gleam             Model storage, dispatch, and rendering loop
@@ -331,6 +365,12 @@ src/
     runner.mjs            Generic effect runner and app lifetime
     subscriptions.mjs     Generic subscription lifetime manager
 ```
+
+`tutorial/index.html` is the tutorial's separate page entry point.
+`docs/tutorial/` contains the six complete checkpoints, and
+`scripts/check-tutorial.mjs` checks them in a temporary project.
+`scripts/tutorial-highlighting.mjs` uses Shiki at build time to highlight the
+tutorial's code. Shared logos and favicons live in `public/`.
 
 Start reading with the counter. The todo example adds CRUD, localStorage,
 fetching, and subscriptions. It starts with three todos when no saved data exists.

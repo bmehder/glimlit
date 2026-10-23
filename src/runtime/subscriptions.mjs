@@ -1,7 +1,7 @@
 // @ts-check
 
 /** @template Msg @typedef {{start: (emit: (message: Msg) => void) => () => void}} Subscription */
-/** @template Msg @typedef {{start: (key: string, subscription: Subscription<Msg>, emit: (message: Msg) => void) => void, stop: (key: string) => void, stopAll: () => void}} Subscriptions */
+/** @template Msg @typedef {{start: (key: string, subscription: Subscription<Msg>, dispatch: (message: Msg) => void) => void, stop: (key: string) => void, stopAll: () => void}} Subscriptions */
 /** @typedef {{active: boolean, cleanup: () => void}} Entry */
 /** @typedef {Map<string, Entry>} ActiveSubscriptions */
 
@@ -10,7 +10,7 @@ export function createSubscriptions() {
 	/** @type {ActiveSubscriptions} */
 	const active = new Map()
 	return {
-		start: (key, subscription, emit) => start(active, key, subscription, emit),
+		start: (key, subscription, dispatch) => start(active, key, subscription, dispatch),
 		stop: key => stop(active, key),
 		stopAll: () => stopAll(active),
 	}
@@ -21,14 +21,16 @@ export function createSubscriptions() {
  * @param {ActiveSubscriptions} active
  * @param {string} key
  * @param {Subscription<Msg>} subscription
- * @param {(message: Msg) => void} emit
+ * @param {(message: Msg) => void} dispatch
  */
-function start(active, key, subscription, emit) {
+function start(active, key, subscription, dispatch) {
 	if (active.has(key)) return
 	const entry = { active: true, cleanup: () => {} }
 	active.set(key, entry)
 	try {
-		const cleanup = subscription.start(whileActive(entry, emit))
+		// Subscriptions receive emit: dispatch guarded by this entry's lifetime.
+		const emit = whileActive(entry, dispatch)
+		const cleanup = subscription.start(emit)
 		attachCleanup(entry, cleanup)
 	} catch (error) {
 		deactivate(active, key, entry)
@@ -57,11 +59,11 @@ function stopAll(active) {
 	if (errors.length) throw new AggregateError(errors, 'Subscription cleanup failed')
 }
 
-/** @template Msg @param {Entry} entry @param {(message: Msg) => void} emit */
-function whileActive(entry, emit) {
+/** @template Msg @param {Entry} entry @param {(message: Msg) => void} dispatch */
+function whileActive(entry, dispatch) {
 	/** @param {Msg} message */
 	return message => {
-		if (entry.active) emit(message)
+		if (entry.active) dispatch(message)
 	}
 }
 
@@ -70,7 +72,9 @@ function attachCleanup(entry, cleanup) {
 	if (typeof cleanup !== 'function')
 		throw new TypeError('Subscription must return cleanup')
 	entry.cleanup = cleanup
-	// Setup may emit synchronously and cause this subscription to stop.
+	// Setup can emit before returning cleanup. If that message stops the
+	// subscription, stop() has only the placeholder cleanup to call; run the
+	// real cleanup now that it is available.
 	if (!entry.active) cleanup()
 }
 

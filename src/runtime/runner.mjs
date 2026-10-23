@@ -37,19 +37,28 @@ export function stop(runtime) {
  */
 export function run(effect, dispatch, runtime = createRuntime()) {
 	/** @param {Msg} message */
-	const send = message => { if (runtime.active) dispatch(message) }
-	return Promise.resolve().then(() => {
-		if (runtime.active) return effect.perform({ subscriptions: runtime.subscriptions, dispatch: send })
-	}).then(
-		value => {
-			if (runtime.active && effect.onSuccess) send(effect.onSuccess(/** @type {Value} */ (value)))
-		},
-		error => {
-			if (!runtime.active) return
-			if (effect.onFailure) send(effect.onFailure(error))
-			else throw error
-		},
-	)
+	const send = message => {
+		if (runtime.active) dispatch(message)
+	}
+	return Promise.resolve()
+		.then(() => {
+			if (runtime.active)
+				return effect.perform({
+					subscriptions: runtime.subscriptions,
+					dispatch: send,
+				})
+		})
+		.then(
+			value => {
+				if (runtime.active && effect.onSuccess)
+					send(effect.onSuccess(/** @type {Value} */ (value)))
+			},
+			error => {
+				if (!runtime.active) return
+				if (effect.onFailure) send(effect.onFailure(error))
+				else throw error
+			},
+		)
 }
 
 /** @template Msg @param {Runtime<Msg>} runtime */

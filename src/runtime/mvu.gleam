@@ -19,19 +19,9 @@ pub fn start(
   view: fn(model, fn(msg) -> Nil) -> Nil,
 ) -> fn() -> Nil {
   let runtime = effect.runtime()
-  let #(initial_model, effects) = initial
+  let #(initial_model, _) = initial
   let model = mutable_ref(initial_model)
-  let send = fn(msg) {
-    case effect.is_active(runtime) {
-      True -> dispatch(model, msg, update, view, runtime)
-      False -> Nil
-    }
-  }
-  view(initial_model, send)
-  list.each(effects, fn(effect) {
-    let _ = effect.run(effect, send, runtime)
-    Nil
-  })
+  render_and_run(initial, model, update, view, runtime)
   fn() { effect.stop(runtime) }
 }
 
@@ -42,15 +32,26 @@ fn dispatch(
   view: fn(model, fn(msg) -> Nil) -> Nil,
   runtime: Runtime(msg),
 ) -> Nil {
-  let #(next, effects) = update(read(model), msg)
-  write(model, next)
+  let next = update(read(model), msg)
+  render_and_run(next, model, update, view, runtime)
+}
+
+fn render_and_run(
+  next: #(model, List(Effect(msg))),
+  model: MutableRef(model),
+  update: fn(model, msg) -> #(model, List(Effect(msg))),
+  view: fn(model, fn(msg) -> Nil) -> Nil,
+  runtime: Runtime(msg),
+) -> Nil {
+  let #(next_model, effects) = next
+  write(model, next_model)
   let send = fn(msg) {
     case effect.is_active(runtime) {
       True -> dispatch(model, msg, update, view, runtime)
       False -> Nil
     }
   }
-  view(next, send)
+  view(next_model, send)
   list.each(effects, fn(effect) {
     let _ = effect.run(effect, send, runtime)
     Nil
