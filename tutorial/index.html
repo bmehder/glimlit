@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Build Postcard Studio with Glimlit. A step-by-step introduction to Gleam, lit-html, Model–View–Update, effects, and subscriptions for web developers.">
+  <title>Build Postcard Studio · Glimlit</title>
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/tutorial/tutorial.css">
+</head>
+<body class="min-h-screen bg-slate-950 font-sans text-slate-100">
+  <a class="skip-link" href="#lessons">Skip to the tutorial</a>
+  <div class="tutorial-shell">
+    <header class="site-header">
+      <a class="wordmark" href="/">Glimlit<span> / learn</span></a>
+      <a href="https://github.com/bmehder/glimlit" target="_blank" rel="noopener noreferrer">GitHub ↗<span class="sr-only"> (opens in a new tab)</span></a>
+    </header>
+    <main>
+      <section class="tutorial-hero" aria-labelledby="tutorial-title">
+        <p class="eyebrow">Your first Glimlit app</p>
+        <h1 id="tutorial-title">A little Gleam.<br>A postcard of your own.</h1>
+        <p class="hero-description">Build a postcard editor, one small step at a time. Start with a preview, make it interactive, then add saving and keyboard shortcuts.</p>
+        <p class="hero-prerequisites">Bring your HTML, CSS, Tailwind, and JavaScript knowledge. We’ll introduce Gleam, lit-html, and Model–View–Update as we go.</p>
+        <a class="primary-link" href="#get-ready">Start building <span aria-hidden="true">↘</span></a>
+      </section>
+      <section class="demo-section" aria-labelledby="finished-title">
+        <div class="section-heading"><div><p class="eyebrow">The destination</p><h2 id="finished-title">Try what you’ll build</h2></div><a href="#get-ready">Then make it yourself →</a></div>
+        <div id="tutorial-app"></div>
+        <noscript>This interactive example needs JavaScript. The tutorial source is also available in the repository’s docs/tutorial folder.</noscript>
+      </section>
+      <div id="guide"></div>
+    </main>
+    <footer class="tutorial-footer"><a href="/">← Back to the Glimlit demo</a><span>Gleam for state. lit-html for views.</span></footer>
+  </div>
+  <script type="module">
+    import { main } from '../build/dev/javascript/glimlit/tutorial/tutorial.mjs'
+    import { mountGuide } from '../src/tutorial/guide.mjs'
+    mountGuide()
+    const stop = main()
+    if (import.meta.hot) import.meta.hot.dispose(stop)
+  </script>
+</body>
+</html>

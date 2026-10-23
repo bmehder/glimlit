@@ -13,7 +13,7 @@ are values that describe ongoing sources of messages.
 The aim is to keep the whole loop understandable. There is one `start` function,
 a small effect runner, and a subscription manager.
 
-This repository contains the framework and two working examples. It is currently
+This repository contains the framework and three working examples. It is currently
 a browser application, rather than a separately published package. Server-side
 rendering is not implemented.
 
@@ -36,10 +36,24 @@ and Tailwind styles also update during development.
 | `npm run build` | Compile Gleam and bundle the app into `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm test` | Compile Gleam and run the tests |
+| `npm run test:tutorial-checkpoints` | Compile and check all six tutorial checkpoints |
 | `gleam format --check` | Check Gleam formatting |
 
 To run the counter instead, switch the call in `src/glimlit.gleam` from
 `todos.main()` to `counter.main()`.
+
+## Build your first app
+
+Open **[/tutorial/](http://127.0.0.1:3000/tutorial/)** on the development server
+for a guided introduction to Glimlit. You’ll build **Postcard Studio**, an editor
+with a live preview, colour themes, browser storage, and optional keyboard
+shortcuts. It assumes basic web development and JavaScript knowledge, and
+introduces Gleam, lit-html, and Model–View–Update as you go.
+
+Six complete checkpoints in `docs/tutorial/` start with a static view, add
+editing and themes without effects, then introduce saving, restoring, and
+subscriptions. The finished app lives in `src/tutorial/`. The tutorial page is
+also included in production builds and linked from the main demo.
 
 ## The loop
 
@@ -282,9 +296,9 @@ and stale view callbacks. It does not cancel an HTTP request already in progress
 
 ## Project layout
 
-The reusable framework lives in `src/runtime/`. The `counter/` and `todos/`
-directories are demos; their storage, fetch, timer, and resize behavior belongs
-to those apps. Vite and Tailwind provide the demo build and styling.
+The reusable framework lives in `src/runtime/`. The `counter/`, `todos/`, and
+`tutorial/` directories are demos; their browser behavior belongs to those apps.
+Vite and Tailwind provide the demo build and styling.
 
 ```text
 src/
@@ -298,6 +312,13 @@ src/
     view.mjs              Todo templates
     effects.mjs           Storage, fetch, logging, and subscription effects
     subscriptions.mjs     Clock and window-resize descriptions
+  tutorial/
+    tutorial.gleam        Postcard model, messages, update, and entry point
+    view.mjs              Postcard editor and preview
+    effects.mjs           Saving, restoring, and managing shortcuts
+    subscriptions.mjs     Keyboard shortcut listener
+    guide.mjs             Tutorial chapters and checkpoint source display
+    tutorial.css          Tutorial page and postcard styles
   runtime/
     mvu.gleam             Model storage, dispatch, and rendering loop
     browser.mjs           MutableRef implementation

@@ -1,0 +1,66 @@
+{
+  "setup": {
+    "language": "shellscript",
+    "source": "npm install\nnpm run dev"
+  },
+  "files": {
+    "language": "text",
+    "source": "src/tutorial/\n  tutorial.gleam     State and the rules for changing it\n  view.mjs           The interface\n  effects.mjs        Browser storage, added in chapter 04\n  subscriptions.mjs  Keyboard events, added in chapter 06"
+  },
+  "model": {
+    "language": "gleam",
+    "source": "pub type Model {\n  Model(title: String, message: String)\n}"
+  },
+  "init": {
+    "language": "gleam",
+    "source": "pub fn init() -> #(Model, List(Effect(Msg))) {\n  #(\n    Model(title: \"Hello from somewhere nice\", message: \"Wish you were here.\"),\n    [],\n  )\n}"
+  },
+  "render": {
+    "language": "javascript",
+    "source": "render(html`\n  <h3>${title(model)}</h3>\n  <p>${message(model)}</p>\n`, app)"
+  },
+  "external": {
+    "language": "gleam",
+    "source": "@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil\n\npub fn main() -> fn() -> Nil {\n  mvu.start(init(), update, view)\n}"
+  },
+  "update": {
+    "language": "gleam",
+    "source": "pub type Msg {\n  UserChangedTitle(String)\n  UserChangedMessage(String)\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(Model(..model, title: title), [])\n    UserChangedMessage(message) -> #(Model(..model, message: message), [])\n  }\n}"
+  },
+  "input": {
+    "language": "html",
+    "source": "<input\n  .value=${live(title(model))}\n  @input=${event => dispatch(new UserChangedTitle(event.currentTarget.value))}\n>"
+  },
+  "themes": {
+    "language": "gleam",
+    "source": "pub type Theme {\n  Coral\n  Ocean\n  Meadow\n}\n\npub fn theme_name(theme: Theme) -> String {\n  case theme {\n    Coral -> \"coral\"\n    Ocean -> \"ocean\"\n    Meadow -> \"meadow\"\n  }\n}"
+  },
+  "saveMessage": {
+    "language": "gleam",
+    "source": "UserClickedSave -> #(\n  Model(..model, notice: \"Saving…\"),\n  [save_design(model.title, model.message, theme_name(model.theme))],\n)"
+  },
+  "saveEffect": {
+    "language": "javascript",
+    "source": "export function saveDesign(title, message, theme) {\n  return {\n    perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),\n    onSuccess: () => designSaved(),\n    onFailure: () => storageFailed(\"Could not save. Browser storage may be unavailable.\"),\n  }\n}"
+  },
+  "restoreEffect": {
+    "language": "javascript",
+    "source": "export function loadDesign() {\n  return {\n    perform: () => localStorage.getItem(key),\n    onSuccess: saved => saved === null ? storageWasEmpty() : storageReturnedDesign(saved),\n    onFailure: () => storageFailed(\"Could not restore. Browser storage may be unavailable.\"),\n  }\n}"
+  },
+  "decode": {
+    "language": "gleam",
+    "source": "use title <- decode.field(\"title\", decode.string)\nuse message <- decode.field(\"message\", decode.string)\nuse name <- decode.field(\"theme\", decode.string)"
+  },
+  "cleanup": {
+    "language": "javascript",
+    "source": "window.addEventListener(\"keydown\", listener)\nreturn () => window.removeEventListener(\"keydown\", listener)"
+  },
+  "subscribe": {
+    "language": "javascript",
+    "source": "subscriptions.start(\n  \"postcard-keys\",\n  nextThemeKey(() => new UserPressedNextTheme()),\n  dispatch,\n)"
+  },
+  "check": {
+    "language": "shellscript",
+    "source": "npm test\nnpm run build\nnpm run preview"
+  }
+}
