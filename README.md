@@ -1,4 +1,9 @@
-# Glimlit
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/glimlit-wordmark-dark.svg">
+    <img src="public/brand/glimlit-wordmark-light.svg" alt="Glimlit" width="240" height="64">
+  </picture>
+</h1>
 
 **A small MVU framework for Gleam and lit-html.**
 
