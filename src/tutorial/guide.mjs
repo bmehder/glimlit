@@ -77,6 +77,12 @@ export function mountGuide() {
           <p class="eyebrow">00 / Set up your workbench</p>
           <h2 id="ready-title">Get it running locally</h2>
           <p>You’ll build Postcard Studio: an editor for a short message and a colour theme. Your text appears on a postcard as you type. Later, you’ll save it in the browser and add a keyboard shortcut.</p>
+          <aside class="try-it" aria-labelledby="chapter-workflow-title">
+            <h3 id="chapter-workflow-title">How to follow each chapter</h3>
+            <p>Read the explanation first. The short snippets show the ideas you’re learning; you don’t need to paste them into your app one by one.</p>
+            <p>When you reach <strong>Complete checkpoint</strong>, replace the listed files in <code>src/tutorial/</code> with the complete versions provided. You can copy or download each file, or use the chapter’s copy command. Then follow <strong>Try it</strong> to check the result in your browser.</p>
+            <p>Each checkpoint is a working version of the app. It’s fine to read through a chapter before changing any files.</p>
+          </aside>
           <p>This is a hands-on Glimlit guide, rather than an official Gleam tutorial. We’ll explain the language concepts we use as we go. Gleam is a small language that’s easy to pick up, so learning enough to get started doesn’t need a large investment of time. For a fuller introduction and reference, visit <a href="https://gleam.run/documentation/" target="_blank" rel="noopener noreferrer">Gleam’s official documentation ↗<span class="sr-only"> (opens in a new tab)</span></a>.</p>
           <p>Install <a href="https://gleam.run/getting-started/installing/">Gleam</a>, and <a href="https://nodejs.org/en/download">Node.js</a> 20.19+ or 22.12+ with npm. Gleam is a programming language that compiles to JavaScript here. Vite runs the development server and rebuilds your app when files change.</p>
           <ol>
@@ -85,7 +91,7 @@ export function mountGuide() {
             <li>Run the commands below. Leave the development server running, and open <a href="http://127.0.0.1:3000/tutorial/">http://127.0.0.1:3000/tutorial/</a>. Use the address Vite prints if port 3000 is already in use.</li>
           </ol>
           ${code(examples.setup.source)}
-          <p>The repository includes the finished app. To build it gradually, start by applying checkpoint 01. Every chapter provides complete files, so you can type along, copy them, or compare them with your own version. The preview at the top of your local tutorial page runs the files you’re editing.</p>
+          <p>The repository includes the finished app. To build it gradually, work through chapter 01 and apply its checkpoint. The preview at the top of your local tutorial page runs the files you’re editing.</p>
           <p>Keep <code>npm run dev</code> running. Use a second terminal in the same project folder for the checkpoint copy commands. Files left from later chapters are unused until you reach those chapters.</p>
           <h3>The files you’ll work in</h3>
           ${code(examples.files.source)}
@@ -112,6 +118,9 @@ export function mountGuide() {
           <p><code>#(a, b)</code> is a tuple: a fixed group of values. Our runtime expects a pair containing a model and a list of work to perform. <code>[]</code> is an empty list. For the first three chapters, leave that list empty. <code>-&gt;</code> introduces the return type. You can read <code>List(Effect(Msg))</code> as “a list of effects that can send messages.” We’ll use it in chapter 04.</p>
           <p>The first checkpoint has a single placeholder message, <code>NoOp</code>. Its update function returns the model unchanged. We only need it to complete the runtime’s interface before we introduce real messages.</p>
           <h3>Render it with lit-html</h3>
+          <aside class="try-it" aria-label="Editor tip: highlighting lit-html">
+            <p><strong>Editor tip: make templates easier to read.</strong> Your editor may treat the markup inside a JavaScript tagged template literal as a string, without highlighting the HTML tags and attributes. In VS Code, install the <a href="https://marketplace.visualstudio.com/items?itemName=bierner.lit-html" target="_blank" rel="noopener noreferrer">lit-html extension ↗<span class="sr-only"> (opens in a new tab)</span></a> (<code>bierner.lit-html</code>) for template highlighting and HTML completions. Open Extensions, search for that identifier, and choose Install. It recognises templates tagged with <code>html</code>, including the ones below. This is an optional editor aid; the app works the same with or without it.</p>
+          </aside>
           ${code(examples.render.source)}
           <p><code>html</code> is a JavaScript tag function applied to a template literal, the expression inside backticks. <code>lit-html</code> turns that template into DOM nodes; <code>render</code> puts them in the mount element. Expressions inside <code>\u0024{...}</code> provide dynamic values. Text values render as text, so typing an HTML tag into a message will not execute it.</p>
           <p>The compiler generates <code>tutorial.mjs</code> from <code>tutorial.gleam</code>. We import <code>Model$Model$title</code> and give it the shorter JavaScript name <code>title</code>. It reads the title field from a model. You edit the Gleam source, not this generated module.</p>
