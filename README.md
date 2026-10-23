@@ -7,8 +7,7 @@ HTML templates and dispatch Gleam messages. Effects are values that describe wor
 subscriptions are values that describe ongoing sources of messages.
 
 The aim is to keep the whole loop understandable. There is one `start` function,
-a small effect runner, and a subscription manager. No Lustre dependency, custom
-HTML DSL, or app-specific effect interpreter.
+a small effect runner, and a subscription manager.
 
 This repository contains the framework and two working examples. It is currently
 a browser application, rather than a separately published package. Server-side
@@ -91,20 +90,15 @@ entry point calls it when Vite disposes the module during development.
 
 ## Views are HTML templates
 
-Views use ordinary lit-html templates, with JSDoc for editor checking:
+Views use ordinary lit-html templates:
 
 ```js
-// @ts-check
 import { html, render } from 'lit-html'
 import {
   UserClickedIncrement,
   Model$Model$count as count,
 } from './counter.mjs'
 
-/**
- * @param {import('./counter.mjs').Model$} model
- * @param {(msg: import('./counter.mjs').Msg$) => void} dispatch
- */
 export function view(model, dispatch) {
   const app = document.getElementById('app')
   if (!app) throw new Error('Missing #app mount element')
@@ -118,15 +112,9 @@ export function view(model, dispatch) {
 }
 ```
 
-The imported constructors, accessor functions, and types come from Gleam's
-compiled JavaScript and generated declarations. `Model$` and `Msg$` are generated
-type names; names such as `Msg$HttpReturnedTodo` are generated constructor
-functions that can be used as callbacks. No hand-maintained JavaScript copy of the
-Gleam types is needed. `jsconfig.json` connects source imports to generated files.
-
-Use source-and-event message names, such as `UserClickedIncrement`,
-`HttpReturnedTodo`, and `WindowResized`. They make each update branch's trigger
-clear.
+The imported message constructor and model accessor come from Gleam's compiled
+JavaScript. The click handler constructs a Gleam message and dispatches it to
+`update`.
 
 ## Effects describe work
 
@@ -134,7 +122,8 @@ An effect is an object with a deferred `perform` function and optional callbacks
 that turn its result or failure into a message. Constructing an effect does
 nothing.
 
-For example, the todo app defines:
+The todo demo defines its own storage effects. These are application code, not
+built-in framework operations. For example:
 
 ```js
 export function saveTodos(json) {
@@ -163,7 +152,6 @@ list order, but asynchronous work can finish in any order. Returning multiple
 effects does not make one wait for another; use a returned message to request
 work that depends on an earlier result.
 
-The runner knows nothing about storage, HTTP, logging, or the app's messages.
 Supply an `onFailure` when a failure should become a message. Unhandled failures
 reject the runner's Promise; they do not automatically update the model.
 
@@ -171,6 +159,8 @@ reject the runner's Promise; they do not automatically update the model.
 
 A subscription has one operation: `start(emit)`, which returns a cleanup function.
 Like an effect, its description is inert until used.
+
+The following timer description comes from the todo demo’s `subscriptions.mjs`:
 
 ```js
 export function every(milliseconds, onTick) {
@@ -183,7 +173,8 @@ export function every(milliseconds, onTick) {
 }
 ```
 
-Starting and stopping a subscription are ordinary effects:
+Starting and stopping a subscription are ordinary effects. The demo defines
+these clock effects in its own `effects.mjs`:
 
 ```js
 export function startClock() {
@@ -226,6 +217,10 @@ and stale view callbacks. It does not cancel an HTTP request already in progress
 
 ## Project layout
 
+The reusable framework lives in `src/runtime/`. The `counter/` and `todos/`
+directories are demos; their storage, fetch, timer, and resize behavior belongs
+to those apps. Vite and Tailwind provide the demo build and styling.
+
 ```text
 src/
   mvu_lit.gleam            Choose which example to start
@@ -235,7 +230,7 @@ src/
     counter_view.mjs      Counter template and button helper
   todos/
     todos.gleam           Model, messages, init, update, JSON, and helpers
-    view.mjs         Todo templates
+    view.mjs              Todo templates
     effects.mjs           Storage, fetch, logging, and subscription effects
     subscriptions.mjs     Clock and window-resize descriptions
   runtime/
@@ -257,5 +252,4 @@ so Vite serves editable JavaScript while resolving generated Gleam modules.
 view.
 
 The project keeps its internal Gleam package and entry module named `mvu_lit`.
-The framework's working name is **Glimlet**: Gleam, lit, and a little runtime.
-# glimlit
+The framework's name is **Glimlet**: Gleam, lit, and a little runtime.
