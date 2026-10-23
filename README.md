@@ -43,16 +43,7 @@ To run the counter instead, switch the call in `src/glimlit.gleam` from
 
 ## The loop
 
-```mermaid
-flowchart LR
-  Message[Message] --> Update["Update(model, message)"]
-  Update -->|next model| Model[Model]
-  Model --> View[View]
-  View -->|user events| Message
-  Model -->|current model| Update
-  Update -->|effects| Effects[Run effects]
-  Effects -->|result messages| Message
-```
+![The MVU loop: Update produces a Model, the Model is rendered by the View, and user events produce Messages that return to Update with the current Model. Update can also request effects, whose result messages return to Update.](docs/mvu-loop.svg)
 
 Both `init` and `update` return a model and a list of effects. An empty list means
 there is no work to perform. The runtime stores the new model, renders it, and then

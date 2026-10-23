@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" role="img" aria-labelledby="title description">
+  <title id="title">The Model–View–Update loop</title>
+  <desc id="description">Clockwise from Update: next Model, View, user-event Message, and back to Update. The current Model also feeds Update. Effects requested by Update return result messages.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#0f766e"/>
+    </marker>
+    <marker id="secondary-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 Z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="880" height="480" rx="16" fill="#f8fafc"/>
+  <g fill="none" stroke="#0f766e" stroke-width="2.5" marker-end="url(#arrow)">
+    <path d="M 540 64 C 660 64 740 106 740 191"/>
+    <path d="M 740 249 C 740 338 660 400 540 400"/>
+    <path d="M 340 400 C 220 400 140 338 140 249"/>
+    <path d="M 140 191 C 140 106 220 64 340 64"/>
+  </g>
+  <g fill="none" stroke="#475569" stroke-width="2" marker-end="url(#secondary-arrow)">
+    <path d="M 660 207 C 596 199 570 139 514 92" stroke-dasharray="6 5"/>
+    <path d="M 440 92 L 440 205"/>
+    <path d="M 355 234 L 220 234"/>
+  </g>
+  <g font-family="system-ui, -apple-system, sans-serif" font-size="15" fill="#475569" text-anchor="middle">
+    <text x="661" y="74">next model</text>
+    <text x="750" y="338">render</text>
+    <text x="199" y="389">user events</text>
+    <text x="218" y="80">message</text>
+    <text x="619" y="150">current model</text>
+    <text x="483" y="154">effects</text>
+    <text x="287" y="220">result messages</text>
+  </g>
+  <g fill="#ffffff" stroke="#0f766e" stroke-width="2">
+    <rect x="340" y="36" width="200" height="56" rx="12"/>
+    <rect x="660" y="192" width="160" height="56" rx="12"/>
+    <rect x="340" y="372" width="200" height="56" rx="12"/>
+    <rect x="60" y="192" width="160" height="56" rx="12"/>
+  </g>
+  <rect x="355" y="206" width="170" height="56" rx="12" fill="#e2e8f0" stroke="#475569" stroke-width="2"/>
+  <g font-family="system-ui, -apple-system, sans-serif" font-size="21" font-weight="600" fill="#0f172a" text-anchor="middle">
+    <text x="440" y="72">Update</text>
+    <text x="740" y="228">Model</text>
+    <text x="440" y="408">View</text>
+    <text x="140" y="228">Message</text>
+    <text x="440" y="242" font-size="19">Run effects</text>
+  </g>
+</svg>
