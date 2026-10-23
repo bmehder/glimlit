@@ -66,6 +66,7 @@ pub type Model {
 // -- Messages ------------------------------------------------------------
 
 pub type Msg {
+  UserClickedRunEffectOrdering
   UserClickedStartResize
   UserClickedStopResize
   WindowResizeStarted
@@ -124,6 +125,11 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
 
 pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   case msg {
+    UserClickedRunEffectOrdering -> #(model, [
+      delayed_log("First effect", 1000),
+      delayed_log("Second effect", 100),
+    ])
+
     UserClickedStartResize -> {
       case model.resize {
         Stopped | SubscriptionFailed(_) -> #(Model(..model, resize: Starting), [
@@ -471,6 +477,9 @@ fn save_todos(json: String) -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "log")
 fn log(message: String) -> Effect(Msg)
+
+@external(javascript, "./effects.mjs", "delayedLog")
+fn delayed_log(label: String, milliseconds: Int) -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "fetchExample")
 fn fetch_example() -> Effect(Msg)

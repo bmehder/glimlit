@@ -25,7 +25,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   }
 }
 
-@external(javascript, "./counter_view.mjs", "view")
+@external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
 
 pub fn main() -> fn() -> Nil {

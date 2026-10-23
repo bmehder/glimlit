@@ -5,6 +5,7 @@ import { from_list as toArray } from '#gleam/array'
 import { repeat } from 'lit-html/directives/repeat.js'
 import { live } from 'lit-html/directives/live.js'
 import {
+	UserClickedRunEffectOrdering,
 	UserClickedStartResize,
 	UserClickedStopResize,
 	resize_can_start as resizeCanStart,
@@ -130,6 +131,11 @@ export function view(model, dispatch) {
 				<p class="mt-3 text-sm text-slate-400" role="status">
 					${fetchMessage(model)}
 				</p>
+			</section>
+			<section class="mt-8 border-t border-slate-800 pt-6" aria-label="Effect ordering example">
+				<h2 class="text-lg font-medium">Effect ordering</h2>
+				<p class="my-3 text-sm text-slate-400">Two effects start in order and finish independently. Open the browser console to see the second finish first.</p>
+				<button type="button" class="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-teal-400" @click=${() => dispatch(new UserClickedRunEffectOrdering())}>Run effect ordering example</button>
 			</section>
 			<p class="mt-8 text-xs text-slate-500">${storageMessage(model)}</p>
 		`,

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { run } from '../src/runtime/runner.mjs';
-import { loadTodos, saveTodos } from '../build/dev/javascript/mvu_lit/todos/effects.mjs';
+import { loadTodos, saveTodos } from '../build/dev/javascript/glimlit/todos/effects.mjs';
 
 test('constructing and storing effect values does not perform their work', () => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');

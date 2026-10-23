@@ -6,7 +6,7 @@ import {
   init, update, UserClickedStartResize, UserClickedStopResize,
   UserClickedStartClock, UserClickedStopClock,
   resize_can_start, resize_can_stop, clock_can_stop,
-} from '../build/dev/javascript/mvu_lit/todos/todos.mjs';
+} from '../build/dev/javascript/glimlit/todos/todos.mjs';
 
 test('resize emits immediately, observes events, and stops independently of the clock', async t => {
   const original = Object.getOwnPropertyDescriptor(globalThis, 'window');

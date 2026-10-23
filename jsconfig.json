@@ -8,12 +8,11 @@
     "noEmit": true,
     "rootDirs": [
       "src",
-      "build/dev/javascript/mvu_lit"
+      "build/dev/javascript/glimlit"
     ],
     "allowJs": true
   },
   "include": [
-    "src/**/*_view.mjs",
     "src/**/view.mjs",
     "src/**/effects.mjs",
     "src/runtime/runner.mjs",

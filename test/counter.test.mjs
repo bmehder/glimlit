@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { from_list as toArray } from '#gleam/array';
-import { init, update, UserClickedIncrement, UserClickedIncrementBy10, UserClickedDecrement, UserClickedReset } from '../build/dev/javascript/mvu_lit/counter/counter.mjs';
+import { init, update, UserClickedIncrement, UserClickedIncrementBy10, UserClickedDecrement, UserClickedReset } from '../build/dev/javascript/glimlit/counter/counter.mjs';
 
 test('counter returns model/effect pairs and preserves the previous model', () => {
   const [initial, initialEffects] = init();

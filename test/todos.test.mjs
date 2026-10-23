@@ -6,7 +6,7 @@ import {
   Editing$Editing$id, Editing$Editing$text, Status$isActive, Status$isCompleted, UserTypedNewTodo, UserSubmittedNewTodo,
   UserToggledTodoCompletion, UserClickedEditTodo, UserTypedTodoEdit,
   UserSubmittedTodoEdit, UserClickedCancelTodoEdit, UserClickedDeleteTodo,
-} from '../build/dev/javascript/mvu_lit/todos/todos.mjs';
+} from '../build/dev/javascript/glimlit/todos/todos.mjs';
 
 const init = () => initWithEffects()[0];
 const update = (model, message) => updateWithEffects(model, message)[0];

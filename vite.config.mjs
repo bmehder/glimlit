@@ -6,16 +6,29 @@ import { gleamImportPlugin } from '@chouquette/gleam-vite-loader'
 const local = path => fileURLToPath(new URL(path, import.meta.url))
 
 export default defineConfig({
-  plugins: [gleamImportPlugin(), tailwindcss()],
+  plugins: [
+    gleamImportPlugin(),
+    tailwindcss(),
+    {
+      name: 'demo-view-source',
+      enforce: 'pre',
+      resolveId(source, importer) {
+        if (source !== './view.mjs' || !importer) return
+        for (const demo of ['counter', 'todos']) {
+          if (importer.startsWith(local(`./build/dev/javascript/glimlit/${demo}/`))) {
+            return local(`./src/${demo}/view.mjs`)
+          }
+        }
+      },
+    },
+  ],
   // Serve view source directly; resolve its Gleam imports to generated modules.
   resolve: {
     alias: {
       './runner.mjs': local('./src/runtime/runner.mjs'),
       './effects.mjs': local('./src/todos/effects.mjs'),
-      './view.mjs': local('./src/todos/view.mjs'),
-      './todos.mjs': local('./build/dev/javascript/mvu_lit/todos/todos.mjs'),
-      './counter_view.mjs': local('./src/counter/counter_view.mjs'),
-      './counter.mjs': local('./build/dev/javascript/mvu_lit/counter/counter.mjs'),
+      './todos.mjs': local('./build/dev/javascript/glimlit/todos/todos.mjs'),
+      './counter.mjs': local('./build/dev/javascript/glimlit/counter/counter.mjs'),
       './browser.mjs': local('./src/runtime/browser.mjs'),
     },
   },

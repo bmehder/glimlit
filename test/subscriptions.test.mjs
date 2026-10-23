@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSubscriptions } from '../src/runtime/subscriptions.mjs';
 import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
-import { start } from '../build/dev/javascript/mvu_lit/runtime/mvu.mjs';
+import { start } from '../build/dev/javascript/glimlit/runtime/mvu.mjs';
 import { from_list as toArray, to_list as toList } from '#gleam/array';
 import {
   init, update, UserClickedStartClock, UserClickedStopClock,
   Msg$ClockStarted, Msg$ClockStopped, Msg$ClockTicked,
   clock_can_start, clock_can_stop,
-} from '../build/dev/javascript/mvu_lit/todos/todos.mjs';
+} from '../build/dev/javascript/glimlit/todos/todos.mjs';
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
 

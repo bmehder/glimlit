@@ -48,6 +48,17 @@ export function log(message) {
 	}
 }
 
+/** @param {string} label @param {number} milliseconds @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
+export function delayedLog(label, milliseconds) {
+	return {
+		perform: async () => {
+			console.log(`${label} started`)
+			await new Promise(resolve => setTimeout(resolve, milliseconds))
+			console.log(`${label} finished`)
+		},
+	}
+}
+
 /** @returns {import('../runtime/runner.mjs').Effect<string, Msg>} */
 export function fetchExample() {
 	return {

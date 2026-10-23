@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { to_list as toList } from '#gleam/array';
-import { start } from '../build/dev/javascript/mvu_lit/runtime/mvu.mjs';
+import { start } from '../build/dev/javascript/glimlit/runtime/mvu.mjs';
 
 test('dispatch uses the latest model even through an earlier view callback', () => {
   const rendered = [];

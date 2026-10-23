@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { from_list as toArray } from '#gleam/array';
 import { run } from '../src/runtime/runner.mjs';
-import { init, update, UserClickedFetchTodo, is_fetching, fetch_message } from '../build/dev/javascript/mvu_lit/todos/todos.mjs';
+import { init, update, UserClickedFetchTodo, is_fetching, fetch_message } from '../build/dev/javascript/glimlit/todos/todos.mjs';
 
 async function resultOf(effect) {
   let message;

@@ -1,10 +1,14 @@
-# Glimlet
+# Glimlit
 
 **A small MVU framework for Gleam and lit-html.**
 
-Gleam owns your model, messages, and pure update function. JavaScript views use
-HTML templates and dispatch Gleam messages. Effects are values that describe work;
-subscriptions are values that describe ongoing sources of messages.
+Glimlit gives developers who enjoy the Model–View–Update approach of Elm and
+Gleam frameworks such as Lustre another option for writing the view: JavaScript
+tagged template literals with lit-html, alongside models and updates in Gleam.
+
+Gleam owns your model, messages, and pure update function. JavaScript views
+dispatch Gleam messages. Effects are values that describe work; subscriptions
+are values that describe ongoing sources of messages.
 
 The aim is to keep the whole loop understandable. There is one `start` function,
 a small effect runner, and a subscription manager.
@@ -34,24 +38,26 @@ and Tailwind styles also update during development.
 | `npm test` | Compile Gleam and run the tests |
 | `gleam format --check` | Check Gleam formatting |
 
-To run the counter instead, switch the call in `src/mvu_lit.gleam` from
+To run the counter instead, switch the call in `src/glimlit.gleam` from
 `todos.main()` to `counter.main()`.
 
 ## The loop
 
-```text
-message → update(model, message) → #(next_model, effects)
-                                      │            │
-                                      ▼            ▼
-                                     view      run effects
-                                      │            │
-                                      └─ messages ──┘
+```mermaid
+flowchart LR
+  Message[Message] --> Update["Update(model, message)"]
+  Update -->|next model| Model[Model]
+  Model --> View[View]
+  View -->|user events| Message
+  Model -->|current model| Update
+  Update -->|effects| Effects[Run effects]
+  Effects -->|result messages| Message
 ```
 
 Both `init` and `update` return a model and a list of effects. An empty list means
 there is no work to perform. The runtime stores the new model, renders it, and then
-runs the effects. Effect callbacks and view events send messages through the same
-update function.
+runs the effects. View events and effect callbacks send messages back to `update`,
+along with the current model, completing the loop.
 
 A minimal Gleam app looks like this:
 
@@ -77,7 +83,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   }
 }
 
-@external(javascript, "./counter_view.mjs", "view")
+@external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
 
 pub fn main() -> fn() -> Nil {
@@ -85,14 +91,12 @@ pub fn main() -> fn() -> Nil {
 }
 ```
 
-The returned function stops the app and cleans up its subscriptions. The browser
-entry point calls it when Vite disposes the module during development.
+The returned function stops the app and cleans up its subscriptions.
 
 ## Views with lit-html
 
-Glimlit gives developers who enjoy Gleam's Model–View–Update approach another
-option for writing the view. In Lustre, elements, attributes, and event handlers
-are Gleam function calls. With lit-html, views use JavaScript tagged template
+Elm and Lustre express elements, attributes, and event handlers as function calls
+in Elm and Gleam respectively. With lit-html, views use JavaScript tagged template
 literals: the `html` tag processes HTML-like markup with `${...}` expressions
 for dynamic content and bindings such as `@click` for event handlers. These are
 JavaScript expressions, rather than standalone HTML documents. See
@@ -207,6 +211,21 @@ list order, but asynchronous work can finish in any order. Returning multiple
 effects does not make one wait for another; use a returned message to request
 work that depends on an earlier result.
 
+The demo's **Run effect ordering example** button returns these two effects
+together:
+
+```gleam
+#(model, [
+  delayed_log("First effect", 1000),
+  delayed_log("Second effect", 100),
+])
+```
+
+Each effect logs when it starts, waits for its delay, and logs when it finishes.
+Open the browser console to see the first effect start before the second, but
+the second finish first. The effect-ordering test controls completion explicitly
+to check this behavior without relying on real timer delays.
+
 Supply an `onFailure` when a failure should become a message. Unhandled failures
 reject the runner's Promise; they do not automatically update the model.
 
@@ -259,7 +278,7 @@ Each app has its own subscription manager, with independent string keys:
 - Starting an active key does nothing; stopping a missing key is harmless.
 - To change configuration, stop the key and start it again.
 - Setup and cleanup are synchronous; emissions may happen during setup or later.
-- A start acknowledgement means setup returned, not that a network connection opened.
+- A start acknowledgement means the subscription's setup function has returned.
 - Stopping disables emissions before cleanup, so late callbacks are ignored.
 
 The todo example includes both a clock and a window-resize listener. The resize
@@ -278,13 +297,13 @@ to those apps. Vite and Tailwind provide the demo build and styling.
 
 ```text
 src/
-  mvu_lit.gleam            Choose which example to start
-  styles.css              Tailwind entry point
+  glimlit.gleam           Choose which example to start
+  styles.css             Tailwind entry point
   counter/
     counter.gleam         Model, messages, init, update, and entry point
-    counter_view.mjs      Counter template and button helper
+    view.mjs              Counter template and button helper
   todos/
-    todos.gleam           Model, messages, init, update, JSON, and helpers
+    todos.gleam           Model, messages, update, and saved-todo JSON encoding/decoding
     view.mjs              Todo templates
     effects.mjs           Storage, fetch, logging, and subscription effects
     subscriptions.mjs     Clock and window-resize descriptions
@@ -305,6 +324,3 @@ views, and Tailwind. When adding app modules, follow its existing source aliases
 so Vite serves editable JavaScript while resolving generated Gleam modules.
 `gleam_javascript` supplies the official list-to-array conversion used by the todo
 view.
-
-The project keeps its internal Gleam package and entry module named `mvu_lit`.
-The framework's name is **Glimlet**: Gleam, lit, and a little runtime.
