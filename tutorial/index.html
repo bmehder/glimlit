@@ -21,7 +21,8 @@
         <p class="eyebrow">Your first Glimlit app</p>
         <h1 id="tutorial-title">A little Gleam.<br>A postcard of your own.</h1>
         <p class="hero-description">Build a postcard editor, one small step at a time. Start with a preview, make it interactive, then add saving and keyboard shortcuts.</p>
-        <p class="hero-prerequisites">Bring your HTML, CSS, Tailwind, and JavaScript knowledge. We’ll introduce Gleam, lit-html, and Model–View–Update as we go.</p>
+        <p class="hero-introduction">Glimlit is a small framework for building web interfaces with Gleam and lit-html. It lets you keep state and update logic in Gleam while writing views with familiar HTML-like JavaScript tagged template literals. It offers another way to use Model–View–Update if you prefer that style of writing interfaces. <a href="https://github.com/bmehder/glimlit/blob/main/README.md" target="_blank" rel="noopener noreferrer">Read about Glimlit on GitHub ↗<span class="sr-only"> (opens in a new tab)</span></a></p>
+        <p class="hero-prerequisites">Bring your HTML, CSS, and JavaScript knowledge. We’ll introduce Gleam, lit-html, and Model–View–Update as we go.</p>
         <a class="primary-link" href="#get-ready">Start building <span aria-hidden="true">↘</span></a>
       </section>
       <section class="demo-section" aria-labelledby="finished-title">
@@ -36,9 +37,12 @@
   <script type="module">
     import { main } from '../build/dev/javascript/glimlit/tutorial/tutorial.mjs'
     import { mountGuide } from '../src/tutorial/guide.mjs'
-    mountGuide()
+    const stopGuide = mountGuide()
     const stop = main()
-    if (import.meta.hot) import.meta.hot.dispose(stop)
+    if (import.meta.hot) import.meta.hot.dispose(() => {
+      stopGuide()
+      stop()
+    })
   </script>
 </body>
 </html>

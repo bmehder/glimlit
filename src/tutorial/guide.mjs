@@ -1,6 +1,7 @@
 import { html, render } from 'lit-html'
 import examples from './examples.json'
 import highlighted from 'virtual:tutorial-highlighting'
+import { trackChapters } from './navigation.mjs'
 
 const checkpoints = import.meta.glob('../../docs/tutorial/*/*', {
   query: '?raw', import: 'default', eager: true,
@@ -220,4 +221,5 @@ export function mountGuide() {
       </div>
     </div>
   `, document.getElementById('guide'))
+  return trackChapters(document.getElementById('guide'))
 }
