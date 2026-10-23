@@ -195,7 +195,7 @@ export function mountGuide() {
           <p>An effect performs a piece of work. A subscription listens for messages over time. Our final feature lets the reader opt in to pressing <kbd>N</kbd> to cycle postcard colours.</p>
           <p>Create <code>subscriptions.mjs</code>. Its <code>nextThemeKey</code> function describes a keyboard listener, but doesn’t attach it yet. The subscription has a <code>start(emit)</code> function that attaches the listener and returns a cleanup function.</p>
           ${code(examples.cleanup.source)}
-          <p>The complete listener ignores text fields, editable content, held-down keys, and modifier shortcuts. Typing an “n” into your postcard must keep working normally.</p>
+          <p>The complete listener ignores input fields (including the shortcuts checkbox), textareas, select controls, editable content, held-down keys, and modifier shortcuts. Typing an “n” into your postcard must keep working normally.</p>
           <h3>Start and stop through effects</h3>
           <p>Add <code>shortcuts: Bool</code> to the model. <code>Bool</code> has the values <code>True</code> and <code>False</code>. Toggling the checkbox returns <code>[set_shortcuts(!model.shortcuts)]</code>; <code>!</code> flips the boolean.</p>
           <p>The <code>setShortcuts</code> effect uses the runtime’s subscription manager. It starts or stops a subscription under the key <code>postcard-keys</code>. Starting an already active key does nothing, and stopping a missing key is harmless.</p>
@@ -203,7 +203,7 @@ export function mountGuide() {
           <p>The start/stop effect reports success with <code>ShortcutsChanged(enabled)</code>. That message updates the checkbox’s model field. Each key press produces <code>UserPressedNextTheme</code>, which goes through the same update function as a button click. Update picks the next colour; the listener doesn’t reach into the DOM to change it.</p>
           <p>Turning shortcuts off calls the cleanup function. Stopping the app also cleans up its subscriptions, and late messages from stopped listeners are ignored. That lifecycle is what distinguishes a managed subscription from an event listener left running indefinitely.</p>
           ${files('06-subscriptions')}
-          ${exercise(html`Enable shortcuts, click outside the text fields, and press N several times. Colours should cycle Coral → Ocean → Meadow → Coral. Type “nice” in the message: it should only enter text. Disable shortcuts and press N outside the fields again: the colour should stay put.`)}
+          ${exercise(html`Enable shortcuts, then click the postcard preview to move focus away from the checkbox. Press N outside an input field to cycle colours. The order should be Coral → Ocean → Meadow → Coral. Type “nice” in the message: it should only enter text. Disable shortcuts, click the preview, and press N again: the colour should stay put.`)}
         </section>
 
         <section class="lesson" id="keep-going" aria-labelledby="next-title">

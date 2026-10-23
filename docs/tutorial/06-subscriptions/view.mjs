@@ -52,7 +52,7 @@ export function view(model, dispatch) {
             @change=${() => dispatch(new UserToggledShortcuts())}>
           Enable keyboard shortcuts
         </label>
-        <p class="studio-hint">Press N outside a text field to cycle colours. Turn shortcuts off to remove the listener.</p>
+        <p class="studio-hint">Press N outside an input field to cycle colours. Turn shortcuts off to remove the listener.</p>
       </div>
       <div class="preview-area">
         <p class="preview-label">Live preview</p>
