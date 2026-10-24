@@ -10,15 +10,13 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/site/navigation.css">
   <link rel="stylesheet" href="/src/tutorial/tutorial.css">
 </head>
 <body class="min-h-screen bg-slate-950 font-sans text-slate-100">
   <a class="skip-link" href="#lessons">Skip to the tutorial</a>
   <div class="tutorial-shell">
-    <header class="site-header">
-      <a class="wordmark" href="/"><img src="/brand/glimlit-wordmark-dark.svg" alt="Glimlit" width="120" height="32"><span> / learn</span></a>
-      <a href="https://github.com/bmehder/glimlit" target="_blank" rel="noopener noreferrer">GitHub ↗<span class="sr-only"> (opens in a new tab)</span></a>
-    </header>
+    <!-- site-navigation -->
     <main>
       <section class="tutorial-hero" aria-labelledby="tutorial-title">
         <p class="eyebrow">Your first Glimlit app</p>
@@ -35,7 +33,7 @@
       </section>
       <div id="guide"></div>
     </main>
-    <footer class="tutorial-footer"><a href="/">← Back to the Glimlit demo</a><span>Gleam for state. lit-html for views.</span></footer>
+    <footer class="tutorial-footer"><a href="/demo/">← Explore the demo</a><a href="/">Glimlit home</a><span>Gleam for state. lit-html for views.</span></footer>
   </div>
   <script type="module">
     import { main } from '../build/dev/javascript/glimlit/tutorial/tutorial.mjs'

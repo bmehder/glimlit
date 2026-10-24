@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Glimlit combines Gleam’s Model–View–Update architecture with JavaScript tagged template literals powered by lit-html.">
+  <title>Demo · Glimlit</title>
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/site/navigation.css">
+  <link rel="stylesheet" href="/src/site.css">
+</head>
+<body class="min-h-screen bg-slate-950 font-sans text-slate-100">
+  <a class="site-skip" href="#app">Skip to demo</a>
+  <div class="site-shell"><!-- site-navigation --></div>
+  <main class="mx-auto my-12 max-w-2xl px-6">
+    <h1 class="sr-only">Glimlit demo</h1>
+    <div id="app"></div>
+  </main>
+  <script type="module">
+    import { main } from '../build/dev/javascript/glimlit/glimlit.mjs'
+    const stop = main()
+    if (import.meta.hot) import.meta.hot.dispose(stop)
+  </script>
+</body>
+</html>

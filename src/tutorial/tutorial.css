@@ -1,45 +1,7 @@
-:root {
-	--tutorial-accent: #5eead4;
-}
-html {
-	scroll-behavior: smooth;
-	scroll-padding-top: 2rem;
-}
-.tutorial-shell {
-	max-width: 1180px;
-	margin: 0 auto;
-	padding: 0 2rem;
-}
-.site-header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	padding: 2rem 0;
-	border-bottom: 1px solid #1e293b;
-}
-.site-header a,
-.tutorial-footer a {
-	color: #cbd5e1;
-	text-decoration: none;
-}
-.site-header .wordmark {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.5rem;
-	color: #f8fafc;
-	font-size: 1.25rem;
-	font-weight: 700;
-	letter-spacing: -0.04em;
-}
-.wordmark img {
-	display: block;
-	width: 120px;
-	height: 32px;
-}
-.wordmark span {
-	color: #64748b;
-	font-weight: 400;
-}
+:root { --tutorial-accent: #5eead4; }
+html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
+.tutorial-shell { max-width: 1180px; margin: 0 auto; padding: 0 2rem; }
+.tutorial-footer a { color: #cbd5e1; text-decoration: none; }
 .tutorial-hero {
 	max-width: 850px;
 	padding: 5rem 0 4rem;

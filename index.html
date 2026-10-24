@@ -1,43 +1,103 @@
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
-  <meta name="color-scheme" content="dark">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Glimlit is a small Model–View–Update framework for Gleam and lit-html.">
-  <title>Glimlit</title>
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Glimlit combines Gleam’s Model–View–Update architecture with JavaScript tagged template literals powered by lit-html.">
+  <title>Glimlit · Gleam for the logic. lit-html for the view.</title>
   <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/site/navigation.css">
+  <link rel="stylesheet" href="/src/site.css">
 </head>
+<body class="bg-slate-950 font-sans text-slate-100">
+  <a class="site-skip" href="#main">Skip to content</a>
+  <div class="site-shell">
+    <!-- site-navigation -->
+    <main id="main">
+      <section class="home-hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="site-eyebrow">A small framework. Another way to build.</p>
+          <h1 id="hero-title">Gleam for the logic.<br><span>lit-html for the view.</span></h1>
+          <p class="home-lead">Keep your state and updates in Gleam. Write your views with JavaScript tagged template literals. Bring them together with a small Model–View–Update runtime.</p>
+          <div class="site-actions">
+            <a class="site-button" href="/tutorial/">Build your first app <span aria-hidden="true">↗</span></a>
+            <a class="site-text-link" href="/demo/">Try the demo <span aria-hidden="true">→</span></a>
+          </div>
+          <p class="hero-footnote">Gleam + lit-html. Your choice of CSS.</p>
+        </div>
+        <div class="code-window" aria-label="Gleam returns a model and effects separately; lit-html renders the view, and effect results return as messages">
+          <div class="code-window-bar"><span class="window-dots" aria-hidden="true">● ● ●</span><span>Two languages. One app.</span></div>
+          <div class="code-tabs" role="tablist" aria-label="Explore the view, model, and effects">
+            <button id="view-tab" type="button" role="tab" aria-selected="true" aria-controls="view-example" tabindex="0">View<span>view.mjs</span></button>
+            <button id="model-tab" type="button" role="tab" aria-selected="false" aria-controls="model-example" tabindex="-1">Model &amp; update<span>tutorial.gleam</span></button>
+            <button id="effects-tab" type="button" role="tab" aria-selected="false" aria-controls="effects-example" tabindex="-1">Effects<span>effects.mjs</span></button>
+          </div>
+          <div id="model-example" class="code-panel" role="tabpanel" aria-labelledby="model-tab" tabindex="0" hidden>
+            <pre><code><span class="syntax-keyword">pub fn</span> <span class="syntax-function">update</span>(model, msg) {
+  <span class="syntax-keyword">case</span> msg {
+    <span class="syntax-type">UserChangedTitle</span>(title) -&gt; #(
+      <span class="syntax-type">Model</span>(..model, title: title), <span class="syntax-comment">// next model</span>
+      [<span class="syntax-function">save_title</span>(title)],       <span class="syntax-comment">// requested work</span>
+    )
+    <span class="syntax-type">TitleSaved</span> -&gt; #(model, [])
+    <span class="syntax-type">TitleSaveFailed</span> -&gt;
+      #(model, [<span class="syntax-function">log</span>(<span class="syntax-string">"Save failed."</span>)])
+  }
+}</code></pre>
+          </div>
+          <div id="view-example" class="code-panel" role="tabpanel" aria-labelledby="view-tab" tabindex="0">
+            <pre><code><span class="syntax-function">html</span>`
+  <span class="syntax-tag">&lt;h1&gt;</span>${title(model)}<span class="syntax-tag">&lt;/h1&gt;</span>
+  <span class="syntax-tag">&lt;input</span>
+    <span class="syntax-property">.value</span>=${title(model)}
+    <span class="syntax-property">@input</span>=${event =&gt; <span class="syntax-function">dispatch</span>(
+      <span class="syntax-keyword">new</span> <span class="syntax-type">UserChangedTitle</span>(event.currentTarget.value)
+    )}
+  <span class="syntax-tag">&gt;</span>
+`</code></pre>
+          </div>
+          <div id="effects-example" class="code-panel" role="tabpanel" aria-labelledby="effects-tab" tabindex="0" hidden>
+            <pre><code><span class="syntax-keyword">export const</span> <span class="syntax-function">saveTitle</span> = title =&gt; ({
+  <span class="syntax-property">perform</span>: () =&gt; localStorage.<span class="syntax-function">setItem</span>(<span class="syntax-string">'title'</span>, title),
+  <span class="syntax-property">onSuccess</span>: () =&gt; <span class="syntax-function">titleSaved</span>(),
+  <span class="syntax-property">onFailure</span>: () =&gt; <span class="syntax-function">titleSaveFailed</span>(),
+})
 
-<body class="min-h-screen bg-slate-950 font-sans text-slate-100">
-  <main class="mx-auto my-12 max-w-2xl px-6">
-    <header class="mb-10 border-b border-slate-800 pb-8">
-      <div class="flex items-center justify-between gap-4">
-        <h1><img src="/brand/glimlit-wordmark-dark.svg" alt="Glimlit" width="240" height="64" class="h-14 w-auto max-w-full"></h1>
-        <a href="https://github.com/bmehder/glimlit" target="_blank" rel="noopener noreferrer" aria-label="View Glimlit on GitHub (opens in a new tab)"
-          class="inline-flex size-11 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-teal-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400">
-          <svg viewBox="0 0 24 24" class="size-6" fill="currentColor" aria-hidden="true" focusable="false">
-            <path d="M12 .75a11.25 11.25 0 0 0-3.558 21.923c.563.104.77-.244.77-.542 0-.267-.01-1.155-.015-2.096-3.13.68-3.791-1.327-3.791-1.327-.512-1.3-1.25-1.646-1.25-1.646-1.022-.699.077-.685.077-.685 1.13.08 1.725 1.16 1.725 1.16 1.004 1.72 2.633 1.223 3.275.935.102-.727.393-1.223.715-1.504-2.499-.284-5.126-1.25-5.126-5.564 0-1.23.44-2.233 1.16-3.022-.117-.285-.503-1.43.11-2.98 0 0 .945-.303 3.095 1.155a10.79 10.79 0 0 1 5.625 0c2.15-1.458 3.094-1.155 3.094-1.155.614 1.55.228 2.695.112 2.98.72.79 1.158 1.792 1.158 3.022 0 4.325-2.632 5.277-5.139 5.556.404.35.763 1.044.763 2.105 0 1.52-.014 2.745-.014 3.119 0 .3.203.65.774.54A11.252 11.252 0 0 0 12 .75Z" />
-          </svg>
-        </a>
-      </div>
-      <p class="mt-4 leading-relaxed text-slate-400">A small Model–View–Update framework for Gleam and lit-html.
-        Model your state and updates in Gleam, render your interface with HTML templates, and describe effects and subscriptions as values.</p>
-      <nav class="mt-5" aria-label="Explore Glimlit">
-        <a href="/tutorial/" class="font-medium text-teal-400 underline decoration-teal-400/40 underline-offset-4 hover:text-teal-300">Build your first app: Postcard Studio →</a>
-      </nav>
-    </header>
-    <div id="app"></div>
-  </main>
-  <script type="module">
-    import { main } from './build/dev/javascript/glimlit/glimlit.mjs'
-    const stop = main()
-    if (import.meta.hot) import.meta.hot.dispose(stop)
-  </script>
+<span class="syntax-keyword">export const</span> <span class="syntax-function">log</span> = message =&gt; ({
+  <span class="syntax-property">perform</span>: () =&gt; console.<span class="syntax-function">log</span>(message),
+})</code></pre>
+          </div>
+          <div class="code-connection">Model → view · effects → runner · messages → update</div>
+          <p class="code-explanation">Return a pair: the next model and a list of effects. The runtime renders the model, then performs the work. <code>[]</code> means no work to run.</p>
+          <p class="code-caption">An illustration of the flow. The tutorial walks through complete, runnable files.</p>
+        </div>
+      </section>
+      <section class="home-principles" aria-labelledby="principles-title">
+        <div class="section-intro"><p class="site-eyebrow">A familiar idea, a different view</p><h2 id="principles-title">The MVU loop.<br>With room for your HTML.</h2></div>
+        <div class="principles-list">
+          <article><span class="principle-number">01</span><div><h3>Gleam owns the state</h3><p>Define your model and messages with Gleam’s types. Pure update functions describe what changes when a message arrives.</p></div></article>
+          <article><span class="principle-number">02</span><div><h3>Views stay close to the web</h3><p>Use lit-html’s HTML-like templates, JavaScript expressions, and DOM event handlers. Style with regular CSS or the tools you already use.</p></div></article>
+          <article><span class="principle-number">03</span><div><h3>Work has a place in the loop</h3><p>Describe browser work with effects and ongoing listeners with subscriptions. Their messages return to the same update function.</p></div></article>
+        </div>
+      </section>
+      <section class="home-choice" aria-labelledby="choice-title">
+        <p class="site-eyebrow">An alternative, by design</p>
+        <h2 id="choice-title">Like MVU, but prefer writing templates?</h2>
+        <p>Glimlit is for developers who enjoy the Model–View–Update approach of Elm and Gleam frameworks such as Lustre, and want another option for authoring views. It combines Gleam’s state model with lit-html rather than expressing every element as a Gleam function call.</p>
+        <a class="site-text-link" href="https://github.com/bmehder/glimlit/blob/main/README.md#views-with-lit-html" target="_blank" rel="noopener noreferrer">See the approaches side by side ↗<span class="sr-only"> (opens in a new tab)</span></a>
+      </section>
+      <section class="home-learn" aria-labelledby="learn-title">
+        <div><p class="site-eyebrow">Learn by making something</p><h2 id="learn-title">Your first app.<br>A postcard of your own.</h2><p>Build Postcard Studio in six working checkpoints. Start with a preview, add editing and colour, then introduce saving and keyboard shortcuts.</p><p>Bring basic HTML, CSS, and JavaScript knowledge. The guide introduces Gleam, lit-html, and MVU as you go.</p><a class="site-button" href="/tutorial/">Start the tutorial <span aria-hidden="true">→</span></a></div>
+        <div class="home-postcard" aria-hidden="true"><div class="postcard-overline">A note from me to you <span>✳︎</span></div><p class="postcard-title">Hello from<br>somewhere nice.</p><p>Gleam for the logic.<br>A little HTML for the hello.</p><div class="postcard-signoff">Made with Glimlit <span>↗</span></div></div>
+      </section>
+      <section class="home-source" aria-labelledby="source-title"><div><h2 id="source-title">Small enough to read through.</h2><p>Explore the runtime, try the examples, and make something of your own. The framework and demos live together in the repository.</p></div><a class="site-text-link" href="https://github.com/bmehder/glimlit/blob/main/README.md" target="_blank" rel="noopener noreferrer">Read the README ↗<span class="sr-only"> (opens in a new tab)</span></a></section>
+    </main>
+    <footer class="site-footer"><span>Glimlit · Gleam + lit-html</span><div><a href="/demo/">Demo</a><a href="/tutorial/">Tutorial</a><a href="https://github.com/bmehder/glimlit" target="_blank" rel="noopener noreferrer">GitHub ↗<span class="sr-only"> (opens in a new tab)</span></a></div></footer>
+  </div>
+  <script type="module" src="/src/home.mjs"></script>
 </body>
-
 </html>

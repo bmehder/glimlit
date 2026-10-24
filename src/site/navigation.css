@@ -1,0 +1,25 @@
+.site-bar { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; min-height: 108px; border-bottom: 1px solid #1e293b; }
+.brand { flex-shrink: 0; }
+.brand img { display: block; width: 180px; height: 48px; }
+.site-navigation { display: flex; align-items: center; flex-wrap: wrap; gap: 1.5rem; }
+.site-navigation a { display: inline-flex; align-items: center; min-height: 44px; color: #94a3b8; font-size: .9rem; text-decoration: none; }
+.site-navigation a:hover, .site-navigation a[aria-current=page] { color: #5eead4; }
+.site-navigation .github-link { justify-content: center; width: 44px; height: 44px; border-radius: .4rem; }
+.site-navigation .github-link:hover { background: #1e293b; }
+.github-label { display: none; }
+.site-menu-toggle { display: none; align-items: center; justify-content: center; gap: .55rem; min-height: 44px; padding: .55rem .8rem; color: #e2e8f0; background: #0f172a; border: 1px solid #334155; border-radius: .45rem; font-size: .85rem; cursor: pointer; }
+.menu-close-icon { display: none; }
+.site-bar a:focus-visible, .site-menu-toggle:focus-visible { outline: 2px solid #5eead4; outline-offset: 4px; border-radius: .3rem; }
+@media (max-width: 700px) {
+  .site-bar { flex-wrap: wrap; gap: 0; min-height: 90px; padding: 1rem 0; }
+  .brand img { width: 150px; height: 40px; }
+  .site-menu-toggle:not([hidden]) { display: inline-flex; }
+  .site-navigation { width: 100%; flex-direction: column; align-items: stretch; gap: .2rem; margin-top: 1rem; padding: .6rem; background: #0f172a; border: 1px solid #334155; border-radius: .6rem; }
+  .site-navigation a { padding: .4rem .75rem; border-radius: .3rem; }
+  .site-navigation a:hover, .site-navigation a[aria-current=page] { background: #0c242b; }
+  .site-navigation .github-link { justify-content: flex-start; gap: .75rem; width: auto; }
+  .github-label { display: inline; }
+  .site-bar[data-menu-ready]:not([data-menu-open]) .site-navigation { display: none; }
+  .site-bar[data-menu-open] .menu-open-icon { display: none; }
+  .site-bar[data-menu-open] .menu-close-icon { display: block; }
+}

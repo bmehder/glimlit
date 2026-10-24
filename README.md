@@ -31,7 +31,9 @@ npm install
 npm run dev
 ```
 
-Open <http://127.0.0.1:3000>. The todo example runs by default. Vite compiles Gleam
+Open <http://127.0.0.1:3000> for the homepage, or
+<http://127.0.0.1:3000/demo/> for the demo. The todo example runs by default on
+the demo page. Vite compiles Gleam
 and refreshes generated JavaScript declarations when Gleam files change. Views
 and Tailwind styles also update during development.
 
@@ -376,7 +378,13 @@ Start reading with the counter. The todo example adds CRUD, localStorage,
 fetching, and subscriptions. It starts with three todos when no saved data exists.
 The fetch button logs a sample response without adding it to the list.
 
-`index.html` mounts the app. `vite.config.mjs` connects Gleam, JavaScript source
+`index.html` is the marketing homepage; `demo/index.html` mounts the demo app.
+`src/site.css` styles the homepage and demo page layout.
+The main header is shared by all three pages: `src/site/navigation.mjs` defines
+its links and markup, `navigation.css` provides its styles, and `menu.mjs` handles
+the small-screen menu. `scripts/site-navigation.mjs` includes the header in each
+page during development and production builds.
+`vite.config.mjs` builds the homepage, demo, and tutorial, and connects Gleam, JavaScript source
 views, and Tailwind. When adding app modules, follow its existing source aliases
 so Vite serves editable JavaScript while resolving generated Gleam modules.
 `gleam_javascript` supplies the official list-to-array conversion used by the todo

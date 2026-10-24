@@ -3,11 +3,13 @@ import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import { gleamImportPlugin } from '@chouquette/gleam-vite-loader'
 import { tutorialHighlighting } from './scripts/tutorial-highlighting.mjs'
+import { siteNavigation } from './scripts/site-navigation.mjs'
 
 const local = path => fileURLToPath(new URL(path, import.meta.url))
 
 export default defineConfig({
   plugins: [
+    siteNavigation(),
     gleamImportPlugin(),
     tailwindcss(),
     tutorialHighlighting(),
@@ -38,6 +40,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: local('./index.html'),
+        demo: local('./demo/index.html'),
         tutorial: local('./tutorial/index.html'),
       },
     },

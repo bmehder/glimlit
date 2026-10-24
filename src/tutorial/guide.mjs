@@ -592,7 +592,7 @@ export function mountGuide() {
 							behavior, and subscription cleanup. Run them with checkpoint 06
 							installed. Earlier checkpoints deliberately lack later features, so the
 							finished-app tests won’t pass against them. The production build
-							includes both the main demo and <code>/tutorial/</code>.
+							includes the homepage, <code>/demo/</code>, and <code>/tutorial/</code>.
 						</p>
 						<h3>If something goes wrong</h3>
 						<ul>
