@@ -46,8 +46,8 @@ and Tailwind styles also update during development.
 | `npm run test:tutorial-checkpoints` | Compile and check all six tutorial checkpoints |
 | `gleam format --check` | Check Gleam formatting |
 
-To run the counter instead, switch the call in `src/glimlit.gleam` from
-`todos.main()` to `counter.main()`.
+To run the counter instead, add `import counter/counter` in `src/glimlit.gleam`
+and switch the call from `todos.main()` to `counter.main()`.
 
 ## Build your first app
 
@@ -343,62 +343,65 @@ and stale view callbacks. It does not cancel an HTTP request already in progress
 
 ## Project layout
 
-The reusable framework lives in `src/runtime/`. The `counter/`, `todos/`, and
-`tutorial/` directories are demos; their browser behavior belongs to those apps.
-Vite and Tailwind provide the demo build and styling.
+**The framework is `src/runtime/`.** Everything else is an example app, the
+project website, documentation, or development tooling. The runtime has no
+website navigation, styles, or dependency on the example apps.
 
 ```text
 src/
-  glimlit.gleam           Choose which example to start
-  styles.css             Tailwind entry point
-  counter/
-    counter.gleam         Model, messages, init, update, and entry point
-    view.mjs              Counter template and button helper
-  todos/
-    todos.gleam           Model, messages, update, and saved-todo JSON encoding/decoding
-    view.mjs              Todo templates
-    effects.mjs           Storage, fetch, logging, and subscription effects
-    subscriptions.mjs     Clock and window-resize descriptions
-  tutorial/
-    tutorial.gleam        Postcard model, messages, update, and entry point
-    view.mjs              Postcard editor and preview
-    effects.mjs           Saving, restoring, and managing shortcuts
-    subscriptions.mjs     Keyboard shortcut listener
-    guide.mjs             Tutorial chapters and checkpoint source display
-    examples.json         Explanatory code snippets
-    navigation.mjs        Current-chapter highlighting
-    tutorial.css          Tutorial page and postcard styles
-  runtime/
-    mvu.gleam             Model storage, dispatch, and rendering loop
-    browser.mjs           MutableRef implementation
-    effect.gleam          Typed JavaScript effect boundary
-    runner.mjs            Generic effect runner and app lifetime
-    subscriptions.mjs     Generic subscription lifetime manager
+  runtime/               Reusable Glimlit framework
+    mvu.gleam            Model storage, dispatch, and rendering loop
+    effect.gleam         Typed JavaScript effect boundary
+    browser.mjs          Private mutable model reference
+    runner.mjs           Generic effect runner and app lifetime
+    subscriptions.mjs    Generic subscription lifetime manager
+  counter/               Small example app: model, update, and view
+  todos/                 Example app with storage, fetch, and subscriptions
+  tutorial/              Finished Postcard Studio app that readers edit
+  glimlit.gleam          Demo entry point; chooses which example to start
+  site/                  Website code; not part of the framework
+    home.mjs             Homepage example tabs
+    home.css             Homepage and demo layout
+    styles.css           Website Tailwind entry point
+    navigation.mjs       Header and shared page links
+    navigation.css       Header styles
+    menu.mjs             Small-screen header menu
+    footer.mjs           Footer using the same page links
+    footer.css           Footer styles
+    chapters.mjs         Active-section tracking for docs and tutorial
+    docs/                Docs page examples, styles, and navigation entry point
+    tutorial/            Tutorial chapters, snippets, and page/postcard styles
 ```
 
-`tutorial/index.html` is the tutorial's separate page entry point.
-`docs/tutorial/` contains the six complete checkpoints, and
-`scripts/check-tutorial.mjs` checks them in a temporary project.
-`scripts/tutorial-highlighting.mjs` uses Shiki at build time to highlight the
-tutorial's code. Shared logos and favicons live in `public/`.
+Start reading with `src/counter/counter.gleam` and `src/counter/view.mjs`.
+The todo example adds CRUD, localStorage, fetching, and subscriptions. It starts
+with three todos when no saved data exists. The fetch button logs a sample
+response without adding it to the list. Each app keeps its model and update in
+Gleam and its view, effects, and subscription sources in adjacent JavaScript files.
 
-Start reading with the counter. The todo example adds CRUD, localStorage,
-fetching, and subscriptions. It starts with three todos when no saved data exists.
-The fetch button logs a sample response without adding it to the list.
+`src/glimlit.gleam` selects the demo app; it is not the framework's API entry
+point. Apps import `runtime/mvu` and `runtime/effect` directly. To build your own
+app, use the examples as a guide and keep `src/runtime/`; the website and example
+apps are not required by the runtime. You will still need a browser entry point,
+a view renderer such as lit-html, and build tooling that connects your Gleam and
+JavaScript modules. This repository is not currently a separately published package.
 
-`index.html` is the marketing homepage; `demo/index.html` mounts the demo app.
-`src/site.css` styles the homepage and demo page layout.
-The main header is shared by all pages: `src/site/navigation.mjs` defines
-its links and markup, `navigation.css` provides its styles, and `menu.mjs` handles
-the small-screen menu. `scripts/site-navigation.mjs` includes the header in each
-page during development and production builds. The footer is also shared:
-`src/site/footer.mjs` uses the same page links as the header, with styles in
-`src/site/footer.css`. The same build plugin inserts it into all four pages.
-`docs/index.html` is the documentation page. `scripts/docs-page.mjs` highlights
-its examples and generates the JavaScript reference from public runtime JSDoc.
-`src/docs/` contains its examples, styles, and section navigation entry point.
-`vite.config.mjs` builds the homepage, demo, docs, and tutorial, and connects Gleam, JavaScript source
-views, and Tailwind. When adding app modules, follow its existing source aliases
-so Vite serves editable JavaScript while resolving generated Gleam modules.
-`gleam_javascript` supplies the official list-to-array conversion used by the todo
-view.
+The website has four HTML entry points: `index.html` (home), `demo/index.html`,
+`docs/index.html`, and `tutorial/index.html`. Their supporting code lives under
+`src/site/`. `scripts/site-navigation.mjs` inserts the shared header and footer
+in development and production, without requiring client-side JavaScript.
+Shared logos and favicons live in `public/`.
+
+`docs/tutorial/` contains the six complete app checkpoints. They replace files
+in `src/tutorial/`, leaving the tutorial reader in `src/site/tutorial/` intact.
+`scripts/check-tutorial.mjs` checks them in a temporary project, and
+`scripts/tutorial-highlighting.mjs` highlights their code with Shiki at build time.
+`scripts/docs-page.mjs` highlights the docs examples and generates the runtime
+reference from public JSDoc. `docs/mvu-loop.svg` is the README's loop diagram.
+
+`test/` covers the runtime and example app behavior. `build/`, `dist/`, and
+`node_modules/` are generated and should not be edited.
+`vite.config.mjs` builds all four website pages and connects Gleam, JavaScript,
+and Tailwind. When adding app modules, follow its existing source aliases so
+Vite serves editable JavaScript while resolving generated Gleam modules.
+`gleam_javascript` supplies the official list-to-array conversion used by the views.

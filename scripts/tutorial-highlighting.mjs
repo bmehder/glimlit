@@ -4,7 +4,7 @@ import { createHighlighter } from 'shiki'
 
 const virtualId = 'virtual:tutorial-highlighting'
 const resolvedId = `\0${virtualId}`
-const examplesPath = fileURLToPath(new URL('../src/tutorial/examples.json', import.meta.url))
+const examplesPath = fileURLToPath(new URL('../src/site/tutorial/examples.json', import.meta.url))
 const checkpointsPath = fileURLToPath(new URL('../docs/tutorial/', import.meta.url))
 
 export function tutorialHighlighting() {

@@ -5,7 +5,7 @@ import { createHighlighter } from 'shiki'
 
 const root = new URL('../', import.meta.url)
 const sourceFiles = ['src/runtime/runner.mjs', 'src/runtime/subscriptions.mjs']
-const examplesFile = 'src/docs/examples.json'
+const examplesFile = 'src/site/docs/examples.json'
 const escape = text => String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;')
 
 async function reference() {

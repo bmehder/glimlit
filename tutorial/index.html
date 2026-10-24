@@ -9,10 +9,10 @@
   <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-  <link rel="stylesheet" href="/src/styles.css">
+  <link rel="stylesheet" href="/src/site/styles.css">
   <link rel="stylesheet" href="/src/site/navigation.css">
   <link rel="stylesheet" href="/src/site/footer.css">
-  <link rel="stylesheet" href="/src/tutorial/tutorial.css">
+  <link rel="stylesheet" href="/src/site/tutorial/tutorial.css">
 </head>
 <body class="min-h-screen bg-slate-950 font-sans text-slate-100">
   <a class="skip-link" href="#lessons">Skip to the tutorial</a>
@@ -38,7 +38,7 @@
   </div>
   <script type="module">
     import { main } from '../build/dev/javascript/glimlit/tutorial/tutorial.mjs'
-    import { mountGuide } from '../src/tutorial/guide.mjs'
+    import { mountGuide } from '../src/site/tutorial/guide.mjs'
     const stopGuide = mountGuide()
     const stop = main()
     if (import.meta.hot) import.meta.hot.dispose(() => {

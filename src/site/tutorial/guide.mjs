@@ -1,9 +1,9 @@
 import { html, render } from 'lit-html'
 import examples from './examples.json'
 import highlighted from 'virtual:tutorial-highlighting'
-import { trackChapters } from './navigation.mjs'
+import { trackChapters } from '../chapters.mjs'
 
-const checkpoints = import.meta.glob('../../docs/tutorial/*/*', {
+const checkpoints = import.meta.glob('../../../docs/tutorial/*/*', {
 	query: '?raw',
 	import: 'default',
 	eager: true,
@@ -386,7 +386,7 @@ export function mountGuide() {
 							communicate which choice is selected.
 						</p>
 						<p>
-							The styles are already in <code>src/tutorial/tutorial.css</code>. The
+							The styles are already in <code>src/site/tutorial/tutorial.css</code>. The
 							editor uses regular CSS for readability; the project’s Tailwind setup
 							is available if you prefer utility classes.
 						</p>
