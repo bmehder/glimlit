@@ -391,7 +391,9 @@ The fetch button logs a sample response without adding it to the list.
 The main header is shared by all pages: `src/site/navigation.mjs` defines
 its links and markup, `navigation.css` provides its styles, and `menu.mjs` handles
 the small-screen menu. `scripts/site-navigation.mjs` includes the header in each
-page during development and production builds.
+page during development and production builds. The footer is also shared:
+`src/site/footer.mjs` uses the same page links as the header, with styles in
+`src/site/footer.css`. The same build plugin inserts it into all four pages.
 `docs/index.html` is the documentation page. `scripts/docs-page.mjs` highlights
 its examples and generates the JavaScript reference from public runtime JSDoc.
 `src/docs/` contains its examples, styles, and section navigation entry point.

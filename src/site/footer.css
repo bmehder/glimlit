@@ -1,0 +1,13 @@
+.site-footer { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-top: 2rem; padding: 1.75rem 0 2.5rem; border-top: 1px solid #1e293b; color: #64748b; font-size: .8rem; }
+.site-footer nav { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1.5rem; }
+.site-footer a { display: inline-flex; align-items: center; min-height: 44px; color: #94a3b8; font-size: .9rem; text-decoration: none; }
+.site-footer a:hover, .site-footer a[aria-current=page] { color: #5eead4; }
+.site-footer a:focus-visible { outline: 2px solid #5eead4; outline-offset: 4px; border-radius: .3rem; }
+@media (max-width: 700px) {
+  .site-footer { align-items: start; flex-direction: column; gap: .75rem; }
+  .site-footer nav { gap: .25rem 1rem; }
+}
+
+.site-footer .github-link { justify-content: center; width: 44px; height: 44px; border-radius: .4rem; }
+.site-footer .github-link:hover { background: #1e293b; }
+.site-footer .github-label { display: none; }

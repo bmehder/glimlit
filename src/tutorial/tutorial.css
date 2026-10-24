@@ -1,7 +1,6 @@
 :root { --tutorial-accent: #5eead4; }
 html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
 .tutorial-shell { max-width: 1180px; margin: 0 auto; padding: 0 2rem; }
-.tutorial-footer a { color: #cbd5e1; text-decoration: none; }
 .tutorial-hero {
 	max-width: 850px;
 	padding: 5rem 0 4rem;
@@ -418,15 +417,6 @@ html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
 .copy-status {
 	min-height: 1.3rem;
 	font-size: 0.75rem !important;
-}
-.tutorial-footer {
-	display: flex;
-	justify-content: space-between;
-	gap: 1rem;
-	flex-wrap: wrap;
-	padding: 0 0 3rem;
-	color: #64748b;
-	font-size: 0.85rem;
 }
 .skip-link {
 	position: absolute;

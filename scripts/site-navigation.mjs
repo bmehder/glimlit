@@ -1,4 +1,5 @@
 import { navigationMarkup } from '../src/site/navigation.mjs'
+import { footerMarkup } from '../src/site/footer.mjs'
 
 export function siteNavigation() {
   return {
@@ -6,7 +7,9 @@ export function siteNavigation() {
     transformIndexHtml: {
       order: 'pre',
       handler(html, context) {
-        return html.replace('<!-- site-navigation -->', navigationMarkup(context.path))
+        return html
+          .replace('<!-- site-navigation -->', navigationMarkup(context.path))
+          .replace('<!-- site-footer -->', footerMarkup(context.path))
       },
     },
   }
