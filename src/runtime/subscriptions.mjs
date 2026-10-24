@@ -5,7 +5,14 @@
 /** @typedef {{active: boolean, cleanup: () => void}} Entry */
 /** @typedef {Map<string, Entry>} ActiveSubscriptions */
 
-/** @template Msg @returns {Subscriptions<Msg>} */
+/**
+ * Create an independent manager with start, stop, and stopAll operations.
+ * Active string keys are unique within this manager. Stopping a subscription
+ * disables its emit callback before cleanup runs.
+ * @public
+ * @template Msg
+ * @returns {Subscriptions<Msg>}
+ */
 export function createSubscriptions() {
 	/** @type {ActiveSubscriptions} */
 	const active = new Map()

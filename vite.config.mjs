@@ -4,12 +4,14 @@ import tailwindcss from '@tailwindcss/vite'
 import { gleamImportPlugin } from '@chouquette/gleam-vite-loader'
 import { tutorialHighlighting } from './scripts/tutorial-highlighting.mjs'
 import { siteNavigation } from './scripts/site-navigation.mjs'
+import { docsPage } from './scripts/docs-page.mjs'
 
 const local = path => fileURLToPath(new URL(path, import.meta.url))
 
 export default defineConfig({
   plugins: [
     siteNavigation(),
+    docsPage(),
     gleamImportPlugin(),
     tailwindcss(),
     tutorialHighlighting(),
@@ -41,6 +43,7 @@ export default defineConfig({
       input: {
         main: local('./index.html'),
         demo: local('./demo/index.html'),
+        docs: local('./docs/index.html'),
         tutorial: local('./tutorial/index.html'),
       },
     },

@@ -5,12 +5,23 @@ import { createSubscriptions } from './subscriptions.mjs'
 /** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>}} Runtime */
 /** @template Msg @typedef {{subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>, dispatch: (message: Msg) => void}} Context */
 
-/** @template Msg @returns {Runtime<Msg>} */
+/**
+ * Create an independent runtime with its own subscription manager.
+ * @public
+ * @template Msg
+ * @returns {Runtime<Msg>}
+ */
 export function createRuntime() {
 	return { active: true, subscriptions: createSubscriptions() }
 }
 
-/** @template Msg @param {Runtime<Msg>} runtime */
+/**
+ * Stop a runtime, clean up its subscriptions, and ignore future messages.
+ * Repeated calls do nothing. This does not cancel work already in progress.
+ * @public
+ * @template Msg
+ * @param {Runtime<Msg>} runtime
+ */
 export function stop(runtime) {
 	if (!runtime.active) return
 	runtime.active = false
@@ -29,6 +40,10 @@ export function stop(runtime) {
  */
 
 /**
+ * Perform deferred work and dispatch its success or failure message.
+ * Work is scheduled through a Promise and is skipped if the runtime is stopped.
+ * Without onFailure, a work failure rejects the returned Promise.
+ * @public
  * @template Value, Msg
  * @param {Effect<Value, Msg>} effect
  * @param {(message: Msg) => void} dispatch
@@ -61,5 +76,12 @@ export function run(effect, dispatch, runtime = createRuntime()) {
 		)
 }
 
-/** @template Msg @param {Runtime<Msg>} runtime */
+/**
+ * Report whether the runtime still accepts work and messages.
+ * @function isActive
+ * @public
+ * @template Msg
+ * @param {Runtime<Msg>} runtime
+ * @returns {boolean}
+ */
 export const isActive = runtime => runtime.active

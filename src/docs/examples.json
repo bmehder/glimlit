@@ -1,0 +1,38 @@
+{
+  "setup": {
+    "language": "shellscript",
+    "source": "npm install\nnpm run dev"
+  },
+  "start": {
+    "language": "gleam",
+    "source": "pub fn main() -> fn() -> Nil {\n  mvu.start(init(), update, view)\n}"
+  },
+  "update": {
+    "language": "gleam",
+    "source": "pub fn init() -> #(Model, List(Effect(Msg))) {\n  #(Model(title: \"Hello\"), [])\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(\n      Model(..model, title: title),\n      [save_title(title)],\n    )\n    TitleSaved -> #(model, [])\n    TitleSaveFailed -> #(model, [log(\"Could not save the title.\")])\n  }\n}"
+  },
+  "view": {
+    "language": "javascript",
+    "source": "import { html, render } from 'lit-html'\nimport { live } from 'lit-html/directives/live.js'\nimport {\n  Model$Model$title as title,\n  UserChangedTitle,\n} from './app.mjs'\n\nexport function view(model, dispatch) {\n  const app = document.getElementById('app')\n  if (!app) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${title(model)}</h1>\n    <input .value=${live(title(model))}\n      @input=${event => dispatch(new UserChangedTitle(event.currentTarget.value))}>\n  `, app)\n}"
+  },
+  "boundary": {
+    "language": "gleam",
+    "source": "@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil\n\n@external(javascript, \"./effects.mjs\", \"saveTitle\")\nfn save_title(title: String) -> Effect(Msg)"
+  },
+  "effect": {
+    "language": "javascript",
+    "source": "import {\n  Msg$TitleSaved as titleSaved,\n  Msg$TitleSaveFailed as titleSaveFailed,\n} from './app.mjs'\n\nexport const saveTitle = title => ({\n  perform: () => localStorage.setItem('title', title),\n  onSuccess: () => titleSaved(),\n  onFailure: () => titleSaveFailed(),\n})\n\nexport const log = message => ({\n  perform: () => console.log(message),\n})"
+  },
+  "subscription": {
+    "language": "javascript",
+    "source": "export function every(milliseconds, onTick) {\n  return {\n    start: emit => {\n      const timer = setInterval(() => emit(onTick(Date.now())), milliseconds)\n      return () => clearInterval(timer)\n    },\n  }\n}"
+  },
+  "manage": {
+    "language": "javascript",
+    "source": "import { every } from './subscriptions.mjs'\nimport { Msg$ClockTicked as clockTicked } from './app.mjs'\n\nexport const startClock = () => ({\n  perform: ({ subscriptions, dispatch }) =>\n    subscriptions.start('clock', every(1000, clockTicked), dispatch),\n})\n\nexport const stopClock = () => ({\n  perform: ({ subscriptions }) => subscriptions.stop('clock'),\n})"
+  },
+  "cleanup": {
+    "language": "javascript",
+    "source": "const stop = main()\n\n// When this app is no longer needed:\nstop()\n\n// Vite development entry points can clean up before replacement:\nif (import.meta.hot) import.meta.hot.dispose(stop)"
+  }
+}

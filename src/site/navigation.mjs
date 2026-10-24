@@ -1,6 +1,7 @@
 const pages = [
   { href: '/', label: 'Home' },
   { href: '/demo/', label: 'Demo' },
+  { href: '/docs/', label: 'Docs' },
   { href: '/tutorial/', label: 'Tutorial' },
 ]
 

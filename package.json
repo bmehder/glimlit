@@ -15,6 +15,7 @@
   "devDependencies": {
     "@chouquette/gleam-vite-loader": "^1.0.3",
     "@tailwindcss/vite": "^4.3.0",
+    "comment-parser": "^1.4.9",
     "shiki": "^4.5.0",
     "tailwindcss": "4.3.0",
     "typescript": "^7.0.2",

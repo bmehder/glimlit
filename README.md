@@ -68,6 +68,14 @@ snippets illustrate the explanation; readers do not need to paste them in one
 by one. Each checkpoint can also be copied from the checkout or downloaded from
 the tutorial page.
 
+## Documentation
+
+Open **[/docs/](http://127.0.0.1:3000/docs/)** for the app API, models and updates,
+views, effects, subscriptions, and lifecycle behavior. The JavaScript runtime
+reference is generated at build time from public JSDoc in `src/runtime/`.
+Tutorial files are excluded from reference generation and need no JSDoc comments.
+Gleam's `mvu.start` API and usage examples are documented separately on the page.
+
 ## The loop
 
 ![The MVU loop: Update produces a Model, the Model is rendered by the View, and user events produce Messages that return to Update with the current Model. Update can also request effects, whose result messages return to Update.](docs/mvu-loop.svg)
@@ -380,11 +388,14 @@ The fetch button logs a sample response without adding it to the list.
 
 `index.html` is the marketing homepage; `demo/index.html` mounts the demo app.
 `src/site.css` styles the homepage and demo page layout.
-The main header is shared by all three pages: `src/site/navigation.mjs` defines
+The main header is shared by all pages: `src/site/navigation.mjs` defines
 its links and markup, `navigation.css` provides its styles, and `menu.mjs` handles
 the small-screen menu. `scripts/site-navigation.mjs` includes the header in each
 page during development and production builds.
-`vite.config.mjs` builds the homepage, demo, and tutorial, and connects Gleam, JavaScript source
+`docs/index.html` is the documentation page. `scripts/docs-page.mjs` highlights
+its examples and generates the JavaScript reference from public runtime JSDoc.
+`src/docs/` contains its examples, styles, and section navigation entry point.
+`vite.config.mjs` builds the homepage, demo, docs, and tutorial, and connects Gleam, JavaScript source
 views, and Tailwind. When adding app modules, follow its existing source aliases
 so Vite serves editable JavaScript while resolving generated Gleam modules.
 `gleam_javascript` supplies the official list-to-array conversion used by the todo
