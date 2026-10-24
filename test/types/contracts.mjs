@@ -1,0 +1,51 @@
+// These examples are type-checked, not executed. Each expected error must remain
+// an error, so the checks fail if the generated/runtime types stop catching it.
+import {
+  UserTypedNewTodo,
+  Model$Model$draft as draft,
+} from '../../build/dev/javascript/glimlit/todos/todos.mjs'
+
+/** @typedef {import('../../build/dev/javascript/glimlit/todos/todos.mjs').Model$} Model */
+/** @typedef {import('../../build/dev/javascript/glimlit/todos/todos.mjs').Msg$} Msg */
+
+/** @param {Model} model @param {(message: Msg) => void} dispatch */
+export function viewContract(model, dispatch) {
+  dispatch(new UserTypedNewTodo(draft(model)))
+  // @ts-expect-error The generated constructor requires a string payload.
+  new UserTypedNewTodo(123)
+  // @ts-expect-error The generated model has no such field.
+  model.missingField
+  // @ts-expect-error Dispatch accepts app messages, not arbitrary values.
+  dispatch(123)
+}
+
+/** @type {import('../../src/runtime/runner.mjs').Effect<string, Msg>} */
+export const validEffect = {
+  perform: async () => 'Saved',
+  onSuccess: title => new UserTypedNewTodo(title),
+  onFailure: () => new UserTypedNewTodo('Could not save'),
+}
+
+/** @type {import('../../src/runtime/runner.mjs').Effect<string, Msg>} */
+export const invalidEffect = {
+  // @ts-expect-error perform must produce the annotated result type.
+  perform: () => 123,
+  // @ts-expect-error A result callback must return an app message.
+  onSuccess: title => title,
+}
+
+/** @type {import('../../src/runtime/subscriptions.mjs').Subscription<Msg>} */
+export const validSubscription = {
+  start: emit => {
+    emit(new UserTypedNewTodo('Listening'))
+    // @ts-expect-error emit accepts the annotated app message type.
+    emit('not a message')
+    return () => {}
+  },
+}
+
+/** @type {import('../../src/runtime/subscriptions.mjs').Subscription<Msg>} */
+export const invalidSubscription = {
+  // @ts-expect-error Setup must return a synchronous cleanup function.
+  start: () => {},
+}

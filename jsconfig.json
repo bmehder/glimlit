@@ -15,8 +15,7 @@
   "include": [
     "src/**/view.mjs",
     "src/**/effects.mjs",
-    "src/runtime/runner.mjs",
-    "src/runtime/subscriptions.mjs",
-    "src/todos/subscriptions.mjs"
+    "src/**/subscriptions.mjs",
+    "src/runtime/runner.mjs"
   ]
 }

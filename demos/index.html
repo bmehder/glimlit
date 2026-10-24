@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description"
+    content="Explore Glimlit examples: a tiny counter, todos with effects and subscriptions, and a recipe box that explores composition.">
+  <title>Demos · Glimlit</title>
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/src/site/styles.css">
+  <link rel="stylesheet" href="/src/site/navigation.css">
+  <link rel="stylesheet" href="/src/site/footer.css">
+  <link rel="stylesheet" href="/src/site/home.css">
+  <link rel="stylesheet" href="/src/site/demos/demos.css">
+</head>
+
+<body class="bg-slate-950 font-sans text-slate-100">
+  <a class="site-skip" href="#examples">Skip to examples</a>
+  <div class="site-shell">
+    <!-- site-navigation -->
+    <main id="examples">
+      <header class="demos-heading">
+        <p class="site-eyebrow">Glimlit in practice</p>
+        <h1>A little interaction.<br><span>A few possibilities.</span></h1>
+        <p>Glimlit is aimed at small interactive islands: a form, editor, filter, or widget within a larger page. The runtime provides the loop and lifetimes; each example chooses which state belongs in the model and which behavior belongs to the browser.</p>
+      </header>
+      <div class="demos-grid">
+        <article class="demos-card">
+          <p class="site-eyebrow">01 · Start small</p>
+          <h2>Counter</h2>
+          <p>A model, a few messages, and a view. Start here to see the smallest working loop.</p><a class="demos-open"
+            href="/demos/counter/">Try the counter <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="demos-card">
+          <p class="site-eyebrow">02 · Add browser work</p>
+          <h2>Todos</h2>
+          <p>Saved state, network requests, and subscriptions. See effects and ongoing message sources join the same
+            loop.</p><a class="demos-open" href="/demos/todos/">Try todos <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="demos-card demos-exploration">
+          <p class="site-eyebrow">03 · Explore composition</p>
+          <h2>Recipe box</h2>
+          <p>A larger example with several screens and a child editor. It explores what Glimlit can handle beyond its
+            primary use case; it isn’t the expected starting point for an app.</p><a class="demos-open"
+            href="/recipes/">Explore the recipe box <span aria-hidden="true">→</span></a>
+        </article>
+      </div>
+      <aside class="demos-learning">
+        <h2>Prefer to build something yourself?</h2>
+        <p>The Postcard Studio tutorial introduces Gleam, lit-html, and MVU one checkpoint at a time.</p><a
+          href="/tutorial/">Start the tutorial →</a>
+      </aside>
+    </main>
+    <!-- site-footer -->
+  </div>
+</body>
+
+</html>

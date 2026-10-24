@@ -26,11 +26,10 @@
         <div class="hero-copy">
           <p class="site-eyebrow">A small framework. Another way to build.</p>
           <h1 id="hero-title">Gleam for the logic.<br><span>lit-html for the view.</span></h1>
-          <p class="home-lead">Keep your state and updates in Gleam. Write your views with JavaScript tagged template
-            literals. Bring them together with a small Model–View–Update runtime.</p>
+          <p class="home-lead">Give your application decisions a clear Model–View–Update structure in Gleam. Write HTML-like views with lit-html, and work directly with browser elements, properties, and events.</p>
           <div class="site-actions">
             <a class="site-button" href="/tutorial/">Build your first app <span aria-hidden="true">↗</span></a>
-            <a class="site-text-link" href="/demo/">Try the demo <span aria-hidden="true">→</span></a>
+            <a class="site-text-link" href="/demos/">Try the demos <span aria-hidden="true">→</span></a>
           </div>
           <p class="hero-footnote">Gleam + lit-html. Your choice of CSS.</p>
         </div>
@@ -91,28 +90,25 @@
       <section class="home-principles" aria-labelledby="principles-title">
         <div class="section-intro">
           <p class="site-eyebrow">A familiar idea, a different view</p>
-          <h2 id="principles-title">The MVU loop.<br>With room for your HTML.</h2>
+          <h2 id="principles-title">MVU structure.<br>Room for the browser.</h2>
         </div>
         <div class="principles-list">
           <article><span class="principle-number">01</span>
             <div>
-              <h3>Gleam owns the state</h3>
-              <p>Define your model and messages with Gleam’s types. Pure update functions describe what changes when a
-                message arrives.</p>
+              <h3>Model the application’s decisions</h3>
+              <p>Use Gleam’s types for shared data, meaningful state, and pure updates. Let the browser keep local details such as focus, selection, and drafts that only matter on submit.</p>
             </div>
           </article>
           <article><span class="principle-number">02</span>
             <div>
               <h3>Views stay close to the web</h3>
-              <p>Use lit-html’s HTML-like templates, JavaScript expressions, and DOM event handlers. Style with regular
-                CSS or the tools you already use.</p>
+              <p>Use lit-html’s HTML-like templates, element properties, DOM events, and native controls. Work with the platform directly, using regular CSS or the tools you already know.</p>
             </div>
           </article>
           <article><span class="principle-number">03</span>
             <div>
               <h3>Work has a place in the loop</h3>
-              <p>Describe browser work with effects and ongoing listeners with subscriptions. Their messages return to
-                the same update function.</p>
+              <p>The runtime handles the loop, effects, subscription lifetimes, and cleanup. Your app chooses how to handle forms, dialogs, routing, and the rest.</p>
             </div>
           </article>
         </div>

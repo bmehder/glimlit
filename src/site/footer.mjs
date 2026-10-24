@@ -1,7 +1,7 @@
-import { pages, githubLinkMarkup } from './navigation.mjs'
+import { pages, githubLinkMarkup, currentPage } from './navigation.mjs'
 
 export function footerMarkup(path) {
-  const current = pages.find(page => page.href !== '/' && path.startsWith(page.href))?.href ?? '/'
+  const current = currentPage(path)
   return `<footer class="site-footer">
     <span>Glimlit · Gleam + lit-html</span>
     <nav aria-label="Footer navigation">

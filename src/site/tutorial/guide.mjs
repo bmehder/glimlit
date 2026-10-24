@@ -322,9 +322,18 @@ export function mountGuide() {
 						<p class="eyebrow">02 / Complete the loop</p>
 						<h2 id="editing-title">Make the postcard editable</h2>
 						<p>
-							Add a title input and a message textarea. Instead of changing state
-							inside an event handler, describe what happened using a message.
+							Add a title input and a message textarea. Their values drive the live
+							preview, so send input messages to update the postcard model.
 						</p>
+						<aside class="try-it" aria-label="Choosing who owns input state">
+							<p><strong>Not every keystroke needs a message.</strong> We keep these
+								values in the model because the preview uses them immediately.
+								A submit-only form could leave its draft in the inputs and read
+								<code>FormData</code> when submitted. Focus, selection, and native
+								controls can stay with the browser. Glimlit gives your app a loop;
+								it does not require you to recreate browser behavior. See
+								<a href="/docs/#browser-state">working with the browser</a>.</p>
+						</aside>
 						${code(examples.update.source)}
 						<p>
 							A custom type can have several variants. Here, each message holds the
@@ -592,7 +601,7 @@ export function mountGuide() {
 							behavior, and subscription cleanup. Run them with checkpoint 06
 							installed. Earlier checkpoints deliberately lack later features, so the
 							finished-app tests won’t pass against them. The production build
-							includes the homepage, <code>/demo/</code>, and <code>/tutorial/</code>.
+							includes the homepage, <code>/demos/</code>, and <code>/tutorial/</code>.
 						</p>
 						<h3>If something goes wrong</h3>
 						<ul>

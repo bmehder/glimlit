@@ -10,15 +10,25 @@
 Glimlit gives developers who enjoy the Model–View–Update approach of Elm and
 Gleam frameworks such as Lustre another option for writing the view: JavaScript
 tagged template literals with lit-html, alongside models and updates in Gleam.
+Its primary use case is small interactive islands—forms, editors, filters, and
+widgets embedded in a larger page.
 
-Gleam owns your model, messages, and pure update function. JavaScript views
+Gleam describes your application model, messages, and pure update function. JavaScript views
 dispatch Gleam messages. Effects are values that describe work; subscriptions
 are values that describe ongoing sources of messages.
 
-The aim is to keep the whole loop understandable. There is one `start` function,
-a small effect runner, and a subscription manager.
+The aim is MVU structure with the browser within reach. Glimlit owns the update
+loop, effect execution, subscription lifetimes, and cleanup. Your app can use
+element properties, DOM events, native forms, and confirmation dialogs directly.
+A draft used only on submission can stay in its input; a value driving a live
+preview belongs in the model. You choose that boundary.
 
-This repository contains the framework and three working examples. It is currently
+There is one `start` function, a small effect runner, and a subscription manager.
+Routing, forms, dialogs, and application architecture can stay with the browser,
+your app, or libraries you choose. See [the project philosophy](docs/philosophy.md)
+for state ownership, examples, and the framework's scope.
+
+This repository contains the framework, working examples, and a beginner tutorial. It is currently
 a browser application, rather than a separately published package. Server-side
 rendering is not implemented.
 
@@ -32,8 +42,8 @@ npm run dev
 ```
 
 Open <http://127.0.0.1:3000> for the homepage, or
-<http://127.0.0.1:3000/demo/> for the demo. The todo example runs by default on
-the demo page. Vite compiles Gleam
+<http://127.0.0.1:3000/demos/> to choose an example. Counter and Todos have their
+own pages; there is no launcher to edit. Vite compiles Gleam
 and refreshes generated JavaScript declarations when Gleam files change. Views
 and Tailwind styles also update during development.
 
@@ -42,12 +52,60 @@ and Tailwind styles also update during development.
 | `npm run dev` | Start the development server |
 | `npm run build` | Compile Gleam and bundle the app into `dist/` |
 | `npm run preview` | Serve the production build locally |
+| `npm run check` | Refresh Gleam declarations and check annotated JavaScript and type examples |
 | `npm test` | Compile Gleam and run the tests |
 | `npm run test:tutorial-checkpoints` | Compile and check all six tutorial checkpoints |
 | `gleam format --check` | Check Gleam formatting |
 
-To run the counter instead, add `import counter/counter` in `src/glimlit.gleam`
-and switch the call from `todos.main()` to `counter.main()`.
+## Examples
+
+The [Demos page](http://127.0.0.1:3000/demos/) introduces three runnable examples:
+
+- [Counter](http://127.0.0.1:3000/demos/counter/): the smallest working loop.
+- [Todos](http://127.0.0.1:3000/demos/todos/): effects, persistence, network requests,
+  and subscriptions.
+- [Recipe box](http://127.0.0.1:3000/recipes/): an exploration of multiple screens,
+  a child editor, and shared state. It demonstrates what Glimlit can handle beyond
+  its primary use case, rather than the expected shape of a Glimlit project.
+
+Each page starts its own Gleam module directly. The recipe box and beginner
+tutorial remain separate examples.
+[How the recipe box is built](docs/recipes-architecture.md) explains its module
+structure, message composition, failure recovery, and remaining limitations.
+
+## Add your own app
+
+New app modules need no per-app Vite aliases. Keep the Gleam module and its
+JavaScript implementations together, for example:
+
+```text
+src/app/
+  app.gleam
+  view.mjs
+  effects.mjs           Optional
+  subscriptions.mjs    Optional
+```
+
+1. Create `src/app/app.gleam` and `src/app/view.mjs` using the
+   [starting example in the docs](http://127.0.0.1:3000/docs/#start).
+2. In `demos/counter/index.html`, change the script's import from `gleam:counter/counter` to
+   `gleam:app/app`. Keep its `main()` call and cleanup registration. The page
+   already contains the `#app` mount element used by the example.
+3. Run `npm run dev` and open <http://127.0.0.1:3000/demos/counter/>. Use `npm run build`
+   to build the same app for production.
+
+In Gleam, declare implementations with relative paths such as
+`@external(javascript, "./view.mjs", "view")`. In `view.mjs`, import generated
+constructors and accessors from `./app.mjs`; do not create that generated file
+in `src/`. The build connects these paths automatically, including nested
+modules and repeated filenames in different folders. Ordinary JavaScript
+helpers use their normal relative imports. Avoid giving a handwritten `.mjs`
+file the same path as a Gleam module's generated `.mjs` file.
+
+Browser entry points can use `gleam:folder/module` to import Gleam exports
+without spelling out a generated build path. A new standalone HTML page still
+needs an entry in Vite's production page list if you want it included in the
+website build; using the existing demos page requires no configuration changes.
 
 ## Build your first app
 
@@ -60,7 +118,7 @@ introduces Gleam, lit-html, and Model–View–Update as you go.
 Six complete checkpoints in `docs/tutorial/` start with a static view, add
 editing and themes without effects, then introduce saving, restoring, and
 subscriptions. The finished app lives in `src/tutorial/`. The tutorial page is
-also included in production builds and linked from the main demo.
+also included in production builds and linked from the Demos page.
 
 Each chapter explains the ideas first, then provides complete replacement files
 under **Complete checkpoint**, followed by a **Try it** exercise. The short
@@ -214,7 +272,17 @@ It adds HTML highlighting and completions to templates tagged with `html`.
 `jsconfig.json` enables strict JavaScript type checking using Gleam's generated
 declarations. Files can opt out with `// @ts-nocheck` on the first line, as the
 tutorial's view, effects, and subscription files do. This editor checking is
-separate from compiling Gleam and building the app.
+separate from compiling Gleam and building the app. Run `npm run check` to refresh
+the declarations and check the selected JavaScript files and the examples in
+`test/types/`. The examples verify that common type mistakes are rejected.
+
+This does **not** automatically prove that JavaScript matches a Gleam external
+declaration. An annotation can disagree with that declaration while both sides
+pass their own checks. Runtime data still needs validation, and template markup
+and event bindings are not fully checked. See
+[Optional type checking](http://127.0.0.1:3000/docs/#type-checking) for annotated
+view/effect examples, subscription types, and what remains unchecked. Tutorial
+files keep their no-check directives and need no JSDoc.
 
 ## Effects describe work
 
@@ -222,7 +290,7 @@ An effect is an object with a deferred `perform` function and optional callbacks
 that turn its result or failure into a message. Constructing an effect does
 nothing.
 
-The todo demo defines its own storage effects. These are application code, not
+The todo example defines its own storage effects. These are application code, not
 built-in framework operations. For example:
 
 ```js
@@ -252,7 +320,7 @@ list order, but asynchronous work can finish in any order. Returning multiple
 effects does not make one wait for another; use a returned message to request
 work that depends on an earlier result.
 
-The demo's **Run effect ordering example** button returns these two effects
+The Todos example's **Run effect ordering example** button returns these two effects
 together:
 
 ```gleam
@@ -275,7 +343,7 @@ reject the runner's Promise; they do not automatically update the model.
 A subscription has one operation: `start(emit)`, which returns a cleanup function.
 Like an effect, its description is inert until used.
 
-The following timer description comes from the todo demo’s `subscriptions.mjs`:
+The following timer description comes from the todo example’s `subscriptions.mjs`:
 
 ```js
 export function every(milliseconds, onTick) {
@@ -294,7 +362,7 @@ which wraps the app's dispatcher with a check that this subscription is still
 active. Subscriptions can therefore produce messages without knowing the model
 or calling `update` themselves.
 
-Starting and stopping a subscription are ordinary effects. The demo defines
+Starting and stopping a subscription are ordinary effects. The Todos example defines
 these clock effects in its own `effects.mjs`:
 
 ```js
@@ -358,10 +426,10 @@ src/
   counter/               Small example app: model, update, and view
   todos/                 Example app with storage, fetch, and subscriptions
   tutorial/              Finished Postcard Studio app that readers edit
-  glimlit.gleam          Demo entry point; chooses which example to start
+  recipes/               Multi-screen recipe box with a child editor
   site/                  Website code; not part of the framework
     code_tabs/           Homepage tabs: a small Glimlit app
-    home.css             Homepage and demo layout
+    home.css             Homepage and demos layout
     styles.css           Website Tailwind entry point
     navigation.mjs       Header and shared page links
     navigation.css       Header styles
@@ -369,6 +437,8 @@ src/
     footer.mjs           Footer using the same page links
     footer.css           Footer styles
     chapters.mjs         Active-section tracking for docs and tutorial
+    demos/                Example hub and runner page styles
+    recipes/             Composition example entry point and styles
     docs/                Docs page examples, styles, and navigation entry point
     tutorial/            Tutorial chapters, snippets, and page/postcard styles
 ```
@@ -379,15 +449,17 @@ with three todos when no saved data exists. The fetch button logs a sample
 response without adding it to the list. Each app keeps its model and update in
 Gleam and its view, effects, and subscription sources in adjacent JavaScript files.
 
-`src/glimlit.gleam` selects the demo app; it is not the framework's API entry
-point. Apps import `runtime/mvu` and `runtime/effect` directly. To build your own
+Demos pages import `counter/counter` or `todos/todos` directly through the
+`gleam:` browser import. There is no shared Gleam launcher. Apps import
+`runtime/mvu` and `runtime/effect` directly. To build your own
 app, use the examples as a guide and keep `src/runtime/`; the website and example
 apps are not required by the runtime. You will still need a browser entry point,
 a view renderer such as lit-html, and build tooling that connects your Gleam and
 JavaScript modules. This repository is not currently a separately published package.
 
-The website has four HTML entry points: `index.html` (home), `demo/index.html`,
-`docs/index.html`, and `tutorial/index.html`. Their supporting code lives under
+The website entry points are `index.html` (home), `demos/index.html` (example hub),
+`demos/counter/index.html`, `demos/todos/index.html`, `docs/index.html`,
+`tutorial/index.html`, and `recipes/index.html`. Their supporting code lives under
 `src/site/`. `scripts/site-navigation.mjs` inserts the shared header and footer
 in development and production, without requiring client-side JavaScript.
 The homepage tabs in `src/site/code_tabs/` use Glimlit too: Gleam selects the active
@@ -404,7 +476,14 @@ reference from public JSDoc. `docs/mvu-loop.svg` is the README's loop diagram.
 
 `test/` covers the runtime and example app behavior. `build/`, `dist/`, and
 `node_modules/` are generated and should not be edited.
-`vite.config.mjs` builds all four website pages and connects Gleam, JavaScript,
-and Tailwind. When adding app modules, follow its existing source aliases so
-Vite serves editable JavaScript while resolving generated Gleam modules.
+`vite.config.mjs` builds these website pages and connects Gleam, JavaScript,
+and Tailwind. `scripts/gleam-source.mjs` connects source JavaScript with generated
+Gleam modules based on their paths and the package name in `gleam.toml`; it needs
+no app-specific aliases. The Gleam Vite loader compiles Gleam and handles its
+development updates. The source bridge leaves dependency packages alone.
 `gleam_javascript` supplies the official list-to-array conversion used by the views.
+
+## Framework development
+
+See [Framework objections and improvement priorities](docs/framework-objections.md)
+for adoption concerns, proposed next steps, and criteria for assessing progress.

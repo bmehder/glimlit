@@ -6,6 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "check": "gleam build && tsc -p jsconfig.json && tsc -p test/types/tsconfig.json",
     "test": "gleam build && node --test test/*.test.mjs",
     "test:tutorial-checkpoints": "gleam build && node scripts/check-tutorial.mjs"
   },

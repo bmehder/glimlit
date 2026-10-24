@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "recipes": [
+    {
+      "id": 1,
+      "title": "Herby chickpea salad",
+      "description": "A crisp, lemony lunch with plenty of herbs.",
+      "minutes": 15,
+      "ingredients": "1 tin chickpeas, drained\nHalf a cucumber\n1 lemon\nFresh mint and parsley\n2 tbsp olive oil",
+      "instructions": "Chop the cucumber and herbs.\nMix with chickpeas, olive oil, and lemon juice.\nSeason and serve.",
+      "favorite": false
+    },
+    {
+      "id": 2,
+      "title": "Mushroom butter rice",
+      "description": "A cosy pan of rice with golden mushrooms.",
+      "minutes": 30,
+      "ingredients": "200g mushrooms\n150g rice\n1 tbsp butter\n1 clove garlic\n350ml vegetable stock",
+      "instructions": "Slice the mushrooms and fry in butter until golden.\nAdd garlic and rice, then stir in the stock.\nCover and simmer gently until the rice is tender.",
+      "favorite": false
+    }
+  ]
+}

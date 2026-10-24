@@ -2,8 +2,10 @@
 @source "../todos";
 @source "../counter";
 @source "../tutorial";
+@source "../recipes";
+@source "../../recipes";
 @source "./";
 @source "../../tutorial";
-@source "../../demo";
+@source "../../demos";
 @source "../../docs/index.html";
 @source "../../index.html";

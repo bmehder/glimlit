@@ -1,12 +1,16 @@
 export const pages = [
   { href: '/', label: 'Home' },
-  { href: '/demo/', label: 'Demo' },
+  { href: '/demos/', label: 'Demos', paths: ['/demos/', '/recipes/'] },
   { href: '/docs/', label: 'Docs' },
   { href: '/tutorial/', label: 'Tutorial' },
 ]
 
+export function currentPage(path) {
+  return pages.find(page => (page.paths ?? [page.href]).some(prefix => prefix !== '/' && path.startsWith(prefix)))?.href ?? '/'
+}
+
 export function navigationMarkup(path) {
-  const current = pages.find(page => page.href !== '/' && path.startsWith(page.href))?.href ?? '/'
+  const current = currentPage(path)
   return `<header class="site-bar" data-site-header>
     <a class="brand" href="/" aria-label="Glimlit home"><img src="/brand/glimlit-wordmark-dark.svg" alt="Glimlit" width="180" height="48"></a>
     <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open menu" hidden>

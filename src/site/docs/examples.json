@@ -33,7 +33,7 @@
   },
   "cleanup": {
     "language": "javascript",
-    "source": "import { main } from './build/dev/javascript/glimlit/app/app.mjs'\n\nconst stop = main()\n\n// Vite calls stop before replacing this entry module during development.\nif (import.meta.hot) import.meta.hot.dispose(stop)\n\n// If your page removes the app, call stop() at that point too."
+    "source": "import { main } from 'gleam:app/app'\n\nconst stop = main()\n\n// Vite calls stop before replacing this entry module during development.\nif (import.meta.hot) import.meta.hot.dispose(stop)\n\n// If your page removes the app, call stop() at that point too."
   },
   "signature": {
     "language": "gleam",
@@ -46,5 +46,25 @@
   "clock-boundary": {
     "language": "gleam",
     "source": "@external(javascript, \"./effects.mjs\", \"startClock\")\nfn start_clock() -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"stopClock\")\nfn stop_clock() -> Effect(Msg)"
+  },
+  "type-check-command": {
+    "language": "shellscript",
+    "source": "npm run check"
+  },
+  "typed-view": {
+    "language": "javascript",
+    "source": "// @ts-check\nimport { html, render } from 'lit-html'\nimport { Model$Model$title as title, UserChangedTitle } from './app.mjs'\n\n/** @typedef {import('./app.mjs').Model$} Model */\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/** @param {Model} model @param {(message: Msg) => void} dispatch */\nexport function view(model, dispatch) {\n  const mount = document.getElementById('app')\n  if (!mount) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${title(model)}</h1>\n    <button @click=${() => dispatch(new UserChangedTitle('Hello'))}>\n      Reset title\n    </button>\n  `, mount)\n}"
+  },
+  "typed-effect": {
+    "language": "javascript",
+    "source": "// @ts-check\nimport {\n  Msg$TitleSaved as titleSaved,\n  Msg$TitleSaveFailed as titleSaveFailed,\n} from './app.mjs'\n\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/**\n * @param {string} title\n * @returns {import('../runtime/runner.mjs').Effect<void, Msg>}\n */\nexport const saveTitle = title => ({\n  perform: () => localStorage.setItem('title', title),\n  onSuccess: () => titleSaved(),\n  onFailure: () => titleSaveFailed(),\n})"
+  },
+  "browser-form": {
+    "language": "javascript",
+    "source": "html`\n  <form @submit=${event => {\n    event.preventDefault()\n    const values = new FormData(event.currentTarget)\n    const title = String(values.get('title') ?? '')\n    dispatch(new TitleSubmitted(title))\n  }}>\n    <label>Title <input name=\"title\" required></label>\n    <button type=\"submit\">Save title</button>\n  </form>\n`"
+  },
+  "browser-confirmation": {
+    "language": "javascript",
+    "source": "html`\n  <button @click=${() => {\n    if (window.confirm('Remove this recipe?')) {\n      dispatch(new DeleteConfirmed(recipe.id))\n    }\n  }}>Remove recipe</button>\n`"
   }
 }

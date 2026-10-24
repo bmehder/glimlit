@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description"
+    content="A recipe box built with Glimlit: browse, edit, favourite, and save recipes in your browser.">
+  <title>Recipe box · Glimlit</title>
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/src/site/styles.css">
+  <link rel="stylesheet" href="/src/site/navigation.css">
+  <link rel="stylesheet" href="/src/site/footer.css">
+  <link rel="stylesheet" href="/src/site/recipes/recipes.css">
+</head>
+
+<body class="bg-slate-950 font-sans text-slate-100">
+  <a class="recipe-skip" href="#recipe-app">Skip to recipes</a>
+  <div class="recipe-shell">
+    <!-- site-navigation -->
+    <header class="recipe-hero"><a class="recipe-back" href="/demos/">← All examples</a>
+      <p class="recipe-eyebrow">A Glimlit composition experiment</p>
+      <h1>Good things.<br><span>Worth keeping.</span></h1>
+      <p>Recipes for slow weekends, quick lunches, and everything in between. A little collection, all your own.</p>
+      <div class="recipe-hero-note"><span aria-hidden="true">✳</span> Saved on this device, in this browser.</div>
+    </header>
+    <main id="recipe-app" tabindex="-1"><noscript>This recipe box needs JavaScript. Explore the <a
+          href="https://github.com/bmehder/glimlit/tree/main/src/recipes" target="_blank"
+          rel="noopener noreferrer">source on GitHub</a>.</noscript></main>
+    <aside class="recipe-about">
+      <p>This example explores composition beyond Glimlit’s primary use case of small interactive islands, while using browser behavior such as native confirmation directly. It
+        demonstrates what is possible, rather than the expected shape of an app.</p><a
+        href="https://github.com/bmehder/glimlit/blob/main/docs/recipes-architecture.md" target="_blank"
+        rel="noopener noreferrer">Explore how it’s built ↗<span class="sr-only"> (opens in a new tab)</span></a>
+    </aside>
+    <!-- site-footer -->
+  </div>
+  <script type="module" src="/src/site/recipes/entry.mjs"></script>
+</body>
+
+</html>
