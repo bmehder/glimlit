@@ -44,7 +44,7 @@ export function docsPage() {
       order: 'pre',
       async handler(html, context) {
         if (!context.path.startsWith('/docs/')) return
-        highlighter ??= createHighlighter({ themes: ['github-dark'], langs: ['gleam', 'javascript', 'shellscript'] })
+        highlighter ??= createHighlighter({ themes: ['github-dark'], langs: ['gleam', 'javascript', 'shellscript', 'html'] })
         const engine = await highlighter
         const examples = JSON.parse(await readFile(new URL(examplesFile, root), 'utf8'))
         const result = html.replace(/<!-- code:([\w-]+) -->/g, (_, name) => {

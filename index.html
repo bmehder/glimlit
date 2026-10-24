@@ -39,11 +39,11 @@
           <div class="code-window-bar"><span class="window-dots" aria-hidden="true">● ● ●</span><span>Two languages. One
               app.</span></div>
           <div class="code-tabs" role="tablist" aria-label="Explore the view, model, and effects">
-            <button id="view-tab" type="button" role="tab" aria-selected="true" aria-controls="view-example"
+            <button data-static-tab id="view-tab" type="button" role="tab" aria-selected="true" aria-controls="view-example"
               tabindex="0">View<span>view.mjs</span></button>
-            <button id="model-tab" type="button" role="tab" aria-selected="false" aria-controls="model-example"
+            <button data-static-tab id="model-tab" type="button" role="tab" aria-selected="false" aria-controls="model-example"
               tabindex="-1">Model &amp; update<span>tutorial.gleam</span></button>
-            <button id="effects-tab" type="button" role="tab" aria-selected="false" aria-controls="effects-example"
+            <button data-static-tab id="effects-tab" type="button" role="tab" aria-selected="false" aria-controls="effects-example"
               tabindex="-1">Effects<span>effects.mjs</span></button>
           </div>
           <div id="model-example" class="code-panel" role="tabpanel" aria-labelledby="model-tab" tabindex="0" hidden>
@@ -154,7 +154,7 @@
     </main>
     <!-- site-footer -->
   </div>
-  <script type="module" src="/src/site/home.mjs"></script>
+  <script type="module" src="/src/site/code_tabs/entry.mjs"></script>
 </body>
 
 </html>

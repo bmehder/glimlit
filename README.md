@@ -360,7 +360,7 @@ src/
   tutorial/              Finished Postcard Studio app that readers edit
   glimlit.gleam          Demo entry point; chooses which example to start
   site/                  Website code; not part of the framework
-    home.mjs             Homepage example tabs
+    code_tabs/           Homepage tabs: a small Glimlit app
     home.css             Homepage and demo layout
     styles.css           Website Tailwind entry point
     navigation.mjs       Header and shared page links
@@ -390,7 +390,10 @@ The website has four HTML entry points: `index.html` (home), `demo/index.html`,
 `docs/index.html`, and `tutorial/index.html`. Their supporting code lives under
 `src/site/`. `scripts/site-navigation.mjs` inserts the shared header and footer
 in development and production, without requiring client-side JavaScript.
-Shared logos and favicons live in `public/`.
+The homepage tabs in `src/site/code_tabs/` use Glimlit too: Gleam selects the active
+tab, lit-html renders the tab buttons, and an effect moves keyboard focus. The
+highlighted code panels stay in the initial HTML so the first example is readable
+before JavaScript loads. Shared logos and favicons live in `public/`.
 
 `docs/tutorial/` contains the six complete app checkpoints. They replace files
 in `src/tutorial/`, leaving the tutorial reader in `src/site/tutorial/` intact.

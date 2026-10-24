@@ -5,11 +5,11 @@
   },
   "start": {
     "language": "gleam",
-    "source": "pub fn main() -> fn() -> Nil {\n  mvu.start(init(), update, view)\n}"
+    "source": "import runtime/effect.{type Effect}\nimport runtime/mvu\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\npub fn init() -> #(Model, List(Effect(Msg))) {\n  #(Model(title: \"Hello\"), [])\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(Model(..model, title: title), [])\n  }\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil\n\npub fn main() -> fn() -> Nil {\n  mvu.start(init(), update, view)\n}"
   },
   "update": {
     "language": "gleam",
-    "source": "pub fn init() -> #(Model, List(Effect(Msg))) {\n  #(Model(title: \"Hello\"), [])\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(\n      Model(..model, title: title),\n      [save_title(title)],\n    )\n    TitleSaved -> #(model, [])\n    TitleSaveFailed -> #(model, [log(\"Could not save the title.\")])\n  }\n}"
+    "source": "pub type Msg {\n  UserChangedTitle(String)\n  TitleSaved\n  TitleSaveFailed\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(\n      Model(..model, title: title),\n      [save_title(title)],\n    )\n    TitleSaved -> #(model, [])\n    TitleSaveFailed -> #(model, [log(\"Could not save the title.\")])\n  }\n}"
   },
   "view": {
     "language": "javascript",
@@ -17,7 +17,7 @@
   },
   "boundary": {
     "language": "gleam",
-    "source": "@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil\n\n@external(javascript, \"./effects.mjs\", \"saveTitle\")\nfn save_title(title: String) -> Effect(Msg)"
+    "source": "@external(javascript, \"./effects.mjs\", \"saveTitle\")\nfn save_title(title: String) -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"log\")\nfn log(message: String) -> Effect(Msg)"
   },
   "effect": {
     "language": "javascript",
@@ -33,6 +33,18 @@
   },
   "cleanup": {
     "language": "javascript",
-    "source": "const stop = main()\n\n// When this app is no longer needed:\nstop()\n\n// Vite development entry points can clean up before replacement:\nif (import.meta.hot) import.meta.hot.dispose(stop)"
+    "source": "import { main } from './build/dev/javascript/glimlit/app/app.mjs'\n\nconst stop = main()\n\n// Vite calls stop before replacing this entry module during development.\nif (import.meta.hot) import.meta.hot.dispose(stop)\n\n// If your page removes the app, call stop() at that point too."
+  },
+  "signature": {
+    "language": "gleam",
+    "source": "pub fn start(\n  initial: #(model, List(Effect(msg))),\n  update: fn(model, msg) -> #(model, List(Effect(msg))),\n  view: fn(model, fn(msg) -> Nil) -> Nil,\n) -> fn() -> Nil"
+  },
+  "mount": {
+    "language": "html",
+    "source": "<div id=\"app\"></div>"
+  },
+  "clock-boundary": {
+    "language": "gleam",
+    "source": "@external(javascript, \"./effects.mjs\", \"startClock\")\nfn start_clock() -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"stopClock\")\nfn stop_clock() -> Effect(Msg)"
   }
 }
