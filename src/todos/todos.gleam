@@ -217,10 +217,16 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 
     LocalStorageReturnedTodos(saved) -> {
       case json.parse(saved, todos_decoder()) {
-        Ok(items) -> #(
-          Model(..model, todos: items, next_id: next_id(items), storage: Ready),
-          [],
-        )
+        Ok(items) -> {
+          let next_id =
+            list.fold(items, 0, fn(next, item) {
+              case item.id >= next {
+                True -> item.id + 1
+                False -> next
+              }
+            })
+          #(Model(..model, todos: items, next_id: next_id, storage: Ready), [])
+        }
         Error(_) -> {
           let reason = "Saved todos could not be read."
           #(Model(..model, storage: Failed(reason)), [log(reason)])
@@ -247,17 +253,32 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
             list.append(model.todos, [Todo(model.next_id, title, Active)])
           #(
             Model(..model, todos: items, draft: "", next_id: model.next_id + 1),
-            [save_todos(encode(items)), log("Todo added.")],
+            [items |> encode |> save_todos, log("Todo added.")],
           )
         }
       }
     }
 
     UserToggledTodoCompletion(id) -> {
-      let items = list.map(model.todos, fn(item) { toggle_todo(item, id) })
+      let items =
+        list.map(model.todos, fn(item) {
+          case item.id == id {
+            False -> item
+            True -> {
+              let status = case item.status {
+                Active -> Completed
+                Completed -> Active
+              }
+              Todo(..item, status: status)
+            }
+          }
+        })
       let effects = case items == model.todos {
         True -> []
-        False -> [save_todos(encode(items)), log("Todo completion toggled.")]
+        False -> [
+          items |> encode |> save_todos,
+          log("Todo completion toggled."),
+        ]
       }
       #(Model(..model, todos: items), effects)
     }
@@ -277,21 +298,26 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
     }
 
     UserSubmittedTodoEdit -> {
-      case edit_details(model.editing) {
-        Error(_) -> #(model, [])
-        Ok(#(id, title)) -> {
-          let items =
-            list.map(model.todos, fn(item) {
-              case item.id == id {
-                True -> Todo(..item, title: title)
-                False -> item
+      case model.editing {
+        NotEditing -> #(model, [])
+        Editing(id, text) -> {
+          case string.trim(text) {
+            "" -> #(model, [])
+            title -> {
+              let items =
+                list.map(model.todos, fn(item) {
+                  case item.id == id {
+                    True -> Todo(..item, title: title)
+                    False -> item
+                  }
+                })
+              let effects = case items == model.todos {
+                True -> []
+                False -> [items |> encode |> save_todos, log("Todo updated.")]
               }
-            })
-          let effects = case items == model.todos {
-            True -> []
-            False -> [save_todos(encode(items)), log("Todo updated.")]
+              #(Model(..model, todos: items, editing: NotEditing), effects)
+            }
           }
-          #(Model(..model, todos: items, editing: NotEditing), effects)
         }
       }
     }
@@ -309,42 +335,6 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
         False -> [save_todos(encode(items)), log("Todo deleted.")]
       }
       #(Model(..model, todos: items, editing: editing), effects)
-    }
-  }
-}
-
-// -- Model helpers -------------------------------------------------------
-
-fn next_id(items: List(Todo)) -> TodoId {
-  list.fold(items, 0, fn(next, item) {
-    case item.id >= next {
-      True -> item.id + 1
-      False -> next
-    }
-  })
-}
-
-fn toggle_todo(item: Todo, id: TodoId) -> Todo {
-  case item.id == id {
-    False -> item
-    True -> {
-      let status = case item.status {
-        Active -> Completed
-        Completed -> Active
-      }
-      Todo(..item, status: status)
-    }
-  }
-}
-
-fn edit_details(editing: Editing) -> Result(#(TodoId, String), Nil) {
-  case editing {
-    NotEditing -> Error(Nil)
-    Editing(id, text) -> {
-      case string.trim(text) {
-        "" -> Error(Nil)
-        title -> Ok(#(id, title))
-      }
     }
   }
 }

@@ -109,6 +109,7 @@ export function stopResize() {
 	return {
 		perform: ({ subscriptions }) => subscriptions.stop('window-resize'),
 		onSuccess: windowResizeStopped,
-		onFailure: () => windowResizeSubscriptionFailed('Could not stop watching window size.'),
+		onFailure: () =>
+			windowResizeSubscriptionFailed('Could not stop watching window size.'),
 	}
 }

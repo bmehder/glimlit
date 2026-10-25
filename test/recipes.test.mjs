@@ -2,35 +2,31 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { from_list as toArray } from '#gleam/array'
 import * as app from '../build/dev/javascript/glimlit/recipes/recipes.mjs'
-import * as route from '../build/dev/javascript/glimlit/recipes/route.mjs'
-import * as editor from '../build/dev/javascript/glimlit/recipes/editor.mjs'
-import * as recipeJson from '../build/dev/javascript/glimlit/recipes/recipe_json.mjs'
-import * as recipe from '../build/dev/javascript/glimlit/recipes/recipe.mjs'
 import { run } from '../src/runtime/runner.mjs'
 import { load, save, fetchSamples, storageKey } from '../build/dev/javascript/glimlit/recipes/effects.mjs'
 import { hashRoute } from '../build/dev/javascript/glimlit/recipes/subscriptions.mjs'
 
 const ready = () => app.update(app.init()[0], new app.StorageEmpty())[0]
 const update = (model, message) => app.update(model, message)[0]
-const samples = () => recipeJson.encode_collection(recipe.starters())
+const samples = () => app.encode_collection(app.starter_recipes())
 
 test('recipe routes round-trip, support deep links, and reject unknown addresses', () => {
-  for (const [hash, type, id] of [['#/',route.Collection],['#/new',route.New],['#/recipe/2',route.Detail,2],['#/recipe/2/edit',route.Edit,2]]) {
-    const parsed = route.parse(hash)
+  for (const [hash, type, id] of [['#/',app.Collection],['#/new',app.New],['#/recipe/2',app.Detail,2],['#/recipe/2/edit',app.Edit,2]]) {
+    const parsed = app.parse_route(hash)
     assert.ok(parsed instanceof type)
-    assert.equal(route.path(parsed), hash)
+    assert.equal(app.route_path(parsed), hash)
     if (id) assert.equal(parsed[0], id)
   }
-  for (const hash of ['#/unknown', '#/recipe/0', '#/recipe/-1', '#/recipe/nope', '#/recipe/1/extra']) assert.ok(route.parse(hash) instanceof route.NotFound)
+  for (const hash of ['#/unknown', '#/recipe/0', '#/recipe/-1', '#/recipe/nope', '#/recipe/1/extra']) assert.ok(app.parse_route(hash) instanceof app.NotFound)
 })
 
 test('recipe JSON validates versions, fields, unique IDs, and empty collections', () => {
   const source = samples()
-  assert.deepEqual(toArray(recipeJson.decode_collection(source)[0]), toArray(recipe.starters()))
-  assert.deepEqual(toArray(recipeJson.decode_collection('{"version":1,"recipes":[]}')[0]), [])
+  assert.deepEqual(toArray(app.decode_collection(source)[0]), toArray(app.starter_recipes()))
+  assert.deepEqual(toArray(app.decode_collection('{"version":1,"recipes":[]}')[0]), [])
   const data = JSON.parse(source)
   for (const invalid of [null, {...data, version:2}, {...data, recipes:[data.recipes[0],data.recipes[0]]}, {...data, recipes:[{...data.recipes[0],minutes:0}]}, {...data, recipes:[{...data.recipes[0],title:'  '}]}, {...data, recipes:[{...data.recipes[0],favorite:'yes'}]}]) {
-    assert.equal(recipeJson.decode_collection(JSON.stringify(invalid)).constructor.name, 'Error')
+    assert.equal(app.decode_collection(JSON.stringify(invalid)).constructor.name, 'Error')
   }
 })
 
@@ -42,21 +38,21 @@ test('child editor validation blocks submission and parent commits trimmed recip
   assert.equal(toArray(effects).length,1)
   assert.equal(toArray(original.editor.errors).length,0)
   model = invalid
-  for (const message of [new editor.TitleChanged('  My soup  '), new editor.IngredientsChanged('  Carrots\nStock  '), new editor.InstructionsChanged('  Simmer.  '), new editor.MinutesChanged('25')]) model = update(model,new app.EditorChanged(message))
+  for (const message of [new app.TitleChanged('  My soup  '), new app.IngredientsChanged('  Carrots\nStock  '), new app.InstructionsChanged('  Simmer.  '), new app.MinutesChanged('25')]) model = update(model,new app.EditorChanged(message))
   const [saved, work] = app.update(model,new app.RecipeSubmitted())
-  assert.ok(saved.route instanceof route.Detail)
+  assert.ok(saved.route instanceof app.Detail)
   assert.equal(toArray(saved.recipes).length,4)
   assert.equal(toArray(saved.recipes).at(-1).title,'My soup')
   assert.equal(toArray(saved.recipes).at(-1).minutes,25)
   assert.ok(saved.saving instanceof app.Saving)
   assert.equal(toArray(work).length,2)
-  assert.equal(toArray(recipe.starters()).length,3)
+  assert.equal(toArray(app.starter_recipes()).length,3)
 })
 
 test('editing preserves IDs and favourites; filters and deletions share the parent collection', () => {
   let model = update(ready(),new app.RouteChanged('#/recipe/1/edit'))
   assert.equal(model.editor.title,toArray(model.recipes)[0].title)
-  model = update(model,new app.EditorChanged(new editor.TitleChanged('Changed title')))
+  model = update(model,new app.EditorChanged(new app.TitleChanged('Changed title')))
   model = update(model,new app.RecipeSubmitted())
   assert.equal(toArray(model.recipes)[0].id,1)
   assert.equal(toArray(model.recipes)[0].favorite,true)
@@ -68,7 +64,7 @@ test('editing preserves IDs and favourites; filters and deletions share the pare
   assert.equal(update(model, new app.DeleteConfirmed(999)), model)
   model=update(model,new app.DeleteConfirmed(1))
   assert.equal(toArray(model.recipes).length,2)
-  assert.ok(model.route instanceof route.Collection)
+  assert.ok(model.route instanceof app.Collection)
 })
 
 test('unreadable storage is not overwritten automatically and missing recipes cannot be edited', () => {
@@ -146,7 +142,7 @@ test('route subscription emits initial and later hashes and removes its listener
 
 test('sample imports keep local recipes, assign noncolliding IDs, and skip duplicate titles in order', () => {
   let model = ready()
-  const original = JSON.parse(recipeJson.encode_collection(model.recipes))
+  const original = JSON.parse(app.encode_collection(model.recipes))
   const incoming = {
     version: 1,
     recipes: [
@@ -170,18 +166,97 @@ test('sample imports keep local recipes, assign noncolliding IDs, and skip dupli
 
 
 test('editor time validation rejects invalid input and accepts both duration boundaries', () => {
-  let draft = editor.init()
-  for (const message of [new editor.TitleChanged('Soup'), new editor.IngredientsChanged('Stock'), new editor.InstructionsChanged('Simmer')]) draft = editor.update(draft, message)
+  let draft = app.init_editor()
+  for (const message of [new app.TitleChanged('Soup'), new app.IngredientsChanged('Stock'), new app.InstructionsChanged('Simmer')]) draft = app.update_editor(draft, message)
   for (const value of ['', 'nope', '1.5', '-1', '0', '1441']) {
-    const invalid = editor.update(draft, new editor.MinutesChanged(value))
-    const result = editor.validate(invalid, 1, false)
+    const invalid = app.update_editor(draft, new app.MinutesChanged(value))
+    const result = app.validate_editor(invalid, 1, false)
     assert.equal(result.constructor.name, 'Error', value)
     assert.equal(toArray(result[0]).length, 1)
   }
   for (const value of ['1', '1440']) {
-    const valid = editor.update(draft, new editor.MinutesChanged(value))
-    const result = editor.validate(valid, 1, false)
+    const valid = app.update_editor(draft, new app.MinutesChanged(value))
+    const result = app.validate_editor(valid, 1, false)
     assert.equal(result.constructor.name, 'Ok', value)
     assert.equal(result[0].minutes, Number(value))
   }
+})
+
+test('screen selection resolves loading, recovery, routes, and missing recipes in Gleam', () => {
+  const initial = app.init()[0]
+  const deepLink = update(initial, app.Msg$RouteChanged('#/recipe/1'))
+  assert.ok(app.Screen$isScreenLoading(app.screen(deepLink)))
+  assert.equal(app.can_import(deepLink), false)
+  const failed = update(deepLink, app.Msg$StorageLoadFailed('Storage unavailable'))
+  assert.equal(app.Screen$ScreenRecovery$0(app.screen(failed)), 'Storage unavailable')
+  assert.equal(app.can_import(failed), false)
+
+  const model = update(deepLink, app.Msg$StorageEmpty())
+  assert.ok(app.Screen$isScreenDetail(app.screen(model)))
+  assert.equal(app.Recipe$Recipe$id(app.Screen$ScreenDetail$0(app.screen(model))), 1)
+  assert.equal(app.can_import(model), true)
+  assert.ok(app.Screen$isScreenCollection(app.screen(ready())))
+  const creating = update(model, app.Msg$RouteChanged('#/new'))
+  assert.deepEqual(app.Screen$ScreenNew$0(app.screen(creating)), creating.editor)
+  const editing = update(model, app.Msg$RouteChanged('#/recipe/1/edit'))
+  assert.deepEqual(app.Screen$ScreenEdit$0(app.screen(editing)), editing.editor)
+  assert.equal(app.Screen$ScreenEdit$1(app.screen(editing)), '#/recipe/1')
+  for (const hash of ['#/recipe/999', '#/recipe/999/edit', '#/unknown']) {
+    assert.ok(app.Screen$isScreenNotFound(app.screen(update(model, app.Msg$RouteChanged(hash)))))
+  }
+  const removed = update(model, app.Msg$DeleteConfirmed(1))
+  const staleLink = update(removed, app.Msg$RouteChanged('#/recipe/1'))
+  assert.ok(app.Screen$isScreenNotFound(app.screen(staleLink)))
+})
+
+test('save presentation exposes the current message and retry availability', () => {
+  const model = ready()
+  assert.equal(app.can_retry_save(model), false)
+  assert.equal(app.saving_message(model), 'Kept in this browser · No account needed')
+  const saving = update(model, app.Msg$FavoriteToggled(1))
+  assert.equal(app.saving_message(saving), 'Saving in this browser…')
+  assert.equal(app.can_retry_save(saving), false)
+  const failed = update(saving, app.Msg$CollectionSaveFailed(saving.revision, 'Storage full'))
+  assert.equal(app.saving_message(failed), 'Storage full')
+  assert.equal(app.can_retry_save(failed), true)
+  const saved = update(failed, app.Msg$CollectionSaved(failed.revision))
+  assert.equal(app.can_retry_save(saved), false)
+})
+
+test('loading and failed storage block application messages without blocking routing or recovery', () => {
+  const initial = app.init()[0]
+  const failed = update(initial, app.Msg$StorageLoadFailed('Storage unavailable'))
+  const messages = [
+    app.Msg$QueryChanged('lemon'),
+    app.Msg$FavoritesToggled(),
+    app.Msg$FavoriteToggled(1),
+    app.Msg$EditorChanged(app.EditorMsg$TitleChanged('Changed')),
+    app.Msg$RecipeSubmitted(),
+    app.Msg$DeleteConfirmed(1),
+    app.Msg$RetrySave(),
+    app.Msg$CollectionSaved(0),
+    app.Msg$CollectionSaveFailed(0, 'Failed'),
+    app.Msg$ImportRequested(),
+    app.Msg$ImportCancelled(),
+    app.Msg$SamplesReturned(0, samples()),
+    app.Msg$SamplesFailed(0, 'Failed'),
+  ]
+  for (const model of [initial, failed]) {
+    for (const message of messages) {
+      const [next, effects] = app.update(model, message)
+      assert.deepEqual(next, model)
+      assert.deepEqual(toArray(effects), [])
+    }
+    const [routed, effects] = app.update(model, app.Msg$RouteChanged('#/new'))
+    assert.ok(app.Route$isNew(routed.route))
+    assert.deepEqual(routed.storage, model.storage)
+    assert.equal(toArray(effects).length, 1)
+    assert.ok(app.Storage$isReady(update(model, app.Msg$StorageEmpty()).storage))
+  }
+  const [retry, loadEffects] = app.update(failed, app.Msg$RetryLoad())
+  assert.ok(app.Storage$isLoading(retry.storage))
+  assert.equal(toArray(loadEffects).length, 1)
+  const [recovered, saveEffects] = app.update(failed, app.Msg$UseStarters())
+  assert.ok(app.Storage$isReady(recovered.storage))
+  assert.ok(toArray(saveEffects).length > 0)
 })

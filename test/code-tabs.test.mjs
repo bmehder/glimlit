@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { from_list as toArray } from '#gleam/array'
 import {
-  init, update, tab_id,
+  init, update,
   View, ModelAndUpdate, Effects,
   Next, Previous, First, Last,
   UserSelectedTab, UserNavigatedTab,
@@ -11,11 +11,11 @@ import { run } from '../src/runtime/runner.mjs'
 
 test('homepage clicks select tabs without moving focus or mutating the old model', () => {
   const [initial, initialEffects] = init()
-  assert.equal(tab_id(initial.selected), 'view-tab')
+  assert.ok(initial.selected instanceof View)
   assert.deepEqual(toArray(initialEffects), [])
   const [next, effects] = update(initial, new UserSelectedTab(new Effects()))
-  assert.equal(tab_id(next.selected), 'effects-tab')
-  assert.equal(tab_id(initial.selected), 'view-tab')
+  assert.ok(next.selected instanceof Effects)
+  assert.ok(initial.selected instanceof View)
   assert.deepEqual(toArray(effects), [])
 })
 
@@ -39,9 +39,11 @@ test('homepage keyboard navigation wraps and defers focus until its effect runs'
   ]
   for (const [from, direction, expected] of cases) {
     const [initial] = init()
+    const [selected] = update(initial, new UserSelectedTab(from))
     const before = focused.length
-    const [next, effects] = update(initial, new UserNavigatedTab(from, direction))
-    assert.equal(tab_id(next.selected), expected)
+    const [next, effects] = update(selected, new UserNavigatedTab(direction))
+    const expectedTab = { 'view-tab': View, 'model-tab': ModelAndUpdate, 'effects-tab': Effects }[expected]
+    assert.ok(next.selected instanceof expectedTab)
     assert.equal(focused.length, before)
     const work = toArray(effects)
     assert.equal(work.length, 1)

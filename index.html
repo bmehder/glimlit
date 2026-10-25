@@ -26,7 +26,8 @@
         <div class="hero-copy">
           <p class="site-eyebrow">A small framework. Another way to build.</p>
           <h1 id="hero-title">Gleam for the logic.<br><span>lit-html for the view.</span></h1>
-          <p class="home-lead">Give your application decisions a clear Model–View–Update structure in Gleam. Write HTML-like views with lit-html, and work directly with browser elements, properties, and events.</p>
+          <p class="home-lead">Give your application decisions a clear Model–View–Update structure in Gleam. Write
+            HTML-like views with lit-html, and work directly with browser elements, properties, and events.</p>
           <div class="site-actions">
             <a class="site-button" href="/tutorial/">Build your first app <span aria-hidden="true">↗</span></a>
             <a class="site-text-link" href="/demos/">Try the demos <span aria-hidden="true">→</span></a>
@@ -38,21 +39,21 @@
           <div class="code-window-bar"><span class="window-dots" aria-hidden="true">● ● ●</span><span>Two languages. One
               app.</span></div>
           <div class="code-tabs" role="tablist" aria-label="Explore the view, model, and effects">
-            <button data-static-tab id="view-tab" type="button" role="tab" aria-selected="true" aria-controls="view-example"
-              tabindex="0">View<span>view.mjs</span></button>
-            <button data-static-tab id="model-tab" type="button" role="tab" aria-selected="false" aria-controls="model-example"
-              tabindex="-1">Model &amp; update<span>tutorial.gleam</span></button>
-            <button data-static-tab id="effects-tab" type="button" role="tab" aria-selected="false" aria-controls="effects-example"
-              tabindex="-1">Effects<span>effects.mjs</span></button>
+            <button data-static-tab id="view-tab" type="button" role="tab" aria-selected="true"
+              aria-controls="view-example" tabindex="0">View<span>view.mjs</span></button>
+            <button data-static-tab id="model-tab" type="button" role="tab" aria-selected="false"
+              aria-controls="model-example" tabindex="-1">Model &amp; update<span>tutorial.gleam</span></button>
+            <button data-static-tab id="effects-tab" type="button" role="tab" aria-selected="false"
+              aria-controls="effects-example" tabindex="-1">Effects<span>effects.mjs</span></button>
           </div>
           <div id="model-example" class="code-panel" role="tabpanel" aria-labelledby="model-tab" tabindex="0" hidden>
             <pre><code><span class="syntax-keyword">pub fn</span> <span class="syntax-function">update</span>(model, msg) {
   <span class="syntax-keyword">case</span> msg {
     <span class="syntax-type">UserChangedTitle</span>(title) -&gt; #(
       <span class="syntax-type">Model</span>(..model, title: title), <span class="syntax-comment">// next model</span>
-      [<span class="syntax-function">save_title</span>(title)],       <span class="syntax-comment">// requested work</span>
+      [<span class="syntax-function">saveTitle</span>(title)], <span class="syntax-comment">// requested work</span>
     )
-    <span class="syntax-type">TitleSaved</span> -&gt; #(model, [])
+    <span class="syntax-type">TitleSaved</span> -&gt; #(model, [<span class="syntax-function">log</span>(<span class="syntax-string">"Title saved."</span>)])
     <span class="syntax-type">TitleSaveFailed</span> -&gt;
       #(model, [<span class="syntax-function">log</span>(<span class="syntax-string">"Save failed."</span>)])
   }
@@ -96,19 +97,22 @@
           <article><span class="principle-number">01</span>
             <div>
               <h3>Model the application’s decisions</h3>
-              <p>Use Gleam’s types for shared data, meaningful state, and pure updates. Let the browser keep local details such as focus, selection, and drafts that only matter on submit.</p>
+              <p>Use Gleam’s types for shared data, meaningful state, and pure updates. Let the browser keep local
+                details such as focus, selection, and drafts that only matter on submit.</p>
             </div>
           </article>
           <article><span class="principle-number">02</span>
             <div>
               <h3>Views stay close to the web</h3>
-              <p>Use lit-html’s HTML-like templates, element properties, DOM events, and native controls. Work with the platform directly, using regular CSS or the tools you already know.</p>
+              <p>Use lit-html’s HTML-like templates, element properties, DOM events, and native controls. Work with the
+                platform directly, using regular CSS or the tools you already know.</p>
             </div>
           </article>
           <article><span class="principle-number">03</span>
             <div>
               <h3>Work has a place in the loop</h3>
-              <p>The runtime handles the loop, effects, subscription lifetimes, and cleanup. Your app chooses how to handle forms, dialogs, routing, and the rest.</p>
+              <p>The runtime handles the loop, effects, subscription lifetimes, and cleanup. Your app chooses how to
+                handle forms, dialogs, routing, and the rest.</p>
             </div>
           </article>
         </div>

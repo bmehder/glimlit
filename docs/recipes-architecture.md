@@ -19,26 +19,33 @@ requests. It uses the existing runtime without new framework APIs.
 
 | File | Responsibility |
 | --- | --- |
-| `src/recipes/recipes.gleam` | Parent model, messages, update, persistence decisions, and startup |
-| `src/recipes/recipe.gleam` | Recipe data, collection operations, IDs, and starter data |
-| `src/recipes/recipe_json.gleam` | Versioned JSON encoding, decoding, and schema checks |
-| `src/recipes/route.gleam` | Parse and construct hash routes |
-| `src/recipes/editor.gleam` | Child form model, field messages, and validation |
-| `src/recipes/view.mjs` | Choose a screen and render shared save/import status |
-| `src/recipes/collection.mjs` | Search, favourites, and collection cards |
-| `src/recipes/detail.mjs` | Recipe details and deletion confirmation |
-| `src/recipes/editor_view.mjs` | Form fields, errors, and child-message callbacks |
+| `src/recipes/recipes.gleam` | Types, model, messages, update, editor, recipe operations, routes, JSON, and startup |
+| `src/recipes/view.mjs` | Page, collection, detail, editor, shared status, and input helpers |
 | `src/recipes/effects.mjs` | Storage, fetching, navigation, and focus |
 | `src/recipes/subscriptions.mjs` | Browser hash changes and listener cleanup |
-| `src/recipes/inputs.mjs` | Narrow DOM event targets before reading input values |
 | `src/site/recipes/` | Website entry point and styling |
 | `public/recipes/samples.json` | Same-origin sample response; no third-party API needed |
 | `test/recipes.test.mjs` | Domain, update, effect, and subscription behavior checks |
+
+The app follows the same four-file shape as the smaller examples:
+`recipes.gleam`, `view.mjs`, `effects.mjs`, and `subscriptions.mjs`. The Gleam file
+uses section comments to separate the editor, recipe operations, routes, codec,
+and shared view queries without introducing more modules.
+
+The JavaScript views live together in `view.mjs`, with section comments for the
+page, collection, recipe details, editor, and shared input handling. Each screen
+still has its own template function.
 
 The source bridge resolves these modules by location. Only the new HTML page
 was added to Vite's production page list; no recipe-specific aliases were added.
 
 ## Parent state and child messages
+
+The parent derives a `Screen` from storage readiness, the route, and the current
+collection. It resolves missing recipes and editor return paths in Gleam; the
+JavaScript view only selects a template for that screen. Screen values are
+derived on demand, not stored alongside the model. Save messages, retry
+availability, and import availability are also derived in Gleam.
 
 The parent owns the collection, current route, search/filter settings, storage
 state, save revision, import request ID, and editor model. Recipe changes stay
@@ -46,14 +53,16 @@ in one collection so details, favourites, and search use the same data.
 
 The editor knows only its field values and validation errors. Its update
 function returns an editor model; it does not save, navigate, or access the
-parent collection. The parent wraps field changes in `EditorChanged(editor.Msg)`
-and delegates them to `editor.update`. The editor view receives a child dispatch
+parent collection. The parent wraps field changes in `EditorChanged(EditorMsg)`
+and delegates them to `update_editor`. The editor view receives a child dispatch
 callback, so it does not import the parent app's messages.
 
-The parent update delegates submission, deletion, restoration, and imports to
-named operations. Each operation builds its next model in local steps, then
-requests persistence or navigation. Collection transformations live in
-`recipe.gleam`; the parent does not repeat their list-processing logic.
+The parent keeps submission, deletion, restoration, and import handling directly
+in one update function. Each message branch builds its next model in local steps,
+then requests persistence or navigation. Shared persistence, route setup, and
+import-result checks remain helpers because multiple branches use them. Collection
+transformations have their own functions in the recipe-operations section of
+`recipes.gleam`.
 
 Submission belongs to the parent. It validates the draft, preserves an existing
 recipe's ID and favourite flag, replaces or appends the recipe, then requests
@@ -81,8 +90,7 @@ The framework does not require a message for every keystroke.
 ## Routes and app lifetime
 
 Routes use hashes, such as `#/recipe/2/edit`. They support reloads and browser
-Back/Forward without server rewrite rules. This is an app-specific routing
-module, not a new framework router.
+Back/Forward without server rewrite rules. This is app-specific routing in `recipes.gleam`, not a new framework router.
 
 Links use ordinary `href` values. A subscription listens for `hashchange`, emits
 the initial hash, and returns a listener cleanup. The runtime gives the app one
@@ -97,7 +105,7 @@ recovery link rather than creating an invalid editor.
 ## Persistence and failure recovery
 
 The collection is stored as versioned JSON under `glimlit.recipes.v1`.
-The codec in `recipe_json.gleam` uses the existing `gleam_json` Hex package and
+The JSON section in `recipes.gleam` uses the existing `gleam_json` Hex package and
 standard-library decoders. Recipe encoding is a named function, and schema checks
 are separate from app updates. A generator such as [Sara](https://sara.hexdocs.pm/)
 could remove the field-by-field codec, but would add a generation step; this
