@@ -17,7 +17,7 @@
   },
   "render": {
     "language": "javascript",
-    "source": "render(html`\n  <h3>${title(model)}</h3>\n  <p>${message(model)}</p>\n`, app)"
+    "source": "render(html`\n  <h3>${Model$Model$title(model)}</h3>\n  <p>${Model$Model$message(model)}</p>\n`, app)"
   },
   "external": {
     "language": "gleam",
@@ -29,7 +29,7 @@
   },
   "input": {
     "language": "html",
-    "source": "<input\n  .value=${live(title(model))}\n  @input=${event => dispatch(new UserChangedTitle(event.currentTarget.value))}\n>"
+    "source": "<input\n  .value=${live(Model$Model$title(model))}\n  @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}\n>"
   },
   "themes": {
     "language": "gleam",
@@ -41,11 +41,11 @@
   },
   "saveEffect": {
     "language": "javascript",
-    "source": "export function saveDesign(title, message, theme) {\n  return {\n    perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),\n    onSuccess: () => designSaved(),\n    onFailure: () => storageFailed(\"Could not save. Browser storage may be unavailable.\"),\n  }\n}"
+    "source": "export function saveDesign(title, message, theme) {\n  return {\n    perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),\n    onSuccess: () => Msg$DesignSaved(),\n    onFailure: () => Msg$StorageFailed(\"Could not save. Browser storage may be unavailable.\"),\n  }\n}"
   },
   "restoreEffect": {
     "language": "javascript",
-    "source": "export function loadDesign() {\n  return {\n    perform: () => localStorage.getItem(key),\n    onSuccess: saved => saved === null ? storageWasEmpty() : storageReturnedDesign(saved),\n    onFailure: () => storageFailed(\"Could not restore. Browser storage may be unavailable.\"),\n  }\n}"
+    "source": "export function loadDesign() {\n  return {\n    perform: () => localStorage.getItem(key),\n    onSuccess: saved => saved === null ? Msg$StorageWasEmpty() : Msg$StorageReturnedDesign(saved),\n    onFailure: () => Msg$StorageFailed(\"Could not restore. Browser storage may be unavailable.\"),\n  }\n}"
   },
   "decode": {
     "language": "gleam",
@@ -57,7 +57,7 @@
   },
   "subscribe": {
     "language": "javascript",
-    "source": "subscriptions.start(\n  \"postcard-keys\",\n  nextThemeKey(() => new UserPressedNextTheme()),\n  dispatch,\n)"
+    "source": "subscriptions.start(\n  \"postcard-keys\",\n  nextThemeKey(() => Msg$UserPressedNextTheme()),\n  dispatch,\n)"
   },
   "check": {
     "language": "shellscript",

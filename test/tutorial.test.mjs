@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { from_list as toArray } from '#gleam/array';
 import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
 import {
-  init, update, theme_name, Ocean,
-  UserChangedTitle, UserChangedMessage, UserSelectedTheme,
-  UserClickedSave, UserClickedRestore, UserToggledShortcuts, UserPressedNextTheme,
+  init, update, theme_name, Theme$Ocean,
+  Msg$UserChangedTitle, Msg$UserChangedMessage, Msg$UserSelectedTheme,
+  Msg$UserClickedSave, Msg$UserClickedRestore, Msg$UserToggledShortcuts, Msg$UserPressedNextTheme,
   Msg$StorageReturnedDesign as restored, Msg$StorageWasEmpty as empty,
   Msg$StorageFailed as failed, Msg$ShortcutsChanged as shortcutsChanged,
 } from '../build/dev/javascript/glimlit/tutorial/tutorial.mjs';
@@ -22,9 +22,9 @@ function replaceGlobal(t, name, value) {
 test('postcard editing is immutable and preserves unrelated fields', () => {
   const [initial, initialEffects] = init();
   assert.deepEqual(toArray(initialEffects), []);
-  const [titled, titleEffects] = update(initial, new UserChangedTitle('A weekend away'));
-  const [written, messageEffects] = update(titled, new UserChangedMessage('Hello <script>'));
-  const [coloured, colourEffects] = update(written, new UserSelectedTheme(new Ocean()));
+  const [titled, titleEffects] = update(initial, Msg$UserChangedTitle('A weekend away'));
+  const [written, messageEffects] = update(titled, Msg$UserChangedMessage('Hello <script>'));
+  const [coloured, colourEffects] = update(written, Msg$UserSelectedTheme(Theme$Ocean()));
   assert.equal(coloured.title, 'A weekend away');
   assert.equal(coloured.message, 'Hello <script>');
   assert.equal(theme_name(coloured.theme), 'ocean');
@@ -39,11 +39,11 @@ test('saving is deferred, stores a snapshot, and reports success through update'
   let calls = 0;
   replaceGlobal(t, 'localStorage', { setItem(key, value) { calls++; saved.set(key, value); } });
   const [initial] = init();
-  const [draft] = update(initial, new UserChangedTitle('Saved title'));
-  const [saving, effects] = update(draft, new UserClickedSave());
+  const [draft] = update(initial, Msg$UserChangedTitle('Saved title'));
+  const [saving, effects] = update(draft, Msg$UserClickedSave());
   assert.equal(calls, 0);
   assert.match(saving.notice, /Saving/);
-  const [newer] = update(saving, new UserChangedTitle('Newer draft'));
+  const [newer] = update(saving, Msg$UserChangedTitle('Newer draft'));
   let message;
   await run(toArray(effects)[0], result => { message = result; });
   assert.deepEqual(JSON.parse(saved.get('glimlit.postcard.v1')), {
@@ -63,7 +63,7 @@ test('restoring saved JSON restores the design and preserves shortcut state', as
   });
   const [initial] = init();
   const [enabled] = update(initial, shortcutsChanged(true));
-  const [, effects] = update(enabled, new UserClickedRestore());
+  const [, effects] = update(enabled, Msg$UserClickedRestore());
   let message;
   await run(toArray(effects)[0], result => { message = result; });
   const [next, followups] = update(enabled, message);
@@ -76,7 +76,7 @@ test('restoring saved JSON restores the design and preserves shortcut state', as
 
 test('missing, invalid, and failed storage preserve the current draft', async t => {
   const [initial] = init();
-  const [draft] = update(initial, new UserChangedTitle('Keep my draft'));
+  const [draft] = update(initial, Msg$UserChangedTitle('Keep my draft'));
   for (const message of [empty(), failed('Storage blocked'),
     ...['not JSON', '{}', 'null', '[]', '{"title":4,"message":"Hi","theme":"coral"}',
       '{"title":"Hi","message":"Hi","theme":"unknown"}'].map(restored),
@@ -90,7 +90,7 @@ test('missing, invalid, and failed storage preserve the current draft', async t 
   replaceGlobal(t, 'localStorage', {
     setItem() { throw new Error('Quota'); }, getItem() { throw new Error('Blocked'); },
   });
-  for (const request of [new UserClickedSave(), new UserClickedRestore()]) {
+  for (const request of [Msg$UserClickedSave(), Msg$UserClickedRestore()]) {
     const [, effects] = update(draft, request);
     let message;
     await run(toArray(effects)[0], result => { message = result; });
@@ -103,7 +103,7 @@ test('missing, invalid, and failed storage preserve the current draft', async t 
 test('a missing storage entry produces an empty result', async t => {
   replaceGlobal(t, 'localStorage', { getItem: () => null });
   const [initial] = init();
-  const [, effects] = update(initial, new UserClickedRestore());
+  const [, effects] = update(initial, Msg$UserClickedRestore());
   let message;
   await run(toArray(effects)[0], result => { message = result; });
   assert.deepEqual(message, empty());
@@ -111,10 +111,10 @@ test('a missing storage entry produces an empty result', async t => {
 
 test('shortcut messages cycle every theme only while enabled', () => {
   const [initial] = init();
-  assert.equal(update(initial, new UserPressedNextTheme())[0], initial);
+  assert.equal(update(initial, Msg$UserPressedNextTheme())[0], initial);
   let [model] = update(initial, shortcutsChanged(true));
   for (const expected of ['ocean', 'meadow', 'coral']) {
-    [model] = update(model, new UserPressedNextTheme());
+    [model] = update(model, Msg$UserPressedNextTheme());
     assert.equal(theme_name(model.theme), expected);
     assert.equal(model.title, initial.title);
   }
@@ -135,7 +135,7 @@ test('shortcuts ignore editing and modifiers and clean up on disable and app sto
   let [model] = init();
   const dispatch = message => { [model] = update(model, message); };
   async function toggle() {
-    const [next, effects] = update(model, new UserToggledShortcuts());
+    const [next, effects] = update(model, Msg$UserToggledShortcuts());
     model = next;
     await run(toArray(effects)[0], dispatch, runtime);
   }

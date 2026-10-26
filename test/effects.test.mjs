@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { from_list as toArray, to_list as toList } from '#gleam/array';
-import { init, update, UserTypedNewTodo, UserSubmittedNewTodo, UserToggledTodoCompletion, UserClickedDeleteTodo, UserClickedEditTodo, UserTypedTodoEdit, UserSubmittedTodoEdit,
+import { init, update, Msg$UserTypedNewTodo, Msg$UserSubmittedNewTodo, Msg$UserToggledTodoCompletion, Msg$UserClickedDeleteTodo, Msg$UserClickedEditTodo, Msg$UserTypedTodoEdit, Msg$UserSubmittedTodoEdit,
   Msg$LocalStorageReturnedTodos, Msg$LocalStorageHadNoTodos,
   Msg$LocalStorageSavedTodos, Msg$LocalStorageFailed, StorageState$isFailed, StorageState$isReady,
-  UserClickedRunEffectOrdering,
+  Msg$UserClickedRunEffectOrdering,
   Model$Model$storage, Status$isCompleted,
 } from '../build/dev/javascript/glimlit/todos/todos.mjs';
 import { run } from '../src/runtime/runner.mjs';
@@ -13,9 +13,9 @@ import { start } from '../build/dev/javascript/glimlit/runtime/mvu.mjs';
 test('startup requests a load; only persisted edits request saving', () => {
   const [model, effects] = init();
   assert.deepEqual(toArray(effects)[0].onSuccess(null), Msg$LocalStorageHadNoTodos());
-  const [draft, draftEffects] = update(model, new UserTypedNewTodo('New todo'));
+  const [draft, draftEffects] = update(model, Msg$UserTypedNewTodo('New todo'));
   assert.deepEqual(toArray(draftEffects), []);
-  const [added, saves] = update(draft, new UserSubmittedNewTodo());
+  const [added, saves] = update(draft, Msg$UserSubmittedNewTodo());
   assert.equal(toArray(saves).length, 2);
   const [saved, followups] = update(added, Msg$LocalStorageSavedTodos());
   assert.ok(StorageState$isReady(Model$Model$storage(saved)));
@@ -51,7 +51,7 @@ test('effects start in list order and the second can finish before the first', a
   });
   const logged = t.mock.method(console, 'log', () => {});
   const [initial] = init();
-  const [next, effects] = update(initial, new UserClickedRunEffectOrdering());
+  const [next, effects] = update(initial, Msg$UserClickedRunEffectOrdering());
   assert.equal(next, initial);
   assert.equal(toArray(effects).length, 2);
   assert.equal(timers.length, 0);
@@ -97,7 +97,7 @@ test('effect values save and load through callbacks and report storage failures'
   const [initial, initialEffects] = init();
   const messageFrom = effect => new Promise(resolve => { void run(effect, resolve); });
   assert.deepEqual(await messageFrom(toArray(initialEffects)[0]), Msg$LocalStorageHadNoTodos());
-  const [changed, effects] = update(initial, new UserToggledTodoCompletion(0));
+  const [changed, effects] = update(initial, Msg$UserToggledTodoCompletion(0));
   assert.deepEqual(await messageFrom(toArray(effects)[0]), Msg$LocalStorageSavedTodos());
   const [restored] = update(initial, await messageFrom(toArray(initialEffects)[0]));
   assert.deepEqual(toArray(restored.todos), toArray(changed.todos));
@@ -121,14 +121,14 @@ test('effects returned by update run after rendering and dispatch their result',
 test('successful CRUD changes log alongside saving; failures can log alone', async t => {
   const logged = t.mock.method(console, 'log', () => {});
   const [initial] = init();
-  const [draft] = update(initial, new UserTypedNewTodo('New'));
-  const [editing] = update(initial, new UserClickedEditTodo(0));
-  const [edited] = update(editing, new UserTypedTodoEdit('Updated'));
+  const [draft] = update(initial, Msg$UserTypedNewTodo('New'));
+  const [editing] = update(initial, Msg$UserClickedEditTodo(0));
+  const [edited] = update(editing, Msg$UserTypedTodoEdit('Updated'));
   const cases = [
-    [draft, new UserSubmittedNewTodo(), 'Todo added.'],
-    [initial, new UserToggledTodoCompletion(0), 'Todo completion toggled.'],
-    [edited, new UserSubmittedTodoEdit(), 'Todo updated.'],
-    [initial, new UserClickedDeleteTodo(0), 'Todo deleted.'],
+    [draft, Msg$UserSubmittedNewTodo(), 'Todo added.'],
+    [initial, Msg$UserToggledTodoCompletion(0), 'Todo completion toggled.'],
+    [edited, Msg$UserSubmittedTodoEdit(), 'Todo updated.'],
+    [initial, Msg$UserClickedDeleteTodo(0), 'Todo deleted.'],
   ];
   for (const [model, message, expected] of cases) {
     const [, effects] = update(model, message);
@@ -138,7 +138,7 @@ test('successful CRUD changes log alongside saving; failures can log alone', asy
     await run(values[1], () => assert.fail('Logging must not dispatch'));
     assert.deepEqual(logged.mock.calls[before].arguments, [expected]);
   }
-  for (const message of [new UserTypedNewTodo('Typing'), new UserSubmittedNewTodo(), new UserClickedDeleteTodo(999)]) {
+  for (const message of [Msg$UserTypedNewTodo('Typing'), Msg$UserSubmittedNewTodo(), Msg$UserClickedDeleteTodo(999)]) {
     assert.deepEqual(toArray(update(initial, message)[1]), []);
   }
   const [, failureEffects] = update(initial, Msg$LocalStorageFailed('Blocked'));

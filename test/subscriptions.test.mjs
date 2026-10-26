@@ -5,7 +5,7 @@ import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
 import { start } from '../build/dev/javascript/glimlit/runtime/mvu.mjs';
 import { from_list as toArray, to_list as toList } from '#gleam/array';
 import {
-  init, update, UserClickedStartClock, UserClickedStopClock,
+  init, update, Msg$UserClickedStartClock, Msg$UserClickedStopClock,
   Msg$ClockStarted, Msg$ClockStopped, Msg$ClockTicked,
   clock_can_start, clock_can_stop,
 } from '../build/dev/javascript/glimlit/todos/todos.mjs';
@@ -101,9 +101,9 @@ test('clock uses the existing effect path, reports start/stop, and can restart',
   const dispatch = message => messages.push(message);
   const [initial] = init();
   assert.equal(clock_can_start(initial), true);
-  const [starting, effects] = update(initial, new UserClickedStartClock());
+  const [starting, effects] = update(initial, Msg$UserClickedStartClock());
   assert.equal(interval.mock.callCount(), 0);
-  assert.deepEqual(toArray(update(starting, new UserClickedStartClock())[1]), []);
+  assert.deepEqual(toArray(update(starting, Msg$UserClickedStartClock())[1]), []);
   await run(toArray(effects)[0], dispatch, runtime);
   assert.deepEqual(messages.pop(), Msg$ClockStarted());
   const [running] = update(starting, Msg$ClockStarted());
@@ -112,7 +112,7 @@ test('clock uses the existing effect path, reports start/stop, and can restart',
   assert.deepEqual(messages.pop(), Msg$ClockTicked(123456));
   const [ticked] = update(running, Msg$ClockTicked(123456));
   assert.equal(ticked.clock_time, 123456);
-  const [stopping, stops] = update(ticked, new UserClickedStopClock());
+  const [stopping, stops] = update(ticked, Msg$UserClickedStopClock());
   await run(toArray(stops)[0], dispatch, runtime);
   assert.deepEqual(messages.pop(), Msg$ClockStopped());
   assert.deepEqual(clear.mock.calls[0].arguments, [123]);
@@ -121,7 +121,7 @@ test('clock uses the existing effect path, reports start/stop, and can restart',
   const [stopped] = update(stopping, Msg$ClockStopped());
   assert.equal(clock_can_start(stopped), true);
   assert.equal(update(stopped, Msg$ClockTicked(999))[0], stopped);
-  await run(toArray(update(stopped, new UserClickedStartClock())[1])[0], dispatch, runtime);
+  await run(toArray(update(stopped, Msg$UserClickedStartClock())[1])[0], dispatch, runtime);
   assert.equal(interval.mock.callCount(), 2);
 });
 

@@ -33,17 +33,17 @@ try {
       assert.equal(typeof model.title, 'string');
       assert.deepEqual(toArray(effects), []);
       if (${index} >= 1) {
-        [model, effects] = app.update(model, new app.UserChangedTitle('My postcard'));
+        [model, effects] = app.update(model, app.Msg$UserChangedTitle('My postcard'));
         assert.equal(model.title, 'My postcard');
         assert.deepEqual(toArray(effects), []);
       }
       if (${index} >= 2) {
-        [model, effects] = app.update(model, new app.UserSelectedTheme(new app.Ocean()));
+        [model, effects] = app.update(model, app.Msg$UserSelectedTheme(app.Theme$Ocean()));
         assert.equal(app.theme_name(model.theme), 'ocean');
         assert.deepEqual(toArray(effects), []);
       }
       if (${index} >= 3) {
-        [, effects] = app.update(model, new app.UserClickedSave());
+        [, effects] = app.update(model, app.Msg$UserClickedSave());
         assert.equal(toArray(effects).length, 1);
         assert.equal(typeof toArray(effects)[0].perform, 'function');
       }

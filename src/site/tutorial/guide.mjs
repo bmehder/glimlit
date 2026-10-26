@@ -173,7 +173,8 @@ export function mountGuide() {
 								open
 								<a href="http://127.0.0.1:3000/tutorial/"
 									>http://127.0.0.1:3000/tutorial/</a
-								>. Use the address Vite prints if port 3000 is already in use.
+								>. If port 3000 is already in use, stop the other server and run
+								<code>npm run dev</code> again.
 							</li>
 						</ol>
 						${code(examples.setup.source)}
@@ -282,6 +283,22 @@ export function mountGuide() {
 								works the same with or without it.
 							</p>
 						</aside>
+						<aside class="try-it" aria-labelledby="generated-names-title">
+							<h3 id="generated-names-title">What does Model$Model$title mean?</h3>
+							<p>
+								Gleam generates this JavaScript function from the type above. Read
+								its name as <strong>type $ constructor $ field</strong>: the first
+								<code>Model</code> is the type, the second <code>Model</code> is its
+								constructor, and <code>title</code> is the field to read.
+							</p>
+							<p>
+								<code>Model$Model$title(model)</code> reads the title, much like
+								<code>model.title</code> does in Gleam. It does not change the model.
+								<code>Model$Model$message(model)</code> reads the message instead.
+								The dollar signs are ordinary characters in a JavaScript function
+								name, not property access or special Glimlit syntax.
+							</p>
+						</aside>
 						${code(examples.render.source)}
 						<p>
 							<code>html</code> is a JavaScript tag function applied to a template
@@ -293,10 +310,11 @@ export function mountGuide() {
 						</p>
 						<p>
 							The compiler generates <code>tutorial.mjs</code> from
-							<code>tutorial.gleam</code>. We import
-							<code>Model$Model$title</code> and give it the shorter JavaScript name
-							<code>title</code>. It reads the title field from a model. You edit the
-							Gleam source, not this generated module.
+							<code>tutorial.gleam</code>. Import these functions from
+							<code>./tutorial.mjs</code> using their exported names, as shown in the
+							complete file. The build supplies that module; you do not create it
+							or edit files in <code>build/</code>. Editor import completion can
+							help you find the generated names.
 						</p>
 						<h3>Connect the two languages</h3>
 						${code(examples.external.source)}
@@ -344,6 +362,14 @@ export function mountGuide() {
 							model stays unchanged.
 						</p>
 						<h3>Send a message from the input</h3>
+						<p>
+							In JavaScript, <code>Msg$UserChangedTitle("Hello")</code> creates the
+							same message as <code>UserChangedTitle("Hello")</code> in Gleam.
+							Read the name as <strong>type $ constructor</strong>: the constructor
+							belongs to <code>Msg</code>, and the argument is its text payload.
+							It is an ordinary function call without <code>new</code>. Creating the
+							value does nothing to the app until <code>dispatch</code> sends it.
+						</p>
 						${code(examples.input.source)}
 						<p>
 							<code>@input</code> attaches a DOM event listener. The handler reads
@@ -380,6 +406,15 @@ export function mountGuide() {
 							variants carry no extra data.
 						</p>
 						${code(examples.themes.source)}
+						<p>
+							The same naming rule gives us <code>Theme$Coral()</code>,
+							<code>Theme$Ocean()</code>, and <code>Theme$Meadow()</code> in
+							JavaScript. These constructors take no data, but JavaScript still
+							needs <code>()</code> to call them. For example,
+							<code>Msg$UserSelectedTheme(Theme$Ocean())</code> creates the message
+							for selecting Ocean. You can check a variant with a generated
+							predicate such as <code>Theme$isOcean(value)</code>, which returns a boolean.
+						</p>
 						<p>
 							Add <code>theme: Theme</code> to the model, initialise it with
 							<code>Coral</code>, and add <code>UserSelectedTheme(Theme)</code> to
@@ -441,9 +476,9 @@ export function mountGuide() {
 							<code>onFailure</code> creates <code>StorageFailed</code>. Each goes
 							through <code>update</code> to change the notice. These constructors
 							are imported with names such as <code>Msg$DesignSaved</code> and
-							aliased for readability. The generated exports can differ between
-							messages with and without data; use the imports shown in the complete
-							file.
+							used directly without aliases or <code>new</code>. The same pattern
+							applies to messages with and without data. Theme values use generated
+							functions such as <code>Theme$Ocean()</code>.
 						</p>
 						<p>
 							<code>localStorage</code> stores strings for this site in this browser.
@@ -601,7 +636,7 @@ export function mountGuide() {
 							behavior, and subscription cleanup. Run them with checkpoint 06
 							installed. Earlier checkpoints deliberately lack later features, so the
 							finished-app tests won’t pass against them. The production build
-							includes the homepage, <code>/demos/</code>, and <code>/tutorial/</code>.
+							includes all site pages, including the demos, docs, and this tutorial.
 						</p>
 						<h3>If something goes wrong</h3>
 						<ul>
@@ -642,7 +677,9 @@ export function mountGuide() {
 							<a href="https://github.com/bmehder/glimlit/tree/main/src/tutorial"
 								>finished app source</a
 							>
-							keeps the same four-file structure you built here.
+							keeps the same four-file structure you built here. For another example,
+							try the <a href="/recipes/">recipe box</a>: it adds several screens,
+							routing, and fetching using the same model–message–update loop.
 						</p>
 					</section>
 				</div>

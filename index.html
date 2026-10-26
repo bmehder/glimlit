@@ -32,7 +32,7 @@
             <a class="site-button" href="/tutorial/">Build your first app <span aria-hidden="true">↗</span></a>
             <a class="site-text-link" href="/demos/">Try the demos <span aria-hidden="true">→</span></a>
           </div>
-          <p class="hero-footnote">Gleam + lit-html. Your choice of CSS.</p>
+          <p class="hero-footnote">For small interactive islands. Gleam + lit-html. Your choice of CSS.</p>
         </div>
         <div class="code-window"
           aria-label="Gleam returns a model and effects separately; lit-html renders the view, and effect results return as messages">
@@ -61,11 +61,11 @@
           </div>
           <div id="view-example" class="code-panel" role="tabpanel" aria-labelledby="view-tab" tabindex="0">
             <pre><code><span class="syntax-function">html</span>`
-  <span class="syntax-tag">&lt;h1&gt;</span>${title(model)}<span class="syntax-tag">&lt;/h1&gt;</span>
+  <span class="syntax-tag">&lt;h1&gt;</span>${Model$Model$title(model)}<span class="syntax-tag">&lt;/h1&gt;</span>
   <span class="syntax-tag">&lt;input</span>
-    <span class="syntax-property">.value</span>=${title(model)}
+    <span class="syntax-property">.value</span>=${Model$Model$title(model)}
     <span class="syntax-property">@input</span>=${event =&gt; <span class="syntax-function">dispatch</span>(
-      <span class="syntax-keyword">new</span> <span class="syntax-type">UserChangedTitle</span>(event.currentTarget.value)
+      <span class="syntax-function">Msg$UserChangedTitle</span>(event.currentTarget.value)
     )}
   <span class="syntax-tag">&gt;</span>
 `</code></pre>
@@ -74,8 +74,8 @@
             hidden>
             <pre><code><span class="syntax-keyword">export const</span> <span class="syntax-function">saveTitle</span> = title =&gt; ({
   <span class="syntax-property">perform</span>: () =&gt; localStorage.<span class="syntax-function">setItem</span>(<span class="syntax-string">'title'</span>, title),
-  <span class="syntax-property">onSuccess</span>: () =&gt; <span class="syntax-function">titleSaved</span>(),
-  <span class="syntax-property">onFailure</span>: () =&gt; <span class="syntax-function">titleSaveFailed</span>(),
+  <span class="syntax-property">onSuccess</span>: () =&gt; <span class="syntax-function">Msg$TitleSaved</span>(),
+  <span class="syntax-property">onFailure</span>: () =&gt; <span class="syntax-function">Msg$TitleSaveFailed</span>(),
 })
 
 <span class="syntax-keyword">export const</span> <span class="syntax-function">log</span> = message =&gt; ({

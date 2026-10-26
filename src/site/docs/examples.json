@@ -13,7 +13,7 @@
   },
   "view": {
     "language": "javascript",
-    "source": "import { html, render } from 'lit-html'\nimport { live } from 'lit-html/directives/live.js'\nimport {\n  Model$Model$title as title,\n  UserChangedTitle,\n} from './app.mjs'\n\nexport function view(model, dispatch) {\n  const app = document.getElementById('app')\n  if (!app) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${title(model)}</h1>\n    <input .value=${live(title(model))}\n      @input=${event => dispatch(new UserChangedTitle(event.currentTarget.value))}>\n  `, app)\n}"
+    "source": "import { html, render } from 'lit-html'\nimport { live } from 'lit-html/directives/live.js'\nimport {\n  Model$Model$title,\n  Msg$UserChangedTitle,\n} from './app.mjs'\n\nexport function view(model, dispatch) {\n  const app = document.getElementById('app')\n  if (!app) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${Model$Model$title(model)}</h1>\n    <input .value=${live(Model$Model$title(model))}\n      @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}>\n  `, app)\n}"
   },
   "boundary": {
     "language": "gleam",
@@ -21,7 +21,7 @@
   },
   "effect": {
     "language": "javascript",
-    "source": "import {\n  Msg$TitleSaved as titleSaved,\n  Msg$TitleSaveFailed as titleSaveFailed,\n} from './app.mjs'\n\nexport const saveTitle = title => ({\n  perform: () => localStorage.setItem('title', title),\n  onSuccess: () => titleSaved(),\n  onFailure: () => titleSaveFailed(),\n})\n\nexport const log = message => ({\n  perform: () => console.log(message),\n})"
+    "source": "import {\n  Msg$TitleSaved,\n  Msg$TitleSaveFailed,\n} from './app.mjs'\n\nexport const saveTitle = title => ({\n  perform: () => localStorage.setItem('title', title),\n  onSuccess: () => Msg$TitleSaved(),\n  onFailure: () => Msg$TitleSaveFailed(),\n})\n\nexport const log = message => ({\n  perform: () => console.log(message),\n})"
   },
   "subscription": {
     "language": "javascript",
@@ -29,7 +29,7 @@
   },
   "manage": {
     "language": "javascript",
-    "source": "import { every } from './subscriptions.mjs'\nimport { Msg$ClockTicked as clockTicked } from './app.mjs'\n\nexport const startClock = () => ({\n  perform: ({ subscriptions, dispatch }) =>\n    subscriptions.start('clock', every(1000, clockTicked), dispatch),\n})\n\nexport const stopClock = () => ({\n  perform: ({ subscriptions }) => subscriptions.stop('clock'),\n})"
+    "source": "import { every } from './subscriptions.mjs'\nimport { Msg$ClockTicked } from './app.mjs'\n\nexport const startClock = () => ({\n  perform: ({ subscriptions, dispatch }) =>\n    subscriptions.start('clock', every(1000, Msg$ClockTicked), dispatch),\n})\n\nexport const stopClock = () => ({\n  perform: ({ subscriptions }) => subscriptions.stop('clock'),\n})"
   },
   "cleanup": {
     "language": "javascript",
@@ -53,18 +53,18 @@
   },
   "typed-view": {
     "language": "javascript",
-    "source": "// @ts-check\nimport { html, render } from 'lit-html'\nimport { Model$Model$title as title, UserChangedTitle } from './app.mjs'\n\n/** @typedef {import('./app.mjs').Model$} Model */\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/** @param {Model} model @param {(message: Msg) => void} dispatch */\nexport function view(model, dispatch) {\n  const mount = document.getElementById('app')\n  if (!mount) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${title(model)}</h1>\n    <button @click=${() => dispatch(new UserChangedTitle('Hello'))}>\n      Reset title\n    </button>\n  `, mount)\n}"
+    "source": "// @ts-check\nimport { html, render } from 'lit-html'\nimport { Model$Model$title, Msg$UserChangedTitle } from './app.mjs'\n\n/** @typedef {import('./app.mjs').Model$} Model */\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/** @param {Model} model @param {(message: Msg) => void} dispatch */\nexport function view(model, dispatch) {\n  const mount = document.getElementById('app')\n  if (!mount) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${Model$Model$title(model)}</h1>\n    <button @click=${() => dispatch(Msg$UserChangedTitle('Hello'))}>\n      Reset title\n    </button>\n  `, mount)\n}"
   },
   "typed-effect": {
     "language": "javascript",
-    "source": "// @ts-check\nimport {\n  Msg$TitleSaved as titleSaved,\n  Msg$TitleSaveFailed as titleSaveFailed,\n} from './app.mjs'\n\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/**\n * @param {string} title\n * @returns {import('../runtime/runner.mjs').Effect<void, Msg>}\n */\nexport const saveTitle = title => ({\n  perform: () => localStorage.setItem('title', title),\n  onSuccess: () => titleSaved(),\n  onFailure: () => titleSaveFailed(),\n})"
+    "source": "// @ts-check\nimport {\n  Msg$TitleSaved,\n  Msg$TitleSaveFailed,\n} from './app.mjs'\n\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/**\n * @param {string} title\n * @returns {import('../runtime/runner.mjs').Effect<void, Msg>}\n */\nexport const saveTitle = title => ({\n  perform: () => localStorage.setItem('title', title),\n  onSuccess: () => Msg$TitleSaved(),\n  onFailure: () => Msg$TitleSaveFailed(),\n})"
   },
   "browser-form": {
     "language": "javascript",
-    "source": "html`\n  <form @submit=${event => {\n    event.preventDefault()\n    const values = new FormData(event.currentTarget)\n    const title = String(values.get('title') ?? '')\n    dispatch(new TitleSubmitted(title))\n  }}>\n    <label>Title <input name=\"title\" required></label>\n    <button type=\"submit\">Save title</button>\n  </form>\n`"
+    "source": "html`\n  <form @submit=${event => {\n    event.preventDefault()\n    const values = new FormData(event.currentTarget)\n    const title = String(values.get('title') ?? '')\n    dispatch(Msg$TitleSubmitted(title))\n  }}>\n    <label>Title <input name=\"title\" required></label>\n    <button type=\"submit\">Save title</button>\n  </form>\n`"
   },
   "browser-confirmation": {
     "language": "javascript",
-    "source": "html`\n  <button @click=${() => {\n    if (window.confirm('Remove this recipe?')) {\n      dispatch(new UserConfirmedDelete(recipe.id))\n    }\n  }}>Remove recipe</button>\n`"
+    "source": "html`\n  <button @click=${() => {\n    if (window.confirm('Remove this recipe?')) {\n      dispatch(Msg$UserConfirmedDelete(Recipe$Recipe$id(recipe)))\n    }\n  }}>Remove recipe</button>\n`"
   }
 }

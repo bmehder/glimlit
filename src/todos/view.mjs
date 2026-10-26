@@ -1,46 +1,46 @@
 // @ts-check
 
 import { html, render, nothing } from 'lit-html'
-import { from_list as toArray } from '#gleam/array'
+import { from_list } from '#gleam/array'
 import { repeat } from 'lit-html/directives/repeat.js'
 import { live } from 'lit-html/directives/live.js'
 import {
-	Msg$UserClickedRunEffectOrdering as UserClickedRunEffectOrdering,
-	Msg$UserClickedStartResize as UserClickedStartResize,
-	Msg$UserClickedStopResize as UserClickedStopResize,
-	resize_can_start as resizeCanStart,
-	resize_can_stop as resizeCanStop,
-	resize_message as resizeMessage,
-	Model$Model$window_width as windowWidth,
-	Model$Model$window_height as windowHeight,
-	Msg$UserClickedStartClock as UserClickedStartClock,
-	Msg$UserClickedStopClock as UserClickedStopClock,
-	clock_can_start as clockCanStart,
-	clock_can_stop as clockCanStop,
-	clock_message as clockMessage,
-	Model$Model$clock_time as clockTime,
-	Msg$UserClickedFetchTodo as UserClickedFetchTodo,
-	is_fetching as isFetching,
-	fetch_message as fetchMessage,
-	Msg$UserTypedNewTodo as UserTypedNewTodo,
-	Msg$UserSubmittedNewTodo as UserSubmittedNewTodo,
-	Msg$UserToggledTodoCompletion as UserToggledTodoCompletion,
-	Msg$UserClickedEditTodo as UserClickedEditTodo,
-	Msg$UserTypedTodoEdit as UserTypedTodoEdit,
-	Msg$UserSubmittedTodoEdit as UserSubmittedTodoEdit,
-	Msg$UserClickedCancelTodoEdit as UserClickedCancelTodoEdit,
-	Msg$UserClickedDeleteTodo as UserClickedDeleteTodo,
-	storage_message as storageMessage,
-	Model$Model$todos as todos,
-	Model$Model$draft as draft,
-	Model$Model$editing as editing,
-	Editing$isEditing as isEditing,
-	Editing$Editing$id as editingId,
-	Editing$Editing$text as editText,
-	Status$isCompleted as isCompleted,
-	Todo$Todo$id as id,
-	Todo$Todo$title as title,
-	Todo$Todo$status as status,
+	Msg$UserClickedRunEffectOrdering,
+	Msg$UserClickedStartResize,
+	Msg$UserClickedStopResize,
+	resize_can_start,
+	resize_can_stop,
+	resize_message,
+	Model$Model$window_width,
+	Model$Model$window_height,
+	Msg$UserClickedStartClock,
+	Msg$UserClickedStopClock,
+	clock_can_start,
+	clock_can_stop,
+	clock_message,
+	Model$Model$clock_time,
+	Msg$UserClickedFetchTodo,
+	is_fetching,
+	fetch_message,
+	Msg$UserTypedNewTodo,
+	Msg$UserSubmittedNewTodo,
+	Msg$UserToggledTodoCompletion,
+	Msg$UserClickedEditTodo,
+	Msg$UserTypedTodoEdit,
+	Msg$UserSubmittedTodoEdit,
+	Msg$UserClickedCancelTodoEdit,
+	Msg$UserClickedDeleteTodo,
+	storage_message,
+	Model$Model$todos,
+	Model$Model$draft,
+	Model$Model$editing,
+	Editing$isEditing,
+	Editing$Editing$id,
+	Editing$Editing$text,
+	Status$isCompleted,
+	Todo$Todo$id,
+	Todo$Todo$title,
+	Todo$Todo$status,
 } from './todos.mjs'
 
 /** @typedef {import('./todos.mjs').Model$} Model */
@@ -56,30 +56,30 @@ export function view(model, dispatch) {
 	if (!app) throw new Error('Missing #app mount element')
 
 	/** @type {Todo[]} */
-	const items = toArray(todos(model))
-	const remaining = items.filter(todo => !isCompleted(status(todo))).length
+	const items = from_list(Model$Model$todos(model))
+	const remaining = items.filter(todo => !Status$isCompleted(Todo$Todo$status(todo))).length
 
 	/** @type {InputHandler} */
 	const handleNewTodoInput = event => {
-		dispatch(UserTypedNewTodo(event.currentTarget.value))
+		dispatch(Msg$UserTypedNewTodo(event.currentTarget.value))
 	}
-	const handleNewTodoSubmit = submit(UserSubmittedNewTodo(), dispatch)
-	const handleStartClock = () => dispatch(UserClickedStartClock())
-	const handleStopClock = () => dispatch(UserClickedStopClock())
-	const handleStartResize = () => dispatch(UserClickedStartResize())
-	const handleStopResize = () => dispatch(UserClickedStopResize())
-	const handleFetchTodo = () => dispatch(UserClickedFetchTodo())
-	const handleRunEffectOrdering = () => dispatch(UserClickedRunEffectOrdering())
+	const handleNewTodoSubmit = submit(Msg$UserSubmittedNewTodo(), dispatch)
+	const handleStartClock = () => dispatch(Msg$UserClickedStartClock())
+	const handleStopClock = () => dispatch(Msg$UserClickedStopClock())
+	const handleStartResize = () => dispatch(Msg$UserClickedStartResize())
+	const handleStopResize = () => dispatch(Msg$UserClickedStopResize())
+	const handleFetchTodo = () => dispatch(Msg$UserClickedFetchTodo())
+	const handleRunEffectOrdering = () => dispatch(Msg$UserClickedRunEffectOrdering())
 
-	const canAdd = Boolean(draft(model).trim())
-	const time = clockTime(model)
+	const canAdd = Boolean(Model$Model$draft(model).trim())
+	const time = Model$Model$clock_time(model)
 	const clockText = time === 0 ? '—' : new Date(time).toLocaleTimeString()
-	const width = windowWidth(model)
-	const windowSize = width === 0 ? '—' : `${width} × ${windowHeight(model)}`
-	const fetchLabel = isFetching(model) ? 'Fetching…' : 'Fetch example todo'
+	const width = Model$Model$window_width(model)
+	const windowSize = width === 0 ? '—' : `${width} × ${Model$Model$window_height(model)}`
+	const fetchLabel = is_fetching(model) ? 'Fetching…' : 'Fetch example todo'
 	const rows = repeat(
 		items,
-		todo => id(todo),
+		todo => Todo$Todo$id(todo),
 		todo => todoRow(todo, model, dispatch),
 	)
 
@@ -96,7 +96,7 @@ export function view(model, dispatch) {
 						class="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-teal-400 focus:outline-none"
 						placeholder="What needs doing?"
 						autocomplete="off"
-						.value=${live(draft(model))}
+						.value=${live(Model$Model$draft(model))}
 						@input=${handleNewTodoInput}
 					/>
 				</div>
@@ -131,7 +131,7 @@ export function view(model, dispatch) {
 					<button
 						type="button"
 						class="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700 disabled:cursor-default disabled:opacity-40"
-						?disabled=${!clockCanStart(model)}
+						?disabled=${!clock_can_start(model)}
 						@click=${handleStartClock}
 					>
 						Start clock
@@ -139,14 +139,14 @@ export function view(model, dispatch) {
 					<button
 						type="button"
 						class="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700 disabled:cursor-default disabled:opacity-40"
-						?disabled=${!clockCanStop(model)}
+						?disabled=${!clock_can_stop(model)}
 						@click=${handleStopClock}
 					>
 						Stop clock
 					</button>
 				</div>
 				<p class="mt-3 text-sm text-slate-400" role="status">
-					${clockMessage(model)}
+					${clock_message(model)}
 				</p>
 			</section>
 			<section
@@ -159,7 +159,7 @@ export function view(model, dispatch) {
 					<button
 						type="button"
 						class="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700 disabled:cursor-default disabled:opacity-40"
-						?disabled=${!resizeCanStart(model)}
+						?disabled=${!resize_can_start(model)}
 						@click=${handleStartResize}
 					>
 						Watch window size
@@ -167,14 +167,14 @@ export function view(model, dispatch) {
 					<button
 						type="button"
 						class="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm hover:bg-slate-700 disabled:cursor-default disabled:opacity-40"
-						?disabled=${!resizeCanStop(model)}
+						?disabled=${!resize_can_stop(model)}
 						@click=${handleStopResize}
 					>
 						Stop watching
 					</button>
 				</div>
 				<p class="mt-3 text-sm text-slate-400" role="status">
-					${resizeMessage(model)}
+					${resize_message(model)}
 				</p>
 			</section>
 			<section
@@ -184,13 +184,13 @@ export function view(model, dispatch) {
 				<button
 					type="button"
 					class="cursor-pointer rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-teal-400 disabled:cursor-wait disabled:opacity-50"
-					?disabled=${isFetching(model)}
+					?disabled=${is_fetching(model)}
 					@click=${handleFetchTodo}
 				>
 					${fetchLabel}
 				</button>
 				<p class="mt-3 text-sm text-slate-400" role="status">
-					${fetchMessage(model)}
+					${fetch_message(model)}
 				</p>
 			</section>
 			<section
@@ -210,7 +210,7 @@ export function view(model, dispatch) {
 					Run effect ordering example
 				</button>
 			</section>
-			<p class="mt-8 text-xs text-slate-500">${storageMessage(model)}</p>
+			<p class="mt-8 text-xs text-slate-500">${storage_message(model)}</p>
 		`,
 		app,
 	)
@@ -218,19 +218,19 @@ export function view(model, dispatch) {
 
 /** @param {Todo} todo @param {Model} model @param {Dispatch} dispatch */
 function todoRow(todo, model, dispatch) {
-	const edit = editing(model)
-	const editingThisTodo = isEditing(edit) && editingId(edit) === id(todo)
-	const text = editingThisTodo ? editText(edit) : ''
-	const done = isCompleted(status(todo))
+	const edit = Model$Model$editing(model)
+	const editingThisTodo = Editing$isEditing(edit) && Editing$Editing$id(edit) === Todo$Todo$id(todo)
+	const text = editingThisTodo ? Editing$Editing$text(edit) : ''
+	const done = Status$isCompleted(Todo$Todo$status(todo))
 
-	const handleToggleCompletion = () => dispatch(UserToggledTodoCompletion(id(todo)))
-	const handleEdit = () => dispatch(UserClickedEditTodo(id(todo)))
-	const handleDelete = () => openDeleteDialog(id(todo))
+	const handleToggleCompletion = () => dispatch(Msg$UserToggledTodoCompletion(Todo$Todo$id(todo)))
+	const handleEdit = () => dispatch(Msg$UserClickedEditTodo(Todo$Todo$id(todo)))
+	const handleDelete = () => openDeleteDialog(Todo$Todo$id(todo))
 	/** @param {Event} event */
 	const handleDeleteDialogClose = event => {
 		const dialog = event.currentTarget
 		if (dialog instanceof HTMLDialogElement && dialog.returnValue === 'delete') {
-			dispatch(UserClickedDeleteTodo(id(todo)))
+			dispatch(Msg$UserClickedDeleteTodo(Todo$Todo$id(todo)))
 		}
 	}
 	return html`
@@ -239,33 +239,33 @@ function todoRow(todo, model, dispatch) {
 				<input
 					type="checkbox"
 					class="mt-1 size-5 shrink-0 cursor-pointer accent-teal-400"
-					aria-label=${`Mark ${title(todo)} ${done ? 'incomplete' : 'complete'}`}
+					aria-label=${`Mark ${Todo$Todo$title(todo)} ${done ? 'incomplete' : 'complete'}`}
 					.checked=${live(done)}
 					@change=${handleToggleCompletion}
 				/>
 				<span
 					class=${`min-w-0 flex-1 break-words ${done ? 'text-slate-500 line-through' : 'text-slate-100'}`}
-					>${title(todo)}</span
+					>${Todo$Todo$title(todo)}</span
 				>
 				${editingThisTodo ? nothing : button('Edit', handleEdit)}
 				${button('Delete', handleDelete)}
 			</div>
 			<dialog
-				id=${`delete-todo-${id(todo)}`}
+				id=${`delete-todo-${Todo$Todo$id(todo)}`}
 				class="m-auto w-[calc(100%-3rem)] max-w-md rounded-2xl border border-slate-600 bg-slate-900 p-7 text-slate-100 shadow-2xl backdrop:bg-slate-950/70"
-				aria-labelledby=${`delete-title-${id(todo)}`}
-				aria-describedby=${`delete-description-${id(todo)}`}
+				aria-labelledby=${`delete-title-${Todo$Todo$id(todo)}`}
+				aria-describedby=${`delete-description-${Todo$Todo$id(todo)}`}
 				@close=${handleDeleteDialogClose}
 			>
 				<form method="dialog">
-					<h2 class="text-2xl font-semibold" id=${`delete-title-${id(todo)}`}>
+					<h2 class="text-2xl font-semibold" id=${`delete-title-${Todo$Todo$id(todo)}`}>
 						Delete todo?
 					</h2>
 					<p
 						class="mt-3 text-slate-300 wrap-anywhere"
-						id=${`delete-description-${id(todo)}`}
+						id=${`delete-description-${Todo$Todo$id(todo)}`}
 					>
-						“${title(todo)}” will be removed from your list.
+						“${Todo$Todo$title(todo)}” will be removed from your list.
 					</p>
 					<div class="mt-7 flex flex-wrap justify-end gap-3">
 						<button
@@ -284,7 +284,7 @@ function todoRow(todo, model, dispatch) {
 					</div>
 				</form>
 			</dialog>
-			${editingThisTodo ? editForm(id(todo), text, dispatch) : nothing}
+			${editingThisTodo ? editForm(Todo$Todo$id(todo), text, dispatch) : nothing}
 		</li>
 	`
 }
@@ -293,10 +293,10 @@ function todoRow(todo, model, dispatch) {
 function editForm(todoId, text, dispatch) {
 	/** @type {InputHandler} */
 	const handleEditInput = event => {
-		dispatch(UserTypedTodoEdit(event.currentTarget.value))
+		dispatch(Msg$UserTypedTodoEdit(event.currentTarget.value))
 	}
-	const handleEditSubmit = submit(UserSubmittedTodoEdit(), dispatch)
-	const handleCancelEdit = () => dispatch(UserClickedCancelTodoEdit())
+	const handleEditSubmit = submit(Msg$UserSubmittedTodoEdit(), dispatch)
+	const handleCancelEdit = () => dispatch(Msg$UserClickedCancelTodoEdit())
 
 	return html`
 		<form class="mt-4 flex flex-wrap items-end gap-3" @submit=${handleEditSubmit}>

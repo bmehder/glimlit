@@ -2,11 +2,11 @@
 
 import { html, render } from 'lit-html'
 import {
-	UserClickedIncrement,
-	UserClickedIncrementBy10,
-	UserClickedDecrement,
-	UserClickedReset,
-	Model$Model$count as count,
+	Msg$UserClickedIncrement,
+	Msg$UserClickedIncrementBy10,
+	Msg$UserClickedDecrement,
+	Msg$UserClickedReset,
+	Model$Model$count,
 } from './counter.mjs'
 
 /**
@@ -23,18 +23,18 @@ export function view(model, dispatch) {
 			<h2 class="text-xl font-semibold">Counter</h2>
 			<p class="my-8">
 				<output class="text-6xl font-medium tabular-nums" aria-live="polite"
-					>${count(model)}</output
+					>${Model$Model$count(model)}</output
 				>
 			</p>
-			${button('−', 'Decrease count', new UserClickedDecrement(), dispatch)}
-			${button('+', 'Increase count', new UserClickedIncrement(), dispatch)}
+			${button('−', 'Decrease count', Msg$UserClickedDecrement(), dispatch)}
+			${button('+', 'Increase count', Msg$UserClickedIncrement(), dispatch)}
 			${button(
 				'+10',
 				'Increase count by 10',
-				new UserClickedIncrementBy10(),
+				Msg$UserClickedIncrementBy10(),
 				dispatch,
 			)}
-			${button('Reset', 'Reset count', new UserClickedReset(), dispatch)}
+			${button('Reset', 'Reset count', Msg$UserClickedReset(), dispatch)}
 		`,
 		app,
 	)

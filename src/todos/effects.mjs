@@ -2,20 +2,20 @@
 
 import { every, windowResize } from './subscriptions.mjs'
 import {
-	Msg$WindowResizeStarted as windowResizeStarted,
-	Msg$WindowResized as windowResized,
-	Msg$WindowResizeStopped as windowResizeStopped,
-	Msg$WindowResizeSubscriptionFailed as windowResizeSubscriptionFailed,
-	Msg$ClockStarted as clockStarted,
-	Msg$ClockTicked as clockTicked,
-	Msg$ClockStopped as clockStopped,
-	Msg$ClockSubscriptionFailed as clockSubscriptionFailed,
-	Msg$HttpReturnedTodo as httpReturnedTodo,
-	Msg$HttpTodoRequestFailed as httpTodoRequestFailed,
-	Msg$LocalStorageReturnedTodos as localStorageReturnedTodos,
-	Msg$LocalStorageHadNoTodos as localStorageHadNoTodos,
-	Msg$LocalStorageSavedTodos as localStorageSavedTodos,
-	Msg$LocalStorageFailed as localStorageFailed,
+	Msg$WindowResizeStarted,
+	Msg$WindowResized,
+	Msg$WindowResizeStopped,
+	Msg$WindowResizeSubscriptionFailed,
+	Msg$ClockStarted,
+	Msg$ClockTicked,
+	Msg$ClockStopped,
+	Msg$ClockSubscriptionFailed,
+	Msg$HttpReturnedTodo,
+	Msg$HttpTodoRequestFailed,
+	Msg$LocalStorageReturnedTodos,
+	Msg$LocalStorageHadNoTodos,
+	Msg$LocalStorageSavedTodos,
+	Msg$LocalStorageFailed,
 } from './todos.mjs'
 
 /** @typedef {import('./todos.mjs').Msg$} Msg */
@@ -27,8 +27,8 @@ export function loadTodos() {
 	return {
 		perform: () => localStorage.getItem(key),
 		onSuccess: saved =>
-			saved === null ? localStorageHadNoTodos() : localStorageReturnedTodos(saved),
-		onFailure: () => localStorageFailed('Browser storage is unavailable.'),
+			saved === null ? Msg$LocalStorageHadNoTodos() : Msg$LocalStorageReturnedTodos(saved),
+		onFailure: () => Msg$LocalStorageFailed('Browser storage is unavailable.'),
 	}
 }
 
@@ -36,8 +36,8 @@ export function loadTodos() {
 export function saveTodos(json) {
 	return {
 		perform: () => localStorage.setItem(key, json),
-		onSuccess: () => localStorageSavedTodos(),
-		onFailure: () => localStorageFailed('Browser storage is unavailable.'),
+		onSuccess: () => Msg$LocalStorageSavedTodos(),
+		onFailure: () => Msg$LocalStorageFailed('Browser storage is unavailable.'),
 	}
 }
 
@@ -67,9 +67,9 @@ export function fetchExample() {
 			if (!response.ok) throw new Error(`HTTP ${response.status}`)
 			return response.text()
 		},
-		onSuccess: httpReturnedTodo,
+		onSuccess: Msg$HttpReturnedTodo,
 		onFailure: error =>
-			httpTodoRequestFailed(
+			Msg$HttpTodoRequestFailed(
 				error instanceof Error ? error.message : 'Network request failed.',
 			),
 	}
@@ -79,9 +79,9 @@ export function fetchExample() {
 export function startClock() {
 	return {
 		perform: ({ subscriptions, dispatch }) =>
-			subscriptions.start('clock', every(1000, clockTicked), dispatch),
-		onSuccess: clockStarted,
-		onFailure: () => clockSubscriptionFailed('Could not manage the clock.'),
+			subscriptions.start('clock', every(1000, Msg$ClockTicked), dispatch),
+		onSuccess: Msg$ClockStarted,
+		onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
 	}
 }
 
@@ -89,8 +89,8 @@ export function startClock() {
 export function stopClock() {
 	return {
 		perform: ({ subscriptions }) => subscriptions.stop('clock'),
-		onSuccess: clockStopped,
-		onFailure: () => clockSubscriptionFailed('Could not manage the clock.'),
+		onSuccess: Msg$ClockStopped,
+		onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
 	}
 }
 
@@ -98,9 +98,9 @@ export function stopClock() {
 export function startResize() {
 	return {
 		perform: ({ subscriptions, dispatch }) =>
-			subscriptions.start('window-resize', windowResize(windowResized), dispatch),
-		onSuccess: windowResizeStarted,
-		onFailure: () => windowResizeSubscriptionFailed('Could not watch window size.'),
+			subscriptions.start('window-resize', windowResize(Msg$WindowResized), dispatch),
+		onSuccess: Msg$WindowResizeStarted,
+		onFailure: () => Msg$WindowResizeSubscriptionFailed('Could not watch window size.'),
 	}
 }
 
@@ -108,8 +108,8 @@ export function startResize() {
 export function stopResize() {
 	return {
 		perform: ({ subscriptions }) => subscriptions.stop('window-resize'),
-		onSuccess: windowResizeStopped,
+		onSuccess: Msg$WindowResizeStopped,
 		onFailure: () =>
-			windowResizeSubscriptionFailed('Could not stop watching window size.'),
+			Msg$WindowResizeSubscriptionFailed('Could not stop watching window size.'),
 	}
 }

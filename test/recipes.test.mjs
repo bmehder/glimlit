@@ -6,14 +6,14 @@ import { run } from '../src/runtime/runner.mjs'
 import { load, save, fetchSamples, storageKey } from '../build/dev/javascript/glimlit/recipes/effects.mjs'
 import { hashRoute } from '../build/dev/javascript/glimlit/recipes/subscriptions.mjs'
 
-const ready = () => app.update(app.init()[0], new app.LocalStorageHadNoRecipes())[0]
+const ready = () => app.update(app.init()[0], app.Msg$LocalStorageHadNoRecipes())[0]
 const update = (model, message) => app.update(model, message)[0]
 const samples = () => app.encode_collection(app.starter_recipes())
 
 test('recipe routes round-trip, support deep links, and reject unknown addresses', () => {
-  for (const [hash, type, id] of [['#/',app.Collection],['#/new',app.New],['#/recipe/2',app.Detail,2],['#/recipe/2/edit',app.Edit,2]]) {
+  for (const [hash, matchesRoute, id] of [['#/',app.Route$isCollection],['#/new',app.Route$isNew],['#/recipe/2',app.Route$isDetail,2],['#/recipe/2/edit',app.Route$isEdit,2]]) {
     const parsed = app.parse_route(hash)
-    assert.ok(parsed instanceof type)
+    assert.ok(matchesRoute(parsed))
     assert.equal(app.route_path(parsed), hash)
     if (id) {
       const recipeId = app.Route$isDetail(parsed)
@@ -22,7 +22,7 @@ test('recipe routes round-trip, support deep links, and reject unknown addresses
       assert.equal(recipeId, id)
     }
   }
-  for (const hash of ['#/unknown', '#/recipe/0', '#/recipe/-1', '#/recipe/nope', '#/recipe/1/extra']) assert.ok(app.parse_route(hash) instanceof app.NotFound)
+  for (const hash of ['#/unknown', '#/recipe/0', '#/recipe/-1', '#/recipe/nope', '#/recipe/1/extra']) assert.ok(app.Route$isNotFound(app.parse_route(hash)))
 })
 
 test('recipe JSON validates versions, fields, unique IDs, and empty collections', () => {
@@ -36,76 +36,76 @@ test('recipe JSON validates versions, fields, unique IDs, and empty collections'
 })
 
 test('editor validation blocks submission and update commits trimmed recipes', () => {
-  let model = update(ready(), new app.BrowserHashChanged('#/new'))
+  let model = update(ready(), app.Msg$BrowserHashChanged('#/new'))
   const original = model
-  const [invalid, effects] = app.update(model, new app.UserSubmittedRecipe())
+  const [invalid, effects] = app.update(model, app.Msg$UserSubmittedRecipe())
   assert.equal(toArray(invalid.editor.errors).length,3)
   assert.equal(toArray(effects).length,1)
   assert.equal(toArray(original.editor.errors).length,0)
   model = invalid
-  for (const message of [new app.UserChangedTitle('  My soup  '), new app.UserChangedIngredients('  Carrots\nStock  '), new app.UserChangedInstructions('  Simmer.  '), new app.UserChangedMinutes('25')]) model = update(model,message)
+  for (const message of [app.Msg$UserChangedTitle('  My soup  '), app.Msg$UserChangedIngredients('  Carrots\nStock  '), app.Msg$UserChangedInstructions('  Simmer.  '), app.Msg$UserChangedMinutes('25')]) model = update(model,message)
   assert.equal(toArray(model.editor.errors).length, 0)
   assert.equal(toArray(invalid.editor.errors).length, 3)
-  const [saved, work] = app.update(model,new app.UserSubmittedRecipe())
-  assert.ok(saved.route instanceof app.Detail)
+  const [saved, work] = app.update(model,app.Msg$UserSubmittedRecipe())
+  assert.ok(app.Route$isDetail(saved.route))
   assert.equal(toArray(saved.recipes).length,4)
   assert.equal(toArray(saved.recipes).at(-1).title,'My soup')
   assert.equal(toArray(saved.recipes).at(-1).minutes,25)
-  assert.ok(saved.save_status instanceof app.Saving)
+  assert.ok(app.SaveStatus$isSaving(saved.save_status))
   assert.equal(toArray(work).length,2)
   assert.equal(toArray(app.starter_recipes()).length,3)
 })
 
 test('editing preserves IDs and favourites; filters and deletions share the parent collection', () => {
-  let model = update(ready(),new app.BrowserHashChanged('#/recipe/1/edit'))
+  let model = update(ready(),app.Msg$BrowserHashChanged('#/recipe/1/edit'))
   assert.equal(model.editor.title,toArray(model.recipes)[0].title)
-  model = update(model,new app.UserChangedTitle('Changed title'))
-  model = update(model,new app.UserSubmittedRecipe())
+  model = update(model,app.Msg$UserChangedTitle('Changed title'))
+  model = update(model,app.Msg$UserSubmittedRecipe())
   assert.equal(toArray(model.recipes)[0].id,1)
   assert.equal(toArray(model.recipes)[0].favorite, true)
-  model=update(model,new app.UserChangedQuery(' TOMATO '))
+  model=update(model,app.Msg$UserChangedQuery(' TOMATO '))
   assert.equal(toArray(app.visible_recipes(model)).length,1)
-  model=update(model,new app.UserToggledFavorites())
+  model=update(model,app.Msg$UserToggledFavorites())
   assert.equal(toArray(app.visible_recipes(model)).length,0)
   // The view sends a confirmed decision; a nonexistent recipe remains a no-op.
-  assert.equal(update(model, new app.UserConfirmedDelete(999)), model)
-  model=update(model,new app.UserConfirmedDelete(1))
+  assert.equal(update(model, app.Msg$UserConfirmedDelete(999)), model)
+  model=update(model,app.Msg$UserConfirmedDelete(1))
   assert.equal(toArray(model.recipes).length,2)
-  assert.ok(model.route instanceof app.Collection)
+  assert.ok(app.Route$isCollection(model.route))
 })
 
 test('unreadable storage is not overwritten automatically and missing recipes cannot be edited', () => {
   const [initial] = app.init()
-  const [broken,effects] = app.update(initial,new app.LocalStorageReturnedRecipes('broken JSON'))
-  assert.ok(broken.storage instanceof app.LoadFailed)
+  const [broken,effects] = app.update(initial,app.Msg$LocalStorageReturnedRecipes('broken JSON'))
+  assert.ok(app.Storage$isLoadFailed(broken.storage))
   assert.deepEqual(toArray(effects),[])
-  assert.equal(update(initial,new app.UserToggledFavorite(1)),initial)
-  const absent=update(ready(),new app.BrowserHashChanged('#/recipe/999/edit'))
-  const [same,work]=app.update(absent,new app.UserSubmittedRecipe())
+  assert.equal(update(initial,app.Msg$UserToggledFavorite(1)),initial)
+  const absent=update(ready(),app.Msg$BrowserHashChanged('#/recipe/999/edit'))
+  const [same,work]=app.update(absent,app.Msg$UserSubmittedRecipe())
   assert.equal(same,absent)
   assert.deepEqual(toArray(work),[])
 })
 
 test('late save messages and superseded or cancelled imports cannot change current state', () => {
-  let model=update(ready(),new app.UserToggledFavorite(1))
+  let model=update(ready(),app.Msg$UserToggledFavorite(1))
   const firstSaveId=model.save_id
-  model=update(model,new app.UserToggledFavorite(2))
-  assert.equal(update(model,new app.LocalStorageSaveFailed(firstSaveId,'old failure')),model)
-  assert.equal(update(model,new app.LocalStorageSavedRecipes(firstSaveId)),model)
-  model=update(model,new app.LocalStorageSaveFailed(model.save_id,'storage full'))
-  assert.ok(model.save_status instanceof app.SaveFailed)
-  model=update(model,new app.UserClickedRetrySave())
-  assert.ok(model.save_status instanceof app.Saving)
-  model=update(model,new app.UserClickedImportSamples())
+  model=update(model,app.Msg$UserToggledFavorite(2))
+  assert.equal(update(model,app.Msg$LocalStorageSaveFailed(firstSaveId,'old failure')),model)
+  assert.equal(update(model,app.Msg$LocalStorageSavedRecipes(firstSaveId)),model)
+  model=update(model,app.Msg$LocalStorageSaveFailed(model.save_id,'storage full'))
+  assert.ok(app.SaveStatus$isSaveFailed(model.save_status))
+  model=update(model,app.Msg$UserClickedRetrySave())
+  assert.ok(app.SaveStatus$isSaving(model.save_status))
+  model=update(model,app.Msg$UserClickedImportSamples())
   const first=model.import_request_id
-  model=update(model,new app.UserClickedImportSamples())
-  assert.equal(update(model,new app.HttpReturnedSamples(first,samples())),model)
+  model=update(model,app.Msg$UserClickedImportSamples())
+  assert.equal(update(model,app.Msg$HttpReturnedSamples(first,samples())),model)
   const cancelled=model.import_request_id
-  model=update(model,new app.UserCancelledImport())
-  assert.equal(update(model,new app.HttpReturnedSamples(cancelled,samples())),model)
-  assert.equal(update(model,new app.HttpSamplesRequestFailed(cancelled,'old failure')),model)
-  model=update(model,new app.UserClickedImportSamples())
-  model=update(model,new app.HttpReturnedSamples(model.import_request_id,samples()))
+  model=update(model,app.Msg$UserCancelledImport())
+  assert.equal(update(model,app.Msg$HttpReturnedSamples(cancelled,samples())),model)
+  assert.equal(update(model,app.Msg$HttpSamplesRequestFailed(cancelled,'old failure')),model)
+  model=update(model,app.Msg$UserClickedImportSamples())
+  model=update(model,app.Msg$HttpReturnedSamples(model.import_request_id,samples()))
   assert.equal(toArray(model.recipes).length,3)
   assert.equal(toArray(model.recipes)[0].favorite, false)
 })
@@ -119,18 +119,18 @@ test('storage and HTTP effects are deferred and report expected failures as mess
   assert.equal(values.size,0)
   await run(work,msg=>messages.push(msg))
   assert.equal(values.get(storageKey),'saved')
-  assert.ok(messages.at(-1) instanceof app.LocalStorageSavedRecipes)
+  assert.ok(app.Msg$isLocalStorageSavedRecipes(messages.at(-1)))
   await run(load(),msg=>messages.push(msg))
   assert.equal(app.Msg$LocalStorageReturnedRecipes$json(messages.at(-1)), 'saved')
   globalThis.localStorage={getItem:()=>{throw Error('denied')},setItem:()=>{throw Error('denied')}}
   await run(save('new',8),msg=>messages.push(msg))
-  assert.ok(messages.at(-1) instanceof app.LocalStorageSaveFailed)
+  assert.ok(app.Msg$isLocalStorageSaveFailed(messages.at(-1)))
   globalThis.fetch=async()=>({ok:false,status:503})
   await run(fetchSamples(2),msg=>messages.push(msg))
-  assert.ok(messages.at(-1) instanceof app.HttpSamplesRequestFailed)
+  assert.ok(app.Msg$isHttpSamplesRequestFailed(messages.at(-1)))
   globalThis.fetch=async()=>({ok:true,text:async()=>samples()})
   await run(fetchSamples(3),msg=>messages.push(msg))
-  assert.ok(messages.at(-1) instanceof app.HttpReturnedSamples)
+  assert.ok(app.Msg$isHttpReturnedSamples(messages.at(-1)))
   assert.equal(app.Msg$HttpReturnedSamples$request(messages.at(-1)), 3)
 })
 
@@ -159,30 +159,30 @@ test('sample imports keep local recipes, assign noncolliding IDs, and skip dupli
       { ...original.recipes[2], id: 12, title: 'New stew' },
     ],
   }
-  model = update(model, new app.UserClickedImportSamples())
+  model = update(model, app.Msg$UserClickedImportSamples())
   const before = model
-  model = update(model, new app.HttpReturnedSamples(model.import_request_id, JSON.stringify(incoming)))
+  model = update(model, app.Msg$HttpReturnedSamples(model.import_request_id, JSON.stringify(incoming)))
   const recipes = toArray(model.recipes)
   assert.equal(recipes.length, 5)
   assert.deepEqual(recipes.slice(0, 3), toArray(before.recipes))
   assert.equal(recipes[0].favorite, true)
   assert.deepEqual(recipes.slice(3).map(r => [r.id, r.title]), [[4, 'New soup'], [5, 'New stew']])
   assert.equal(toArray(before.recipes).length, 3)
-  assert.ok(model.save_status instanceof app.Saving)
+  assert.ok(app.SaveStatus$isSaving(model.save_status))
 })
 
 
 test('editor time validation rejects invalid input and accepts both duration boundaries', () => {
   let draft = ready()
-  for (const message of [new app.UserChangedTitle('Soup'), new app.UserChangedIngredients('Stock'), new app.UserChangedInstructions('Simmer')]) draft = update(draft, message)
+  for (const message of [app.Msg$UserChangedTitle('Soup'), app.Msg$UserChangedIngredients('Stock'), app.Msg$UserChangedInstructions('Simmer')]) draft = update(draft, message)
   for (const value of ['', 'nope', '1.5', '-1', '0', '1441']) {
-    const invalid = update(draft, new app.UserChangedMinutes(value))
+    const invalid = update(draft, app.Msg$UserChangedMinutes(value))
     const result = app.validate_editor(invalid.editor, 1, false)
     assert.equal(result.constructor.name, 'Error', value)
     assert.equal(toArray(result[0]).length, 1)
   }
   for (const value of ['1', '1440']) {
-    const valid = update(draft, new app.UserChangedMinutes(value))
+    const valid = update(draft, app.Msg$UserChangedMinutes(value))
     const result = app.validate_editor(valid.editor, 1, false)
     assert.equal(result.constructor.name, 'Ok', value)
     assert.equal(result[0].minutes, Number(value))

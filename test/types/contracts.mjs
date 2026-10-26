@@ -1,8 +1,8 @@
 // These examples are type-checked, not executed. Each expected error must remain
 // an error, so the checks fail if the generated/runtime types stop catching it.
 import {
-  UserTypedNewTodo,
-  Model$Model$draft as draft,
+  Msg$UserTypedNewTodo,
+  Model$Model$draft,
 } from '../../build/dev/javascript/glimlit/todos/todos.mjs'
 
 /** @typedef {import('../../build/dev/javascript/glimlit/todos/todos.mjs').Model$} Model */
@@ -10,9 +10,9 @@ import {
 
 /** @param {Model} model @param {(message: Msg) => void} dispatch */
 export function viewContract(model, dispatch) {
-  dispatch(new UserTypedNewTodo(draft(model)))
+  dispatch(Msg$UserTypedNewTodo(Model$Model$draft(model)))
   // @ts-expect-error The generated constructor requires a string payload.
-  new UserTypedNewTodo(123)
+  Msg$UserTypedNewTodo(123)
   // @ts-expect-error The generated model has no such field.
   model.missingField
   // @ts-expect-error Dispatch accepts app messages, not arbitrary values.
@@ -22,8 +22,8 @@ export function viewContract(model, dispatch) {
 /** @type {import('../../src/runtime/runner.mjs').Effect<string, Msg>} */
 export const validEffect = {
   perform: async () => 'Saved',
-  onSuccess: title => new UserTypedNewTodo(title),
-  onFailure: () => new UserTypedNewTodo('Could not save'),
+  onSuccess: title => Msg$UserTypedNewTodo(title),
+  onFailure: () => Msg$UserTypedNewTodo('Could not save'),
 }
 
 /** @type {import('../../src/runtime/runner.mjs').Effect<string, Msg>} */
@@ -37,7 +37,7 @@ export const invalidEffect = {
 /** @type {import('../../src/runtime/subscriptions.mjs').Subscription<Msg>} */
 export const validSubscription = {
   start: emit => {
-    emit(new UserTypedNewTodo('Listening'))
+    emit(Msg$UserTypedNewTodo('Listening'))
     // @ts-expect-error emit accepts the annotated app message type.
     emit('not a message')
     return () => {}

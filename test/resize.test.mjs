@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { from_list as toArray } from '#gleam/array';
 import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
 import {
-  init, update, UserClickedStartResize, UserClickedStopResize,
-  UserClickedStartClock, UserClickedStopClock,
+  init, update, Msg$UserClickedStartResize, Msg$UserClickedStopResize,
+  Msg$UserClickedStartClock, Msg$UserClickedStopClock,
   resize_can_start, resize_can_stop, clock_can_stop,
 } from '../build/dev/javascript/glimlit/todos/todos.mjs';
 
@@ -29,24 +29,24 @@ test('resize emits immediately, observes events, and stops independently of the 
     for (const effect of toArray(effects)) await run(effect, dispatch, runtime);
   }
   assert.equal(resize_can_start(model), true);
-  await send(new UserClickedStartClock());
-  await send(new UserClickedStartResize());
+  await send(Msg$UserClickedStartClock());
+  await send(Msg$UserClickedStartResize());
   assert.equal(resize_can_stop(model), true);
   assert.equal(clock_can_stop(model), true);
   assert.deepEqual([model.window_width, model.window_height], [1280, 720]);
   assert.equal(add.mock.callCount(), 1);
-  await send(new UserClickedStartResize());
+  await send(Msg$UserClickedStartResize());
   assert.equal(add.mock.callCount(), 1);
   target.innerWidth = 900;
   target.innerHeight = 600;
   target.dispatchEvent(new Event('resize'));
   assert.deepEqual([model.window_width, model.window_height], [900, 600]);
-  await send(new UserClickedStopClock());
+  await send(Msg$UserClickedStopClock());
   target.innerWidth = 800;
   target.dispatchEvent(new Event('resize'));
   assert.equal(model.window_width, 800);
-  await send(new UserClickedStartClock());
-  await send(new UserClickedStopResize());
+  await send(Msg$UserClickedStartClock());
+  await send(Msg$UserClickedStopResize());
   assert.equal(remove.mock.callCount(), 1);
   assert.equal(remove.mock.calls[0].arguments[1], add.mock.calls[0].arguments[1]);
   target.innerWidth = 700;
@@ -58,7 +58,7 @@ test('resize emits immediately, observes events, and stops independently of the 
   assert.equal(resize_can_start(model), true);
   assert.equal(model.todos, todos);
   assert.equal(clear.mock.callCount(), 1);
-  await send(new UserClickedStartResize());
+  await send(Msg$UserClickedStartResize());
   assert.equal(model.window_width, 700);
   stop(runtime);
   assert.equal(remove.mock.callCount(), 2);

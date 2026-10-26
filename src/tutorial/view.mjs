@@ -3,21 +3,21 @@
 import { html, render } from 'lit-html'
 import { live } from 'lit-html/directives/live.js'
 import {
-	Model$Model$title as title,
-	Model$Model$message as message,
-	UserChangedTitle,
-	UserChangedMessage,
-	Coral,
-	Ocean,
-	Meadow,
-	UserSelectedTheme,
-	Model$Model$theme as theme,
-	theme_name as themeName,
-	UserClickedSave,
-	Model$Model$notice as notice,
-	UserClickedRestore,
-	UserToggledShortcuts,
-	Model$Model$shortcuts as shortcuts,
+	Model$Model$title,
+	Model$Model$message,
+	Msg$UserChangedTitle,
+	Msg$UserChangedMessage,
+	Theme$Coral,
+	Theme$Ocean,
+	Theme$Meadow,
+	Msg$UserSelectedTheme,
+	Model$Model$theme,
+	theme_name,
+	Msg$UserClickedSave,
+	Model$Model$notice,
+	Msg$UserClickedRestore,
+	Msg$UserToggledShortcuts,
+	Model$Model$shortcuts,
 } from './tutorial.mjs'
 
 export function view(model, dispatch) {
@@ -32,46 +32,46 @@ export function view(model, dispatch) {
 					<input
 						id="postcard-title"
 						maxlength="80"
-						.value=${live(title(model))}
+						.value=${live(Model$Model$title(model))}
 						@input=${event =>
-							dispatch(new UserChangedTitle(event.currentTarget.value))}
+							dispatch(Msg$UserChangedTitle(event.currentTarget.value))}
 					/>
 					<label for="postcard-message">Your message</label>
 					<textarea
 						id="postcard-message"
 						rows="4"
 						maxlength="400"
-						.value=${live(message(model))}
+						.value=${live(Model$Model$message(model))}
 						@input=${event =>
-							dispatch(new UserChangedMessage(event.currentTarget.value))}
+							dispatch(Msg$UserChangedMessage(event.currentTarget.value))}
 					></textarea>
 					<fieldset>
 						<legend>Choose a colour</legend>
 						<div class="theme-options">
-							${themeButton('Coral', new Coral(), model, dispatch)}
-							${themeButton('Ocean', new Ocean(), model, dispatch)}
-							${themeButton('Meadow', new Meadow(), model, dispatch)}
+							${themeButton('Coral', Theme$Coral(), model, dispatch)}
+							${themeButton('Ocean', Theme$Ocean(), model, dispatch)}
+							${themeButton('Meadow', Theme$Meadow(), model, dispatch)}
 						</div>
 					</fieldset>
 					<div class="studio-actions">
-						<button type="button" @click=${() => dispatch(new UserClickedSave())}>
+						<button type="button" @click=${() => dispatch(Msg$UserClickedSave())}>
 							Save design
 						</button>
 						<button
 							type="button"
 							class="secondary"
-							@click=${() => dispatch(new UserClickedRestore())}
+							@click=${() => dispatch(Msg$UserClickedRestore())}
 						>
 							Restore saved
 						</button>
 					</div>
-					<p class="studio-status" role="status">${notice(model)}</p>
+					<p class="studio-status" role="status">${Model$Model$notice(model)}</p>
 					<label class="shortcut-toggle" for="postcard-shortcuts">
 						<input
 							id="postcard-shortcuts"
 							type="checkbox"
-							.checked=${shortcuts(model)}
-							@change=${() => dispatch(new UserToggledShortcuts())}
+							.checked=${Model$Model$shortcuts(model)}
+							@change=${() => dispatch(Msg$UserToggledShortcuts())}
 						/>
 						Enable keyboard shortcuts
 					</label>
@@ -83,15 +83,15 @@ export function view(model, dispatch) {
 				<div class="preview-area">
 					<p class="preview-label">Live preview</p>
 					<article
-						class="postcard postcard-${themeName(theme(model))}"
+						class="postcard postcard-${theme_name(Model$Model$theme(model))}"
 						aria-label="Your postcard preview"
 					>
 						<div class="postcard-top">
 							<span>A note from me to you</span
 							><span class="postcard-stamp" aria-hidden="true">✳︎</span>
 						</div>
-						<h3>${title(model)}</h3>
-						<p class="postcard-message">${message(model)}</p>
+						<h3>${Model$Model$title(model)}</h3>
+						<p class="postcard-message">${Model$Model$message(model)}</p>
 						<div class="postcard-bottom">
 							<span>Somewhere nice</span><span aria-hidden="true">↗</span>
 						</div>
@@ -107,8 +107,8 @@ function themeButton(label, value, model, dispatch) {
 	return html`<button
 		type="button"
 		class="theme-option"
-		aria-pressed=${themeName(theme(model)) === themeName(value)}
-		@click=${() => dispatch(new UserSelectedTheme(value))}
+		aria-pressed=${theme_name(Model$Model$theme(model)) === theme_name(value)}
+		@click=${() => dispatch(Msg$UserSelectedTheme(value))}
 	>
 		${label}
 	</button>`

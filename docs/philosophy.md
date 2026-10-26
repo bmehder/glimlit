@@ -5,8 +5,9 @@ structure and HTML-like views. The aim is to make application decisions clear
 without requiring a large framework API to work with the browser.
 
 Small interactive islands—forms, editors, filters, and widgets within a larger
-page—are its primary use case. The recipe box explores larger composition; it
-is evidence of capability, not a reason to expand the framework's responsibilities.
+page—are its primary use case. The recipe box is a larger example: several
+screens, an editor, and shared data use the same loop and runtime. Its routing
+and storage choices remain application code.
 
 ## What the framework owns
 

@@ -41,8 +41,11 @@ npm install
 npm run dev
 ```
 
+The development server uses port 3000. If that port is occupied, stop the other
+server before running `npm run dev`.
+
 Open <http://127.0.0.1:3000> for the homepage, or
-<http://127.0.0.1:3000/demos/> to choose an example. Counter and Todos have their
+<http://127.0.0.1:3000/demos/> to choose an example. Counter, Todos, and Recipe box have their
 own pages; there is no launcher to edit. Vite compiles Gleam
 and refreshes generated JavaScript declarations when Gleam files change. Views
 and Tailwind styles also update during development.
@@ -63,15 +66,15 @@ The [Demos page](http://127.0.0.1:3000/demos/) introduces three runnable example
 
 - [Counter](http://127.0.0.1:3000/demos/counter/): the smallest working loop.
 - [Todos](http://127.0.0.1:3000/demos/todos/): effects, persistence, network requests,
-  and subscriptions.
-- [Recipe box](http://127.0.0.1:3000/recipes/): an exploration of multiple screens,
-  an editor, and shared state. It demonstrates what Glimlit can handle beyond
-  its primary use case, rather than the expected shape of a Glimlit project.
+  and subscriptions, plus a styled delete-confirmation dialog.
+- [Recipe box](http://127.0.0.1:3000/recipes/): a larger app with browsing, search,
+  editing, routing, local storage, and sample imports. It uses the same runtime
+  and model–message–update structure as the smaller examples.
 
-Each page starts its own Gleam module directly. The recipe box and beginner
-tutorial remain separate examples.
+Each page starts its own Gleam module directly. The tutorial has its own
+page for building Postcard Studio.
 [How the recipe box is built](docs/recipes-architecture.md) explains its module
-structure, message composition, failure recovery, and remaining limitations.
+structure, state and messages, persistence, and failure recovery.
 
 ## Add your own app
 
@@ -225,8 +228,8 @@ from Gleam's compiled `counter.mjs` module:
 ```js
 import { html, render } from 'lit-html'
 import {
-  UserClickedIncrement,
-  Model$Model$count as count,
+  Msg$UserClickedIncrement,
+  Model$Model$count,
 } from './counter.mjs'
 
 export function view(model, dispatch) {
@@ -235,8 +238,8 @@ export function view(model, dispatch) {
 
   render(html`
     <div>
-      <p>${count(model)}</p>
-      <button @click=${() => dispatch(new UserClickedIncrement())}>
+      <p>${Model$Model$count(model)}</p>
+      <button @click=${() => dispatch(Msg$UserClickedIncrement())}>
         Increment
       </button>
     </div>
@@ -264,6 +267,42 @@ they do not automatically validate all markup or lit-html bindings. See
 
 The choice is about which authoring style and tradeoffs suit your project;
 neither syntax is inherently better.
+
+### Reading Gleam’s JavaScript exports
+
+Gleam generates ordinary JavaScript functions for public custom types. The names
+identify the **type**, **constructor**, and, for accessors, **field**:
+
+- `Type$Constructor(...)` creates a value.
+- `Type$Constructor$field(value)` reads a field without changing it.
+- `Type$isConstructor(value)` checks which variant a value has and returns a boolean.
+
+For example, `pub type Model { Model(count: Int) }` has a type and a constructor
+both named `Model`. That is why the accessor repeats the name: `Model$Model$count`.
+The first `Model` is the type, the second is its constructor, and `count` is the
+field. `Msg$UserChangedTitle` instead names the `UserChangedTitle` constructor
+belonging to the `Msg` type.
+
+| In Gleam | In JavaScript | Meaning |
+| --- | --- | --- |
+| `Model(count: 0)` | `Model$Model(0)` | Create a model |
+| `model.count` | `Model$Model$count(model)` | Read its count |
+| `UserChangedTitle("Hello")` | `Msg$UserChangedTitle("Hello")` | Create a message with a payload |
+| `UserClickedIncrement` | `Msg$UserClickedIncrement()` | Create a message without a payload |
+| `Ocean` | `Theme$Ocean()` | Create a theme value |
+| Match the `Ocean` variant | `Theme$isOcean(theme)` | Check a theme variant |
+
+The `$` characters are part of the function name, not JavaScript property access
+or a Glimlit operation. Constructor arguments follow their Gleam declaration
+order. Even constructors without payloads are called with `()` in JavaScript.
+Calling a message constructor only creates a value; `dispatch(message)` sends it
+to update.
+
+Import these functions from the compiled module, such as `./counter.mjs` or
+`./tutorial.mjs`. The build supplies that module from the adjacent Gleam source;
+you do not create it or edit files under `build/`. The examples keep the exported
+names without aliases and call constructor functions directly, without `new`.
+Editor import completion can help you find them.
 
 For editor highlighting inside tagged templates, VS Code users can install the
 [lit-html extension](https://marketplace.visualstudio.com/items?itemName=bierner.lit-html).
@@ -297,8 +336,8 @@ built-in framework operations. For example:
 export function saveTodos(json) {
   return {
     perform: () => localStorage.setItem(key, json),
-    onSuccess: () => localStorageSavedTodos(),
-    onFailure: () => localStorageFailed('Browser storage is unavailable.'),
+    onSuccess: () => Msg$LocalStorageSavedTodos(),
+    onFailure: () => Msg$LocalStorageFailed('Browser storage is unavailable.'),
   }
 }
 ```
@@ -369,17 +408,17 @@ these clock effects in its own `effects.mjs`:
 export function startClock() {
   return {
     perform: ({ subscriptions, dispatch }) =>
-      subscriptions.start('clock', every(1000, clockTicked), dispatch),
-    onSuccess: clockStarted,
-    onFailure: () => clockSubscriptionFailed('Could not manage the clock.'),
+      subscriptions.start('clock', every(1000, Msg$ClockTicked), dispatch),
+    onSuccess: Msg$ClockStarted,
+    onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
   }
 }
 
 export function stopClock() {
   return {
     perform: ({ subscriptions }) => subscriptions.stop('clock'),
-    onSuccess: clockStopped,
-    onFailure: () => clockSubscriptionFailed('Could not manage the clock.'),
+    onSuccess: Msg$ClockStopped,
+    onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
   }
 }
 ```
@@ -437,8 +476,8 @@ src/
     footer.mjs           Footer using the same page links
     footer.css           Footer styles
     chapters.mjs         Active-section tracking for docs and tutorial
-    demos/                Example hub and runner page styles
-    recipes/             Composition example entry point and styles
+    demos/               Example hub and runner page styles
+    recipes/             Recipe box entry point and styles
     docs/                Docs page examples, styles, and navigation entry point
     tutorial/            Tutorial chapters, snippets, and page/postcard styles
 ```

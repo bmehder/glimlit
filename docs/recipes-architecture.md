@@ -1,12 +1,12 @@
-# Recipe box: composing a larger Glimlit app
+# Recipe box: a larger app with the same loop
 
 Run `npm run dev` and choose **Recipe box** from the **Demos** page, or open
 <http://127.0.0.1:3000/recipes/> directly. The app is included in the
 production build. It is separate from the beginner Postcard Studio tutorial.
 
-Glimlit primarily targets small interactive islands within larger pages. This
-example explores what it can handle beyond that use case, rather than proposing
-that every app should have this structure.
+Glimlit primarily targets small interactive islands within larger pages. Recipe
+box is a larger example, using one model, one message type, and one update
+function for several screens. It needs no additional runtime features.
 
 The [project philosophy](philosophy.md) describes the framework boundary and
 choices about browser-owned state.
@@ -43,7 +43,7 @@ was added to Vite's production page list; no recipe-specific aliases were added.
 
 ## Model and messages
 
-The parent derives a `Screen` from storage readiness, the route, and the current
+The app derives a `Screen` from storage readiness, the route, and the current
 collection. It resolves missing recipes and editor return paths in Gleam; the
 JavaScript view only selects a template for that screen. Screen values are
 derived on demand, not stored alongside the model. Save messages, retry
@@ -63,7 +63,7 @@ The model uses explicit alternatives instead of ambiguous flags:
 `ImportIdle` or `ImportInProgress`. The view derives booleans for HTML attributes.
 Each recipe's `favorite` field is a `Bool`, matching the stored JSON field.
 
-The parent owns the collection, current route, search/filter settings, storage
+The app owns the collection, current route, search/filter settings, storage
 state, save ID, import request ID, and editor model. Recipe changes stay
 in one collection so details, favourites, and search use the same data.
 
@@ -78,14 +78,14 @@ request results, `LocalStorage…` for persistence results, and `BrowserHashChan
 for hash navigation. Payload labels distinguish request IDs, save IDs, JSON,
 and failure reasons.
 
-The parent keeps submission, deletion, restoration, and import handling directly
+The app keeps submission, deletion, restoration, and import handling directly
 in one update function. Each message branch builds its next model in local steps,
 then requests persistence or navigation. Shared persistence, route setup, and
 import-result checks remain helpers because multiple branches use them. Collection
 transformations have their own functions in the recipe-operations section of
 `recipes.gleam`.
 
-Submission belongs to the parent. It validates the draft, preserves an existing
+Submission belongs to the app. It validates the draft, preserves an existing
 recipe's ID and favourite flag, replaces or appends the recipe, then requests
 saving and navigation. Validation failures render an error summary before a
 focus effect moves keyboard focus there.
@@ -119,7 +119,7 @@ the initial hash, and returns a listener cleanup. The runtime gives the app one
 keyed subscription and removes it on shutdown. The browser entry registers the
 returned app cleanup with Vite's disposal hook.
 
-The parent initializes the editor when a route changes. Unsubmitted changes are
+The app initializes the editor when a route changes. Unsubmitted changes are
 discarded when leaving the form; the form states this explicitly. There is no
 unsaved-change confirmation. Unknown routes and missing recipe IDs show a
 recovery link rather than creating an invalid editor.
@@ -149,7 +149,7 @@ The app does not pretend that failed writes succeeded or reload stale storage
 over edits. Reloading before a failed write is recovered can lose in-memory changes.
 
 Each save carries an ID. Only the latest save ID can change save status.
-The actual storage writes are synchronous and scheduled in list order. Revision
+The actual storage writes are synchronous and scheduled in list order. Save-ID
 checks alone would not make writes to an asynchronous server arrive in order;
 a remote backend would need its own concurrency strategy.
 
@@ -174,7 +174,7 @@ It is not a backend for saving recipes or sharing them across devices.
 
 - One model, one message type, and one update function coordinate the screens
   without a new runtime API. Editor fields and shared collection state stay explicit.
-- Plain view functions can share the parent's state without prop-drilling a
+- Plain view functions can share the app's state without prop-drilling a
   framework context or starting separate app lifetimes.
 - App-specific hash routing and a single subscription are enough for these
   screens; path routing, nested layouts, and route guards need further evaluation.
@@ -183,7 +183,7 @@ It is not a backend for saving recipes or sharing them across devices.
   external declaration matches its implementation.
 - Request IDs and save IDs are explicit app state. They work here, but
   extracting helpers should wait until another example shows the same need.
-- This small multi-screen app provides evidence for conventions. It does not
+- This multi-screen example uses the same framework APIs as the smaller apps. It does not
   establish large-application performance, accessibility completeness, backend
   integration, cross-tab synchronization, or a complete developer-tools story.
 

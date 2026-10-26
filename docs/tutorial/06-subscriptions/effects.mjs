@@ -1,11 +1,11 @@
 import {
-  Msg$DesignSaved as designSaved,
-  Msg$StorageFailed as storageFailed,
-  Msg$StorageReturnedDesign as storageReturnedDesign,
-  Msg$StorageWasEmpty as storageWasEmpty,
-  Msg$ShortcutsChanged as shortcutsChanged,
-  Msg$ShortcutsFailed as shortcutsFailed,
-  UserPressedNextTheme,
+  Msg$DesignSaved,
+  Msg$StorageFailed,
+  Msg$StorageReturnedDesign,
+  Msg$StorageWasEmpty,
+  Msg$ShortcutsChanged,
+  Msg$ShortcutsFailed,
+  Msg$UserPressedNextTheme,
 } from './tutorial.mjs'
 import { nextThemeKey } from './subscriptions.mjs'
 
@@ -14,16 +14,16 @@ const key = 'glimlit.postcard.v1'
 export function saveDesign(title, message, theme) {
   return {
     perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),
-    onSuccess: () => designSaved(),
-    onFailure: () => storageFailed('Could not save. Browser storage may be unavailable.'),
+    onSuccess: () => Msg$DesignSaved(),
+    onFailure: () => Msg$StorageFailed('Could not save. Browser storage may be unavailable.'),
   }
 }
 
 export function loadDesign() {
   return {
     perform: () => localStorage.getItem(key),
-    onSuccess: saved => saved === null ? storageWasEmpty() : storageReturnedDesign(saved),
-    onFailure: () => storageFailed('Could not restore. Browser storage may be unavailable.'),
+    onSuccess: saved => saved === null ? Msg$StorageWasEmpty() : Msg$StorageReturnedDesign(saved),
+    onFailure: () => Msg$StorageFailed('Could not restore. Browser storage may be unavailable.'),
   }
 }
 
@@ -31,12 +31,12 @@ export function setShortcuts(enabled) {
   return {
     perform: ({ subscriptions, dispatch }) => {
       if (enabled) {
-        subscriptions.start('postcard-keys', nextThemeKey(() => new UserPressedNextTheme()), dispatch)
+        subscriptions.start('postcard-keys', nextThemeKey(() => Msg$UserPressedNextTheme()), dispatch)
       } else {
         subscriptions.stop('postcard-keys')
       }
     },
-    onSuccess: () => shortcutsChanged(enabled),
-    onFailure: () => shortcutsFailed('Could not change keyboard shortcuts.'),
+    onSuccess: () => Msg$ShortcutsChanged(enabled),
+    onFailure: () => Msg$ShortcutsFailed('Could not change keyboard shortcuts.'),
   }
 }
