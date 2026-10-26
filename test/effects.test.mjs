@@ -4,7 +4,6 @@ import { from_list as toArray, to_list as toList } from '#gleam/array';
 import { init, update, Msg$UserTypedNewTodo, Msg$UserSubmittedNewTodo, Msg$UserToggledTodoCompletion, Msg$UserClickedDeleteTodo, Msg$UserClickedEditTodo, Msg$UserTypedTodoEdit, Msg$UserSubmittedTodoEdit,
   Msg$LocalStorageReturnedTodos, Msg$LocalStorageHadNoTodos,
   Msg$LocalStorageSavedTodos, Msg$LocalStorageFailed, StorageState$isFailed, StorageState$isReady,
-  Msg$UserClickedRunEffectOrdering,
   Model$Model$storage, Status$isCompleted,
 } from '../build/dev/javascript/glimlit/todos/todos.mjs';
 import { run } from '../src/runtime/runner.mjs';
@@ -44,34 +43,24 @@ test('load validates JSON, restores completion and IDs, and does not trigger a s
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 test('effects start in list order and the second can finish before the first', async t => {
-  const timers = [];
-  t.mock.method(globalThis, 'setTimeout', (callback, milliseconds) => {
-    timers.push({ callback, milliseconds });
-    return timers.length;
-  });
-  const logged = t.mock.method(console, 'log', () => {});
-  const [initial] = init();
-  const [next, effects] = update(initial, Msg$UserClickedRunEffectOrdering());
-  assert.equal(next, initial);
-  assert.equal(toArray(effects).length, 2);
-  assert.equal(timers.length, 0);
-  assert.equal(logged.mock.callCount(), 0);
-
-  const dispose = start([initial, effects], (model, message) => {
-    assert.fail('Logging effects should not dispatch messages');
-  }, () => {});
+  const events = [];
+  const finish = [];
+  const effects = toList(['First', 'Second'].map(label => ({
+    perform: () => {
+      events.push(`${label} started`);
+      return new Promise(resolve => finish.push(() => { events.push(`${label} finished`); resolve(); }));
+    },
+  })));
+  const dispose = start([0, effects], () => assert.fail('No messages expected'), () => {});
   t.after(dispose);
   await settle();
-  const logs = () => logged.mock.calls.map(call => call.arguments[0]);
-  assert.deepEqual(logs(), ['First effect started', 'Second effect started']);
-  assert.deepEqual(timers.map(timer => timer.milliseconds), [1000, 100]);
-
-  timers[1].callback();
+  assert.deepEqual(events, ['First started', 'Second started']);
+  finish[1]();
   await settle();
-  assert.deepEqual(logs(), ['First effect started', 'Second effect started', 'Second effect finished']);
-  timers[0].callback();
+  assert.deepEqual(events, ['First started', 'Second started', 'Second finished']);
+  finish[0]();
   await settle();
-  assert.deepEqual(logs(), ['First effect started', 'Second effect started', 'Second effect finished', 'First effect finished']);
+  assert.deepEqual(events, ['First started', 'Second started', 'Second finished', 'First finished']);
 });
 
 test('runtime renders before performing effects and callbacks use the latest model', async () => {

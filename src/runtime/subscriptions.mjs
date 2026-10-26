@@ -1,23 +1,25 @@
 // @ts-check
 
 /** @template Msg @typedef {{start: (emit: (message: Msg) => void) => () => void}} Subscription */
-/** @template Msg @typedef {{start: (key: string, subscription: Subscription<Msg>, dispatch: (message: Msg) => void) => void, stop: (key: string) => void, stopAll: () => void}} Subscriptions */
+/** @template Msg @typedef {{start: (key: string, subscription: Subscription<Msg>) => void, stop: (key: string) => void, stopAll: () => void}} Subscriptions */
 /** @typedef {{active: boolean, cleanup: () => void}} Entry */
 /** @typedef {Map<string, Entry>} ActiveSubscriptions */
 
 /**
  * Create an independent manager with start, stop, and stopAll operations.
  * Active string keys are unique within this manager. Stopping a subscription
- * disables its emit callback before cleanup runs.
+ * disables its emit callback before cleanup runs. Every source uses the dispatcher
+ * supplied when this manager is created.
  * @public
  * @template Msg
+ * @param {(message: Msg) => void} dispatch
  * @returns {Subscriptions<Msg>}
  */
-export function createSubscriptions() {
+export function createSubscriptions(dispatch) {
 	/** @type {ActiveSubscriptions} */
 	const active = new Map()
 	return {
-		start: (key, subscription, dispatch) => start(active, key, subscription, dispatch),
+		start: (key, subscription) => start(active, key, subscription, dispatch),
 		stop: key => stop(active, key),
 		stopAll: () => stopAll(active),
 	}

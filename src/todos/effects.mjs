@@ -1,17 +1,10 @@
 // @ts-check
 
-import { every, windowResize } from './subscriptions.mjs'
+import { newTodoKey } from './subscriptions.mjs'
 import {
-	Msg$WindowResizeStarted,
-	Msg$WindowResized,
-	Msg$WindowResizeStopped,
-	Msg$WindowResizeSubscriptionFailed,
-	Msg$ClockStarted,
-	Msg$ClockTicked,
-	Msg$ClockStopped,
-	Msg$ClockSubscriptionFailed,
-	Msg$HttpReturnedTodo,
-	Msg$HttpTodoRequestFailed,
+	Msg$UserPressedNewTodoShortcut,
+	Msg$KeyboardShortcutsStarted,
+	Msg$KeyboardShortcutsFailed,
 	Msg$LocalStorageReturnedTodos,
 	Msg$LocalStorageHadNoTodos,
 	Msg$LocalStorageSavedTodos,
@@ -27,7 +20,9 @@ export function loadTodos() {
 	return {
 		perform: () => localStorage.getItem(key),
 		onSuccess: saved =>
-			saved === null ? Msg$LocalStorageHadNoTodos() : Msg$LocalStorageReturnedTodos(saved),
+			saved === null
+				? Msg$LocalStorageHadNoTodos()
+				: Msg$LocalStorageReturnedTodos(saved),
 		onFailure: () => Msg$LocalStorageFailed('Browser storage is unavailable.'),
 	}
 }
@@ -48,68 +43,23 @@ export function log(message) {
 	}
 }
 
-/** @param {string} label @param {number} milliseconds @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
-export function delayedLog(label, milliseconds) {
+/** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
+export function watchShortcuts() {
 	return {
-		perform: async () => {
-			console.log(`${label} started`)
-			await new Promise(resolve => setTimeout(resolve, milliseconds))
-			console.log(`${label} finished`)
-		},
-	}
-}
-
-/** @returns {import('../runtime/runner.mjs').Effect<string, Msg>} */
-export function fetchExample() {
-	return {
-		perform: async () => {
-			const response = await fetch('https://jsonplaceholder.typicode.com/todos/1')
-			if (!response.ok) throw new Error(`HTTP ${response.status}`)
-			return response.text()
-		},
-		onSuccess: Msg$HttpReturnedTodo,
-		onFailure: error =>
-			Msg$HttpTodoRequestFailed(
-				error instanceof Error ? error.message : 'Network request failed.',
+		perform: ({ subscriptions }) =>
+			subscriptions.start(
+				'todo-keyboard',
+				newTodoKey(Msg$UserPressedNewTodoShortcut),
 			),
-	}
-}
-
-/** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
-export function startClock() {
-	return {
-		perform: ({ subscriptions, dispatch }) =>
-			subscriptions.start('clock', every(1000, Msg$ClockTicked), dispatch),
-		onSuccess: Msg$ClockStarted,
-		onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
-	}
-}
-
-/** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
-export function stopClock() {
-	return {
-		perform: ({ subscriptions }) => subscriptions.stop('clock'),
-		onSuccess: Msg$ClockStopped,
-		onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
-	}
-}
-
-/** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
-export function startResize() {
-	return {
-		perform: ({ subscriptions, dispatch }) =>
-			subscriptions.start('window-resize', windowResize(Msg$WindowResized), dispatch),
-		onSuccess: Msg$WindowResizeStarted,
-		onFailure: () => Msg$WindowResizeSubscriptionFailed('Could not watch window size.'),
-	}
-}
-
-/** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
-export function stopResize() {
-	return {
-		perform: ({ subscriptions }) => subscriptions.stop('window-resize'),
-		onSuccess: Msg$WindowResizeStopped,
+		onSuccess: Msg$KeyboardShortcutsStarted,
 		onFailure: () =>
-			Msg$WindowResizeSubscriptionFailed('Could not stop watching window size.'),
+			Msg$KeyboardShortcutsFailed('Could not listen for key presses.'),
+	}
+}
+
+/** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
+export function focusNewTodo() {
+	return {
+		perform: () => document.getElementById('new-todo')?.focus(),
 	}
 }

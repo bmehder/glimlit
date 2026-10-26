@@ -2,7 +2,7 @@ import test from 'node:test';
 import { from_list as toArray } from '#gleam/array';
 import assert from 'node:assert/strict';
 import {
-  init as initWithEffects, update as updateWithEffects, StorageState$Ready, FetchState$NotRequested, SubscriptionState$Stopped, Model$Model, Editing$NotEditing, Editing$isNotEditing,
+  init as initWithEffects, update as updateWithEffects, StorageState$Ready, ShortcutStatus$Listening, Model$Model, Editing$NotEditing, Editing$isNotEditing,
   Editing$Editing$id, Editing$Editing$text, Status$isActive, Status$isCompleted, Msg$UserTypedNewTodo, Msg$UserSubmittedNewTodo,
   Msg$UserToggledTodoCompletion, Msg$UserClickedEditTodo, Msg$UserTypedTodoEdit,
   Msg$UserSubmittedTodoEdit, Msg$UserClickedCancelTodoEdit, Msg$UserClickedDeleteTodo,
@@ -15,7 +15,7 @@ const items = model => toArray(model.todos);
 const emptyModel = () => {
   let model = init();
   for (const item of items(model)) model = update(model, Msg$UserClickedDeleteTodo(item.id));
-  return Model$Model(model.todos, '', 0, Editing$NotEditing(), StorageState$Ready(), FetchState$NotRequested(), SubscriptionState$Stopped(), 0, SubscriptionState$Stopped(), 0, 0);
+  return Model$Model(model.todos, '', 0, Editing$NotEditing(), StorageState$Ready(), ShortcutStatus$Listening());
 };
 
 test('add trims titles, rejects blanks, and allocates stable IDs after deletion', () => {

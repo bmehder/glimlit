@@ -65,8 +65,8 @@ and Tailwind styles also update during development.
 The [Demos page](http://127.0.0.1:3000/demos/) introduces three runnable examples:
 
 - [Counter](http://127.0.0.1:3000/demos/counter/): the smallest working loop.
-- [Todos](http://127.0.0.1:3000/demos/todos/): effects, persistence, network requests,
-  and subscriptions, plus a styled delete-confirmation dialog.
+- [Todos](http://127.0.0.1:3000/demos/todos/): saved todos, a keyboard shortcut for adding a new todo,
+  and a styled delete-confirmation dialog.
 - [Recipe box](http://127.0.0.1:3000/recipes/): a larger app with browsing, search,
   editing, routing, local storage, and sample imports. It uses the same runtime
   and model–message–update structure as the smaller examples.
@@ -376,20 +376,8 @@ list order, but asynchronous work can finish in any order. Returning multiple
 effects does not make one wait for another; use a returned message to request
 work that depends on an earlier result.
 
-The Todos example's **Run effect ordering example** button returns these two effects
-together:
-
-```gleam
-#(model, [
-  delayed_log("First effect", 1000),
-  delayed_log("Second effect", 100),
-])
-```
-
-Each effect logs when it starts, waits for its delay, and logs when it finishes.
-Open the browser console to see the first effect start before the second, but
-the second finish first. The effect-ordering test controls completion explicitly
-to check this behavior without relying on real timer delays.
+The runtime test verifies that effects start in list order and can finish in
+reverse order, without relying on real timer delays.
 
 Supply an `onFailure` when a failure should become a message. Unhandled failures
 reject the runner's Promise; they do not automatically update the model.
@@ -399,50 +387,52 @@ reject the runner's Promise; they do not automatically update the model.
 A subscription has one operation: `start(emit)`, which returns a cleanup function.
 Like an effect, its description is inert until used.
 
-The following timer description comes from the todo example’s `subscriptions.mjs`:
+Todos uses a keyboard subscription for a list feature: pressing **N** outside an
+input focuses the new-todo field. It ignores text fields, editable content,
+open dialogs, repeated key presses, handled events, and modifier shortcuts.
+
+The source in `subscriptions.mjs` listens for keydown events, constructs a
+`UserPressedNewTodoShortcut` message, and passes it to `emit`. Its `start` function
+returns a cleanup that removes the listener. The subscription does not reach
+into the app's DOM to move focus itself.
+
+The app starts listening through an ordinary effect. The manager already has the
+app dispatcher, so each start call needs only a key and a source:
 
 ```js
-export function every(milliseconds, handleTick) {
+export function watchShortcuts() {
+	return {
+		perform: ({ subscriptions }) =>
+			subscriptions.start('todo-keyboard', newTodoKey(Msg$UserPressedNewTodoShortcut)),
+		onSuccess: Msg$KeyboardShortcutsStarted,
+		onFailure: () => Msg$KeyboardShortcutsFailed('Could not listen for key presses.'),
+	}
+}
+```
+
+The message constructors and `newTodoKey` are imports in `effects.mjs`. Init
+returns `load_todos()` to restore the list and `watch_shortcuts()` to attach the
+keyboard subscription. The manager guards `emit` so a stopped subscription
+cannot dispatch late messages.
+
+Update requests focus through another effect:
+
+```gleam
+UserPressedNewTodoShortcut -> #(model, [focus_new_todo()])
+```
+
+```js
+export function focusNewTodo() {
   return {
-    start: emit => {
-      const timer = setInterval(() => emit(handleTick(Date.now())), milliseconds)
-      return () => clearInterval(timer)
-    },
+    perform: () => document.getElementById('new-todo')?.focus(),
   }
 }
 ```
 
-`handleTick` creates a message from the current time; `emit` sends that message back
-into the app's update loop. It is an ordinary callback supplied by the manager,
-which wraps the app's dispatcher with a check that this subscription is still
-active. Subscriptions can therefore produce messages without knowing the model
-or calling `update` themselves.
-
-Starting and stopping a subscription are ordinary effects. The Todos example defines
-these clock effects in its own `effects.mjs`:
-
-```js
-export function startClock() {
-  return {
-    perform: ({ subscriptions, dispatch }) =>
-      subscriptions.start('clock', every(1000, Msg$ClockTicked), dispatch),
-    onSuccess: Msg$ClockStarted,
-    onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
-  }
-}
-
-export function stopClock() {
-  return {
-    perform: ({ subscriptions }) => subscriptions.stop('clock'),
-    onSuccess: Msg$ClockStopped,
-    onFailure: () => Msg$ClockSubscriptionFailed('Could not manage the clock.'),
-  }
-}
-```
-
-The update function decides when to return these effects. A button can start a
-subscription later; it does not have to start with the app. A success callback can
-acknowledge setup through another message.
+The subscription reports an event, update decides what to do, and the effect
+moves browser focus. Saving todos remains a separate effect. Open
+`/demos/todos/`, click outside the inputs, and press N to try it. Typing an N into
+an input still works normally.
 
 Each app has its own subscription manager, with independent string keys:
 
@@ -457,10 +447,9 @@ setup returns its cleanup function. The manager still runs that cleanup once
 it becomes available. When stopping all subscriptions, it attempts every cleanup
 even if one fails, then reports the collected errors.
 
-The todo example includes both a clock and a window-resize listener. The resize
-subscription emits the current size during setup and then listens for changes.
-They start and stop independently using the same manager. Timers, browser events,
-and other message sources use the same contract; their details belong in the app.
+Timers, browser events, and other message sources use the same subscription
+contract; their details belong in the app. The Docs page includes a standalone
+[timer reference example](http://127.0.0.1:3000/docs/#subscriptions).
 
 Stopping the app cleans up all subscriptions and ignores pending effect results
 and stale view callbacks. It does not cancel an HTTP request already in progress.
@@ -480,7 +469,7 @@ src/
     runner.mjs           Generic effect runner and app lifetime
     subscriptions.mjs    Generic subscription lifetime manager
   counter/               Small example app: model, update, and view
-  todos/                 Example app with storage, fetch, and subscriptions
+  todos/                 Todo list with storage and a keyboard shortcut
   tutorial/              Finished Postcard Studio app that readers edit
   recipes/               Multi-screen recipe box with an editor
   site/                  Website code; not part of the framework
@@ -500,9 +489,7 @@ src/
 ```
 
 Start reading with `src/counter/counter.gleam` and `src/counter/view.mjs`.
-The todo example adds CRUD, localStorage, fetching, and subscriptions. It starts
-with three todos when no saved data exists. The fetch button logs a sample
-response without adding it to the list. Each app keeps its model and update in
+The todo example adds CRUD, localStorage, and a keyboard subscription. It starts with three todos when no saved data exists. Each app keeps its model and update in
 Gleam and its view, effects, and subscription sources in adjacent JavaScript files.
 
 Demos pages import `counter/counter` or `todos/todos` directly through the

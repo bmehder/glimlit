@@ -9,7 +9,7 @@
   },
   "update": {
     "language": "gleam",
-    "source": "pub type Msg {\n  UserChangedTitle(String)\n  TitleSaved\n  TitleSaveFailed\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(\n      Model(..model, title: title),\n      [save_title(title)],\n    )\n    TitleSaved -> #(model, [])\n    TitleSaveFailed -> #(model, [log(\"Could not save the title.\")])\n  }\n}"
+    "source": "import runtime/effect.{type Effect}\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n  TitleSaved\n  TitleSaveFailed\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(\n      Model(..model, title: title),\n      [save_title(title)],\n    )\n    TitleSaved -> #(model, [])\n    TitleSaveFailed -> #(model, [log(\"Could not save the title.\")])\n  }\n}\n\n@external(javascript, \"./effects.mjs\", \"saveTitle\")\nfn save_title(title: String) -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"log\")\nfn log(message: String) -> Effect(Msg)"
   },
   "view": {
     "language": "javascript",
@@ -17,7 +17,7 @@
   },
   "boundary": {
     "language": "gleam",
-    "source": "@external(javascript, \"./effects.mjs\", \"saveTitle\")\nfn save_title(title: String) -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"log\")\nfn log(message: String) -> Effect(Msg)"
+    "source": "import runtime/effect.{type Effect}\n\npub type Msg {\n  TitleSaved\n  TitleSaveFailed\n}\n\n@external(javascript, \"./effects.mjs\", \"saveTitle\")\nfn save_title(title: String) -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"log\")\nfn log(message: String) -> Effect(Msg)"
   },
   "effect": {
     "language": "javascript",
@@ -29,7 +29,7 @@
   },
   "manage": {
     "language": "javascript",
-    "source": "import { every } from './subscriptions.mjs'\nimport { Msg$ClockTicked } from './app.mjs'\n\nexport const startClock = () => ({\n  perform: ({ subscriptions, dispatch }) =>\n    subscriptions.start('clock', every(1000, Msg$ClockTicked), dispatch),\n})\n\nexport const stopClock = () => ({\n  perform: ({ subscriptions }) => subscriptions.stop('clock'),\n})"
+    "source": "import { every } from './subscriptions.mjs'\nimport { Msg$ClockTicked } from './app.mjs'\n\nexport const startClock = () => ({\n  perform: ({ subscriptions }) =>\n    subscriptions.start('clock', every(1000, Msg$ClockTicked)),\n})\n\nexport const stopClock = () => ({\n  perform: ({ subscriptions }) => subscriptions.stop('clock'),\n})"
   },
   "cleanup": {
     "language": "javascript",
@@ -45,7 +45,7 @@
   },
   "clock-boundary": {
     "language": "gleam",
-    "source": "@external(javascript, \"./effects.mjs\", \"startClock\")\nfn start_clock() -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"stopClock\")\nfn stop_clock() -> Effect(Msg)"
+    "source": "import runtime/effect.{type Effect}\n\npub type Model {\n  Model(time: Int)\n}\n\npub type Msg {\n  UserClickedStartClock\n  UserClickedStopClock\n  ClockTicked(Int)\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserClickedStartClock -> #(model, [start_clock()])\n    UserClickedStopClock -> #(model, [stop_clock()])\n    ClockTicked(time) -> #(Model(time: time), [])\n  }\n}\n\n@external(javascript, \"./effects.mjs\", \"startClock\")\nfn start_clock() -> Effect(Msg)\n\n@external(javascript, \"./effects.mjs\", \"stopClock\")\nfn stop_clock() -> Effect(Msg)"
   },
   "type-check-command": {
     "language": "shellscript",
@@ -70,5 +70,9 @@
   "import-aliases": {
     "language": "javascript",
     "source": "import {\n  Model$Model$title as title,\n  Msg$UserChangedTitle as userChangedTitle,\n} from './app.mjs'\n\nconst currentTitle = title(model)\ndispatch(userChangedTitle('Hello'))"
+  },
+  "view-boundary": {
+    "language": "gleam",
+    "source": "pub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil"
   }
 }

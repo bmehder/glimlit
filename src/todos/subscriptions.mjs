@@ -2,31 +2,35 @@
 
 /**
  * @template Msg
- * @param {number} milliseconds
- * @param {(now: number) => Msg} handleTick
+ * @param {() => Msg} handleNewTodo
  * @returns {import('../runtime/subscriptions.mjs').Subscription<Msg>}
  */
-export function every(milliseconds, handleTick) {
+export function newTodoKey(handleNewTodo) {
 	return {
 		start: emit => {
-			const timer = setInterval(() => emit(handleTick(Date.now())), milliseconds)
-			return () => clearInterval(timer)
-		},
-	}
-}
-
-/**
- * @template Msg
- * @param {(width: number, height: number) => Msg} handleResize
- * @returns {import('../runtime/subscriptions.mjs').Subscription<Msg>}
- */
-export function windowResize(handleResize) {
-	return {
-		start: emit => {
-			const listener = () => emit(handleResize(window.innerWidth, window.innerHeight))
-			window.addEventListener('resize', listener)
-			listener()
-			return () => window.removeEventListener('resize', listener)
+			/** @param {KeyboardEvent} event */
+			const handleKeydown = event => {
+				const editing =
+					event.target instanceof HTMLElement &&
+					(event.target.matches('input, textarea, select') ||
+						event.target.isContentEditable ||
+						event.target.closest('dialog'))
+				if (
+					editing ||
+					event.defaultPrevented ||
+					event.isComposing ||
+					event.repeat ||
+					event.ctrlKey ||
+					event.metaKey ||
+					event.altKey ||
+					event.shiftKey
+				) return
+				if (event.key.toLowerCase() !== 'n') return
+				event.preventDefault()
+				emit(handleNewTodo())
+			}
+			window.addEventListener('keydown', handleKeydown)
+			return () => window.removeEventListener('keydown', handleKeydown)
 		},
 	}
 }

@@ -1,3 +1,4 @@
+import { createSubscriptions } from '../../src/runtime/subscriptions.mjs'
 // These examples are type-checked, not executed. Each expected error must remain
 // an error, so the checks fail if the generated/runtime types stop catching it.
 import {
@@ -49,3 +50,15 @@ export const invalidSubscription = {
   // @ts-expect-error Setup must return a synchronous cleanup function.
   start: () => {},
 }
+
+/** @type {import('../../src/runtime/subscriptions.mjs').Subscriptions<Msg>} */
+export const subscriptionManager = createSubscriptions(message => {
+  /** @type {Msg} */
+  const appMessage = message;
+  void appMessage;
+});
+subscriptionManager.start('valid', validSubscription);
+// @ts-expect-error The manager already has its dispatcher; start accepts only key and source.
+subscriptionManager.start('invalid-dispatch', validSubscription, () => {});
+// @ts-expect-error Every source must emit this manager's app message type.
+subscriptionManager.start('invalid-messages', { start: emit => { emit(123); return () => {}; } });

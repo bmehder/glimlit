@@ -29,9 +29,9 @@ export function loadDesign() {
 
 export function setShortcuts(enabled) {
   return {
-    perform: ({ subscriptions, dispatch }) => {
+    perform: ({ subscriptions }) => {
       if (enabled) {
-        subscriptions.start('postcard-keys', nextThemeKey(() => Msg$UserPressedNextTheme()), dispatch)
+        subscriptions.start('postcard-keys', nextThemeKey(() => Msg$UserPressedNextTheme()))
       } else {
         subscriptions.stop('postcard-keys')
       }

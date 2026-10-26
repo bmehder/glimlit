@@ -57,7 +57,7 @@
   },
   "subscribe": {
     "language": "javascript",
-    "source": "subscriptions.start(\n  \"postcard-keys\",\n  nextThemeKey(() => Msg$UserPressedNextTheme()),\n  dispatch,\n)"
+    "source": "subscriptions.start(\n  \"postcard-keys\",\n  nextThemeKey(() => Msg$UserPressedNextTheme()),\n)"
   },
   "check": {
     "language": "shellscript",

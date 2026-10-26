@@ -593,7 +593,8 @@ export function mountGuide() {
 						</p>
 						<p>
 							The <code>setShortcuts</code> effect uses the runtime’s subscription
-							manager. It starts or stops a subscription under the key
+							manager, which already knows where to send your app’s messages.
+							It starts or stops a subscription under the key
 							<code>postcard-keys</code>. Starting an already active key does
 							nothing, and stopping a missing key is harmless.
 						</p>

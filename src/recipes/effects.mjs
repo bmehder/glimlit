@@ -56,11 +56,10 @@ export const fetchSamples = request => ({
 
 /** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
 export const watchRoute = () => ({
-	perform: ({ subscriptions, dispatch }) =>
+	perform: ({ subscriptions }) =>
 		subscriptions.start(
 			'recipes-route',
 			hashRoute(hash => Msg$BrowserHashChanged(hash)),
-			dispatch,
 		),
 })
 

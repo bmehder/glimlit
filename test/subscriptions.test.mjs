@@ -4,25 +4,20 @@ import { createSubscriptions } from '../src/runtime/subscriptions.mjs';
 import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
 import { start } from '../build/dev/javascript/glimlit/runtime/mvu.mjs';
 import { from_list as toArray, to_list as toList } from '#gleam/array';
-import {
-  init, update, Msg$UserClickedStartClock, Msg$UserClickedStopClock,
-  Msg$ClockStarted, Msg$ClockStopped, Msg$ClockTicked,
-  clock_can_start, clock_can_stop,
-} from '../build/dev/javascript/glimlit/todos/todos.mjs';
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
 
 test('subscriptions are inert, keyed, independently stoppable, and suppress late messages', () => {
-  const manager = createSubscriptions();
+  const manager = createSubscriptions(value => messages.push(value));
   const messages = [];
   let starts = 0, cleanups = 0, emit;
   const subscription = { start: send => { starts++; emit = send; return () => { cleanups++; send('cleanup'); }; } };
   assert.equal(starts, 0);
-  manager.start('one', subscription, value => messages.push(value));
+  manager.start('one', subscription);
   const oldEmit = emit;
-  manager.start('one', subscription, value => messages.push(value));
+  manager.start('one', subscription);
   assert.equal(starts, 1);
-  manager.start('two', subscription, value => messages.push(value));
+  manager.start('two', subscription);
   manager.stop('one');
   oldEmit('late');
   emit('still active');
@@ -34,20 +29,20 @@ test('subscriptions are inert, keyed, independently stoppable, and suppress late
 });
 
 test('setup may emit immediately, and cleanup still runs if stopped during setup', () => {
-  const manager = createSubscriptions();
+  const manager = createSubscriptions(() => manager.stop('one'));
   let cleaned = 0;
   manager.start('one', {
     start: emit => { emit('ready'); return () => { cleaned++; }; },
-  }, () => manager.stop('one'));
+  });
   assert.equal(cleaned, 1);
 });
 
 test('failed setup can be retried and disposing tries all cleanup functions', () => {
-  const manager = createSubscriptions();
-  assert.throws(() => manager.start('one', { start() { throw new Error('Setup'); } }, () => {}), /Setup/);
+  const manager = createSubscriptions(() => {});
+  assert.throws(() => manager.start('one', { start() { throw new Error('Setup'); } }), /Setup/);
   let cleaned = 0;
-  manager.start('one', { start: () => () => { throw new Error('Cleanup'); } }, () => {});
-  manager.start('two', { start: () => () => { cleaned++; } }, () => {});
+  manager.start('one', { start: () => () => { throw new Error('Cleanup'); } });
+  manager.start('two', { start: () => () => { cleaned++; } });
   assert.throws(() => manager.stopAll(), AggregateError);
   assert.equal(cleaned, 1);
   assert.doesNotThrow(() => manager.stopAll());
@@ -64,7 +59,7 @@ test('the same contract works for event listeners, not just timers', async () =>
       return () => target.removeEventListener('change', listener);
     },
   };
-  await run({ perform: ({ subscriptions, dispatch }) => subscriptions.start('events', subscription, dispatch), onSuccess: () => 'started' }, message => messages.push(message), runtime);
+  await run({ perform: ({ subscriptions }) => subscriptions.start('events', subscription), onSuccess: () => 'started' }, message => messages.push(message), runtime);
   target.dispatchEvent(new Event('change'));
   await run({ perform: ({ subscriptions }) => subscriptions.stop('events'), onSuccess: () => 'stopped' }, message => messages.push(message), runtime);
   target.dispatchEvent(new Event('change'));
@@ -76,8 +71,8 @@ test('app runtimes are isolated and stopped apps ignore pending results', async 
   const first = createRuntime(), second = createRuntime();
   let cleaned = 0;
   const subscription = { start: () => () => { cleaned++; } };
-  await run({ perform: ({ subscriptions, dispatch }) => subscriptions.start('same-key', subscription, dispatch), onSuccess: () => 'started' }, () => {}, first);
-  await run({ perform: ({ subscriptions, dispatch }) => subscriptions.start('same-key', subscription, dispatch), onSuccess: () => 'started' }, () => {}, second);
+  await run({ perform: ({ subscriptions }) => subscriptions.start('same-key', subscription), onSuccess: () => 'started' }, () => {}, first);
+  await run({ perform: ({ subscriptions }) => subscriptions.start('same-key', subscription), onSuccess: () => 'started' }, () => {}, second);
   let resolve;
   const pending = run({ perform: () => new Promise(done => { resolve = done; }), onSuccess: value => value }, () => assert.fail('Disposed app dispatched'), first);
   await Promise.resolve();
@@ -90,46 +85,11 @@ test('app runtimes are isolated and stopped apps ignore pending results', async 
   assert.equal(cleaned, 2);
 });
 
-test('clock uses the existing effect path, reports start/stop, and can restart', async t => {
-  let tick;
-  const interval = t.mock.method(globalThis, 'setInterval', callback => { tick = callback; return 123; });
-  const clear = t.mock.method(globalThis, 'clearInterval', () => {});
-  t.mock.method(Date, 'now', () => 123456);
-  const runtime = createRuntime();
-  t.after(() => stop(runtime));
-  const messages = [];
-  const dispatch = message => messages.push(message);
-  const [initial] = init();
-  assert.equal(clock_can_start(initial), true);
-  const [starting, effects] = update(initial, Msg$UserClickedStartClock());
-  assert.equal(interval.mock.callCount(), 0);
-  assert.deepEqual(toArray(update(starting, Msg$UserClickedStartClock())[1]), []);
-  await run(toArray(effects)[0], dispatch, runtime);
-  assert.deepEqual(messages.pop(), Msg$ClockStarted());
-  const [running] = update(starting, Msg$ClockStarted());
-  assert.equal(clock_can_stop(running), true);
-  tick();
-  assert.deepEqual(messages.pop(), Msg$ClockTicked(123456));
-  const [ticked] = update(running, Msg$ClockTicked(123456));
-  assert.equal(ticked.clock_time, 123456);
-  const [stopping, stops] = update(ticked, Msg$UserClickedStopClock());
-  await run(toArray(stops)[0], dispatch, runtime);
-  assert.deepEqual(messages.pop(), Msg$ClockStopped());
-  assert.deepEqual(clear.mock.calls[0].arguments, [123]);
-  tick();
-  assert.deepEqual(messages, []);
-  const [stopped] = update(stopping, Msg$ClockStopped());
-  assert.equal(clock_can_start(stopped), true);
-  assert.equal(update(stopped, Msg$ClockTicked(999))[0], stopped);
-  await run(toArray(update(stopped, Msg$UserClickedStartClock())[1])[0], dispatch, runtime);
-  assert.equal(interval.mock.callCount(), 2);
-});
-
 test('start returns app cleanup and old view callbacks cannot update a stopped app', async () => {
   let send, cleaned = 0;
   const renders = [];
   const initialEffect = {
-    perform: ({ subscriptions, dispatch }) => subscriptions.start('resource', { start: () => () => { cleaned++; } }, dispatch),
+    perform: ({ subscriptions }) => subscriptions.start('resource', { start: () => () => { cleaned++; } }),
     onSuccess: () => 1,
   };
   const dispose = start([0, toList([initialEffect])], (model, message) => [model + message, toList([])], (model, dispatch) => { renders.push(model); send = dispatch; });
@@ -139,4 +99,59 @@ test('start returns app cleanup and old view callbacks cannot update a stopped a
   await settle();
   assert.equal(cleaned, 1);
   assert.deepEqual(renders, [0, 1]);
+});
+
+test('all sources share their app dispatcher across renders while separate apps stay isolated', async t => {
+  function mount(initial) {
+    const emitters = new Map();
+    const cleaned = [];
+    const rendered = [];
+    let send;
+    const watch = key => ({
+      perform: ({ subscriptions }) => subscriptions.start(key, {
+        start: emit => {
+          emitters.set(key, emit);
+          return () => cleaned.push(key);
+        },
+      }),
+    });
+    const dispose = start([initial, toList([
+      { perform: () => 1, onSuccess: value => ({ add: value }) },
+      watch('first'),
+    ])], (model, message) => message.watch
+      ? [model, toList([watch(message.watch)])]
+      : [model + message.add, toList([])], (model, dispatch) => {
+      rendered.push(model);
+      send = dispatch;
+    });
+    t.after(dispose);
+    return { emitters, cleaned, rendered, dispose, send: message => send(message) };
+  }
+  const first = mount(0), second = mount(100);
+  await settle();
+  first.send({ add: 10 });
+  first.send({ watch: 'second' });
+  await settle();
+  first.emitters.get('first')({ add: 2 });
+  first.emitters.get('second')({ add: 3 });
+  second.emitters.get('first')({ add: 4 });
+  assert.equal(first.rendered.at(-1), 16);
+  assert.equal(second.rendered.at(-1), 105);
+  first.dispose();
+  first.emitters.get('first')({ add: 1000 });
+  first.emitters.get('second')({ add: 1000 });
+  second.emitters.get('first')({ add: 5 });
+  assert.equal(first.rendered.at(-1), 16);
+  assert.equal(second.rendered.at(-1), 110);
+  assert.deepEqual(first.cleaned, ['first', 'second']);
+  assert.deepEqual(second.cleaned, []);
+});
+
+test('a runtime can stop before its first effect without creating sources or sending results', async () => {
+  const runtime = createRuntime();
+  stop(runtime);
+  stop(runtime);
+  await run({ perform: () => assert.fail('Stopped runtime ran work'), onSuccess: () => 'late' },
+    () => assert.fail('Stopped runtime dispatched'), runtime);
+  assert.equal(runtime.subscriptions, null);
 });

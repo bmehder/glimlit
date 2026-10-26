@@ -2,17 +2,18 @@
 
 import { createSubscriptions } from './subscriptions.mjs'
 
-/** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>}} Runtime */
+/** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg> | null}} Runtime */
 /** @template Msg @typedef {{subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>, dispatch: (message: Msg) => void}} Context */
 
 /**
- * Create an independent runtime with its own subscription manager.
+ * Create an independent runtime. Its subscription manager is created by the first
+ * run call and keeps that app dispatcher for all of its sources.
  * @public
  * @template Msg
  * @returns {Runtime<Msg>}
  */
 export function createRuntime() {
-	return { active: true, subscriptions: createSubscriptions() }
+	return { active: true, subscriptions: null }
 }
 
 /**
@@ -25,7 +26,7 @@ export function createRuntime() {
 export function stop(runtime) {
 	if (!runtime.active) return
 	runtime.active = false
-	runtime.subscriptions.stopAll()
+	runtime.subscriptions?.stopAll()
 }
 
 /**
@@ -43,6 +44,7 @@ export function stop(runtime) {
  * Perform deferred work and dispatch its success or failure message.
  * Work is scheduled through a Promise and is skipped if the runtime is stopped.
  * Without onFailure, a work failure rejects the returned Promise.
+ * Reuse a runtime only for effects belonging to the same app dispatcher.
  * @public
  * @template Value, Msg
  * @param {Effect<Value, Msg>} effect
@@ -57,11 +59,11 @@ export function run(effect, dispatch, runtime = createRuntime()) {
 	}
 	return Promise.resolve()
 		.then(() => {
-			if (runtime.active)
-				return effect.perform({
-					subscriptions: runtime.subscriptions,
-					dispatch: send,
-				})
+			if (runtime.active) {
+				// All sources in an app share the first effect's guarded dispatcher.
+				const subscriptions = runtime.subscriptions ??= createSubscriptions(send)
+				return effect.perform({ subscriptions, dispatch: send })
+			}
 		})
 		.then(
 			value => {
