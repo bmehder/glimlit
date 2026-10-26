@@ -304,6 +304,23 @@ you do not create it or edit files under `build/`. The examples keep the exporte
 names without aliases and call constructor functions directly, without `new`.
 Editor import completion can help you find them.
 
+You can use JavaScript’s normal import aliases if you prefer shorter local names:
+
+```js
+import {
+  Model$Model$title as title,
+  Msg$UserChangedTitle as userChangedTitle,
+} from './app.mjs'
+
+const currentTitle = title(model)
+dispatch(userChangedTitle('Hello'))
+```
+
+`as title` gives the imported accessor a local name; it is still the same
+function. Aliases preserve the generated types and behavior, and constructor
+functions still use ordinary calls without `new`. The main examples keep the
+exported names so their connection to Gleam stays visible; aliases are optional.
+
 For editor highlighting inside tagged templates, VS Code users can install the
 [lit-html extension](https://marketplace.visualstudio.com/items?itemName=bierner.lit-html).
 It adds HTML highlighting and completions to templates tagged with `html`.

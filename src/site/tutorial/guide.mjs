@@ -316,6 +316,21 @@ export function mountGuide() {
 							or edit files in <code>build/</code>. Editor import completion can
 							help you find the generated names.
 						</p>
+						<aside class="try-it" aria-label="Optional import aliases">
+							<h3>Prefer shorter names?</h3>
+							<p>
+								JavaScript lets you give an imported function a local name with
+								<code>as</code>. This is optional:
+							</p>
+							${code(examples.importAliases.source)}
+							<p>
+								<code>title</code> is the same function as
+								<code>Model$Model$title</code>, with the same types and behavior.
+								If you choose an alias, use that name wherever you call the function
+								in this file. Our checkpoints keep the generated names so you can
+								see how they connect to Gleam; neither form changes how the app runs.
+							</p>
+						</aside>
 						<h3>Connect the two languages</h3>
 						${code(examples.external.source)}
 						<p>

@@ -66,5 +66,9 @@
   "browser-confirmation": {
     "language": "javascript",
     "source": "html`\n  <button @click=${() => {\n    if (window.confirm('Remove this recipe?')) {\n      dispatch(Msg$UserConfirmedDelete(Recipe$Recipe$id(recipe)))\n    }\n  }}>Remove recipe</button>\n`"
+  },
+  "import-aliases": {
+    "language": "javascript",
+    "source": "import {\n  Model$Model$title as title,\n  Msg$UserChangedTitle as userChangedTitle,\n} from './app.mjs'\n\nconst currentTitle = title(model)\ndispatch(userChangedTitle('Hello'))"
   }
 }

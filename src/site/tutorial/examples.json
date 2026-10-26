@@ -62,5 +62,9 @@
   "check": {
     "language": "shellscript",
     "source": "npm test\nnpm run build\nnpm run preview"
+  },
+  "importAliases": {
+    "language": "javascript",
+    "source": "import {\n  Model$Model$title as title,\n  Model$Model$message as message,\n} from './tutorial.mjs'\n\n// These call the same generated accessors:\ntitle(model)\nmessage(model)"
   }
 }
