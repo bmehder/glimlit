@@ -9,12 +9,37 @@ import runtime/mvu
 
 // -- Types ---------------------------------------------------------------
 
+pub type RecipeId =
+  Int
+
+pub type SaveId =
+  Int
+
+pub type ImportRequestId =
+  Int
+
+pub type CookingMinutes =
+  Int
+
+pub type RouteHash =
+  String
+
+pub type RecipeFilter {
+  AllRecipes
+  FavoritesOnly
+}
+
+pub type SampleImportState {
+  ImportIdle
+  ImportInProgress
+}
+
 pub type Recipe {
   Recipe(
-    id: Int,
+    id: RecipeId,
     title: String,
     description: String,
-    minutes: Int,
+    minutes: CookingMinutes,
     ingredients: String,
     instructions: String,
     favorite: Bool,
@@ -23,9 +48,9 @@ pub type Recipe {
 
 pub type Route {
   Collection
-  Detail(Int)
+  Detail(id: RecipeId)
   New
-  Edit(Int)
+  Edit(id: RecipeId)
   NotFound
 }
 
@@ -40,34 +65,26 @@ pub type Editor {
   )
 }
 
-pub type EditorMsg {
-  TitleChanged(String)
-  DescriptionChanged(String)
-  MinutesChanged(String)
-  IngredientsChanged(String)
-  InstructionsChanged(String)
-}
-
 pub type Storage {
   Loading
   Ready
-  LoadFailed(String)
+  LoadFailed(reason: String)
 }
 
-pub type Saving {
+pub type SaveStatus {
   Saved
   Saving
-  SaveFailed(String)
+  SaveFailed(reason: String)
 }
 
 // Derived from the model rather than stored as another source of state.
 pub type Screen {
   ScreenLoading
-  ScreenRecovery(String)
+  ScreenRecovery(reason: String)
   ScreenCollection
-  ScreenNew(Editor)
-  ScreenDetail(Recipe)
-  ScreenEdit(Editor, String)
+  ScreenNew(editor: Editor)
+  ScreenDetail(recipe: Recipe)
+  ScreenEdit(editor: Editor, cancel_path: RouteHash)
   ScreenNotFound
 }
 
@@ -79,12 +96,12 @@ pub type Model {
     route: Route,
     editor: Editor,
     query: String,
-    favorites: Bool,
+    filter: RecipeFilter,
     storage: Storage,
-    saving: Saving,
-    revision: Int,
-    request: Int,
-    importing: Bool,
+    save_status: SaveStatus,
+    save_id: SaveId,
+    import_request_id: ImportRequestId,
+    sample_import: SampleImportState,
     notice: String,
   )
 }
@@ -92,25 +109,29 @@ pub type Model {
 // -- Messages ------------------------------------------------------------
 
 pub type Msg {
-  RouteChanged(String)
-  QueryChanged(String)
-  FavoritesToggled
-  FavoriteToggled(Int)
-  EditorChanged(EditorMsg)
-  RecipeSubmitted
-  DeleteConfirmed(Int)
-  RetryLoad
-  UseStarters
-  RetrySave
-  StorageReturned(String)
-  StorageEmpty
-  StorageLoadFailed(String)
-  CollectionSaved(Int)
-  CollectionSaveFailed(Int, String)
-  ImportRequested
-  ImportCancelled
-  SamplesReturned(Int, String)
-  SamplesFailed(Int, String)
+  BrowserHashChanged(hash: RouteHash)
+  UserChangedQuery(query: String)
+  UserToggledFavorites
+  UserToggledFavorite(id: RecipeId)
+  UserChangedTitle(title: String)
+  UserChangedDescription(description: String)
+  UserChangedMinutes(minutes: String)
+  UserChangedIngredients(ingredients: String)
+  UserChangedInstructions(instructions: String)
+  UserSubmittedRecipe
+  UserConfirmedDelete(id: RecipeId)
+  UserClickedRetryLoad
+  UserClickedUseStarters
+  UserClickedRetrySave
+  LocalStorageReturnedRecipes(json: String)
+  LocalStorageHadNoRecipes
+  LocalStorageLoadFailed(reason: String)
+  LocalStorageSavedRecipes(save_id: SaveId)
+  LocalStorageSaveFailed(save_id: SaveId, reason: String)
+  UserClickedImportSamples
+  UserCancelledImport
+  HttpReturnedSamples(request: ImportRequestId, json: String)
+  HttpSamplesRequestFailed(request: ImportRequestId, reason: String)
 }
 
 // -- Initial state -------------------------------------------------------
@@ -122,12 +143,12 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
       route: Collection,
       editor: init_editor(),
       query: "",
-      favorites: False,
+      filter: AllRecipes,
       storage: Loading,
-      saving: Saved,
-      revision: 0,
-      request: 0,
-      importing: False,
+      save_status: Saved,
+      save_id: 0,
+      import_request_id: 0,
+      sample_import: ImportIdle,
       notice: "",
     )
   #(model, [watch_route(), load()])
@@ -138,15 +159,15 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
 pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   let storage_ready = model.storage == Ready
   case msg {
-    RouteChanged(hash) -> {
+    BrowserHashChanged(hash) -> {
       let next_route = parse_route(hash)
-      #(on_route(model, next_route), [focus_content()])
+      #(handle_route(model, route: next_route), [focus_content()])
     }
-    StorageReturned(source) -> {
+    LocalStorageReturnedRecipes(source) -> {
       case decode_collection(source) {
         Ok(recipes) -> {
           let restored = Model(..model, recipes: recipes, storage: Ready)
-          #(on_route(restored, model.route), [])
+          #(handle_route(restored, route: model.route), [])
         }
         Error(_) -> {
           let reason =
@@ -155,117 +176,149 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
         }
       }
     }
-    StorageEmpty -> #(Model(..model, storage: Ready), [])
-    StorageLoadFailed(reason) -> #(
+    LocalStorageHadNoRecipes -> #(Model(..model, storage: Ready), [])
+    LocalStorageLoadFailed(reason) -> #(
       Model(..model, storage: LoadFailed(reason)),
       [],
     )
-    RetryLoad -> #(Model(..model, storage: Loading), [load()])
-    UseStarters -> {
+    UserClickedRetryLoad -> #(Model(..model, storage: Loading), [load()])
+    UserClickedUseStarters -> {
       let model = Model(..model, recipes: starter_recipes(), storage: Ready)
-      persist_and_navigate(model, Collection)
+      persist_and_navigate(model, destination: Collection)
     }
     // Only loading, recovery, and routing messages above can run before readiness.
     _ if !storage_ready -> #(model, [])
-    QueryChanged(query) -> #(Model(..model, query: query), [])
-    FavoritesToggled -> #(Model(..model, favorites: !model.favorites), [])
-    FavoriteToggled(id) -> {
-      let recipes = toggle_favorite(model.recipes, id)
+    UserChangedQuery(query) -> #(Model(..model, query: query), [])
+    UserToggledFavorites -> {
+      let filter = case model.filter {
+        AllRecipes -> FavoritesOnly
+        FavoritesOnly -> AllRecipes
+      }
+      #(Model(..model, filter: filter), [])
+    }
+    UserToggledFavorite(id) -> {
+      let recipes = toggle_favorite(model.recipes, id: id)
       persist(Model(..model, recipes: recipes))
     }
-    EditorChanged(message) -> {
-      let draft = update_editor(model.editor, message)
+    UserChangedTitle(value) -> {
+      let draft = Editor(..model.editor, title: value, errors: [])
       #(Model(..model, editor: draft), [])
     }
-    RecipeSubmitted -> {
-      let identity = case model.route {
-        New -> Ok(#(next_recipe_id(model.recipes), False))
+    UserChangedDescription(value) -> {
+      let draft = Editor(..model.editor, description: value, errors: [])
+      #(Model(..model, editor: draft), [])
+    }
+    UserChangedMinutes(value) -> {
+      let draft = Editor(..model.editor, minutes: value, errors: [])
+      #(Model(..model, editor: draft), [])
+    }
+    UserChangedIngredients(value) -> {
+      let draft = Editor(..model.editor, ingredients: value, errors: [])
+      #(Model(..model, editor: draft), [])
+    }
+    UserChangedInstructions(value) -> {
+      let draft = Editor(..model.editor, instructions: value, errors: [])
+      #(Model(..model, editor: draft), [])
+    }
+    UserSubmittedRecipe -> {
+      let validation = case model.route {
+        New ->
+          Ok(validate_editor(
+            model.editor,
+            id: next_recipe_id(model.recipes),
+            favorite: False,
+          ))
         Edit(_) ->
           case current_recipe(model) {
-            Ok(found) -> Ok(#(found.id, found.favorite))
+            Ok(found) ->
+              Ok(validate_editor(
+                model.editor,
+                id: found.id,
+                favorite: found.favorite,
+              ))
             Error(_) -> Error(Nil)
           }
         _ -> Error(Nil)
       }
-      case identity {
+      case validation {
         Error(_) -> #(model, [])
-        Ok(#(id, favorite)) ->
-          case validate_editor(model.editor, id, favorite) {
+        Ok(result) ->
+          case result {
             Error(errors) -> {
-              let draft = editor_with_errors(model.editor, errors)
+              let draft = editor_with_errors(model.editor, errors: errors)
               #(Model(..model, editor: draft), [focus_errors()])
             }
             Ok(saved) -> {
-              let recipes = put_recipe(model.recipes, saved)
+              let recipes = put_recipe(model.recipes, recipe: saved)
               let notice = case model.route {
                 New -> "Recipe added to your collection."
                 _ -> "Recipe updated."
               }
               let model = Model(..model, recipes: recipes, notice: notice)
-              persist_and_navigate(model, Detail(saved.id))
+              persist_and_navigate(model, destination: Detail(id: saved.id))
             }
           }
       }
     }
-    DeleteConfirmed(id) -> {
-      case find_recipe(model.recipes, id) {
+    UserConfirmedDelete(id) -> {
+      case find_recipe(model.recipes, id: id) {
         Error(_) -> #(model, [])
         Ok(_) -> {
-          let recipes = remove_recipe(model.recipes, id)
+          let recipes = remove_recipe(model.recipes, id: id)
           let model =
             Model(..model, recipes: recipes, notice: "Recipe removed.")
-          persist_and_navigate(model, Collection)
+          persist_and_navigate(model, destination: Collection)
         }
       }
     }
-    RetrySave -> persist(model)
-    CollectionSaved(revision) ->
-      case revision == model.revision {
-        True -> #(Model(..model, saving: Saved), [])
+    UserClickedRetrySave -> persist(model)
+    LocalStorageSavedRecipes(save_id) ->
+      case save_id == model.save_id {
+        True -> #(Model(..model, save_status: Saved), [])
         False -> #(model, [])
       }
-    CollectionSaveFailed(revision, reason) ->
-      case revision == model.revision {
-        True -> #(Model(..model, saving: SaveFailed(reason)), [])
+    LocalStorageSaveFailed(save_id, reason) ->
+      case save_id == model.save_id {
+        True -> #(Model(..model, save_status: SaveFailed(reason)), [])
         False -> #(model, [])
       }
-    ImportRequested -> {
-      let request = model.request + 1
+    UserClickedImportSamples -> {
+      let request = model.import_request_id + 1
       let model =
         Model(
           ..model,
-          request: request,
-          importing: True,
+          import_request_id: request,
+          sample_import: ImportInProgress,
           notice: "Loading sample recipes…",
         )
       #(model, [fetch_samples(request)])
     }
-    ImportCancelled -> #(
+    UserCancelledImport -> #(
       Model(
         ..model,
-        request: model.request + 1,
-        importing: False,
+        import_request_id: model.import_request_id + 1,
+        sample_import: ImportIdle,
         notice: "Import cancelled.",
       ),
       [],
     )
-    SamplesReturned(request, source) ->
-      case is_current_import(model, request) {
+    HttpReturnedSamples(request, source) ->
+      case is_current_import(model, request_id: request) {
         False -> #(model, [])
         True -> {
           case decode_collection(source) {
             Error(_) -> {
               let notice =
                 "The sample file was invalid. Your collection is unchanged. Try again."
-              #(Model(..model, importing: False, notice: notice), [])
+              #(Model(..model, sample_import: ImportIdle, notice: notice), [])
             }
             Ok(samples) -> {
-              let recipes = merge_samples(model.recipes, samples)
+              let recipes = merge_samples(model.recipes, samples: samples)
               let model =
                 Model(
                   ..model,
                   recipes: recipes,
-                  importing: False,
+                  sample_import: ImportIdle,
                   notice: "Sample recipes imported. Existing titles were kept.",
                 )
               persist(model)
@@ -273,9 +326,9 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
           }
         }
       }
-    SamplesFailed(request, reason) ->
-      case is_current_import(model, request) {
-        True -> #(Model(..model, importing: False, notice: reason), [])
+    HttpSamplesRequestFailed(request, reason) ->
+      case is_current_import(model, request_id: request) {
+        True -> #(Model(..model, sample_import: ImportIdle, notice: reason), [])
         False -> #(model, [])
       }
   }
@@ -283,7 +336,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 
 // -- Model helpers -------------------------------------------------------
 
-fn on_route(model: Model, next: Route) -> Model {
+fn handle_route(model: Model, route next: Route) -> Model {
   let draft = case next {
     Edit(id) ->
       case find_recipe(model.recipes, id) {
@@ -296,53 +349,60 @@ fn on_route(model: Model, next: Route) -> Model {
 }
 
 fn persist(model: Model) -> #(Model, List(Effect(Msg))) {
-  let revision = model.revision + 1
+  let save_id = model.save_id + 1
   let source = encode_collection(model.recipes)
-  let model = Model(..model, revision: revision, saving: Saving)
-  #(model, [save(source, revision)])
+  let model = Model(..model, save_id: save_id, save_status: Saving)
+  #(model, [save(source, save_id: save_id)])
 }
 
 fn persist_and_navigate(
   model: Model,
-  destination: Route,
+  destination destination: Route,
 ) -> #(Model, List(Effect(Msg))) {
-  let model = on_route(model, destination)
+  let model = handle_route(model, route: destination)
   let #(model, effects) = persist(model)
-  let navigation = navigate(route_path(destination))
+  let navigation = destination |> route_path |> navigate
   #(model, list.append(effects, [navigation]))
 }
 
-fn is_current_import(model: Model, request: Int) -> Bool {
+fn is_current_import(
+  model: Model,
+  request_id request_id: ImportRequestId,
+) -> Bool {
   // Restarting or cancelling an import makes its earlier results irrelevant.
-  request == model.request && model.importing
+  request_id == model.import_request_id
+  && model.sample_import == ImportInProgress
 }
 
 // -- Recipe operations ---------------------------------------------------
 
-pub fn find_recipe(recipes: List(Recipe), id: Int) -> Result(Recipe, Nil) {
+pub fn find_recipe(
+  recipes: List(Recipe),
+  id id: RecipeId,
+) -> Result(Recipe, Nil) {
   list.find(recipes, fn(recipe) { recipe.id == id })
 }
 
-pub fn next_recipe_id(recipes: List(Recipe)) -> Int {
+pub fn next_recipe_id(recipes: List(Recipe)) -> RecipeId {
   list.fold(recipes, 1, fn(next, recipe) { int.max(next, recipe.id + 1) })
 }
 
 pub fn filter_recipes(
   recipes: List(Recipe),
-  query: String,
-  favorites: Bool,
+  query query: String,
+  filter filter: RecipeFilter,
 ) -> List(Recipe) {
   let query = query |> string.trim |> string.lowercase
   list.filter(recipes, fn(recipe) {
     let text =
       recipe.title <> " " <> recipe.description <> " " <> recipe.ingredients
     let matches_search = text |> string.lowercase |> string.contains(query)
-    let matches_favorites = !favorites || recipe.favorite
-    matches_search && matches_favorites
+    let matches_filter = filter == AllRecipes || recipe.favorite
+    matches_search && matches_filter
   })
 }
 
-pub fn valid_minutes(minutes: Int) -> Bool {
+pub fn valid_minutes(minutes: CookingMinutes) -> Bool {
   minutes > 0 && minutes <= 1440
 }
 
@@ -354,17 +414,19 @@ pub fn is_valid_recipe(recipe: Recipe) -> Bool {
   && string.trim(recipe.instructions) != ""
 }
 
-pub fn toggle_favorite(recipes: List(Recipe), id: Int) -> List(Recipe) {
+pub fn toggle_favorite(recipes: List(Recipe), id id: RecipeId) -> List(Recipe) {
   list.map(recipes, fn(recipe) {
     case recipe.id == id {
-      True -> Recipe(..recipe, favorite: !recipe.favorite)
+      True -> {
+        Recipe(..recipe, favorite: !recipe.favorite)
+      }
       False -> recipe
     }
   })
 }
 
-pub fn put_recipe(recipes: List(Recipe), saved: Recipe) -> List(Recipe) {
-  case find_recipe(recipes, saved.id) {
+pub fn put_recipe(recipes: List(Recipe), recipe saved: Recipe) -> List(Recipe) {
+  case find_recipe(recipes, id: saved.id) {
     Error(_) -> list.append(recipes, [saved])
     Ok(_) ->
       list.map(recipes, fn(recipe) {
@@ -376,13 +438,13 @@ pub fn put_recipe(recipes: List(Recipe), saved: Recipe) -> List(Recipe) {
   }
 }
 
-pub fn remove_recipe(recipes: List(Recipe), id: Int) -> List(Recipe) {
+pub fn remove_recipe(recipes: List(Recipe), id id: RecipeId) -> List(Recipe) {
   list.filter(recipes, fn(recipe) { recipe.id != id })
 }
 
 pub fn merge_samples(
   recipes: List(Recipe),
-  samples: List(Recipe),
+  samples samples: List(Recipe),
 ) -> List(Recipe) {
   let initial = #(recipes, next_recipe_id(recipes))
   let #(merged, _) = list.fold(samples, initial, add_sample)
@@ -390,9 +452,9 @@ pub fn merge_samples(
 }
 
 fn add_sample(
-  state: #(List(Recipe), Int),
+  state: #(List(Recipe), RecipeId),
   sample: Recipe,
-) -> #(List(Recipe), Int) {
+) -> #(List(Recipe), RecipeId) {
   let #(recipes, id) = state
   let already_present =
     list.any(recipes, fn(recipe) { recipe.title == sample.title })
@@ -410,31 +472,31 @@ fn add_sample(
 pub fn starter_recipes() -> List(Recipe) {
   [
     Recipe(
-      1,
-      "Lemon & white bean toast",
-      "Bright, creamy, and ready before the kettle boils.",
-      10,
-      "1 tin white beans, drained\n1 lemon\n2 slices sourdough\n2 tbsp olive oil\nA handful of parsley",
-      "Warm the beans in olive oil.\nMash half the beans with lemon zest and a squeeze of juice.\nSpoon onto toasted sourdough and finish with parsley.",
-      True,
+      id: 1,
+      title: "Lemon & white bean toast",
+      description: "Bright, creamy, and ready before the kettle boils.",
+      minutes: 10,
+      ingredients: "1 tin white beans, drained\n1 lemon\n2 slices sourdough\n2 tbsp olive oil\nA handful of parsley",
+      instructions: "Warm the beans in olive oil.\nMash half the beans with lemon zest and a squeeze of juice.\nSpoon onto toasted sourdough and finish with parsley.",
+      favorite: True,
     ),
     Recipe(
-      2,
-      "Roasted tomato pasta",
-      "A tray of tomatoes does most of the work.",
-      35,
-      "400g cherry tomatoes\n2 cloves garlic\n200g pasta\n2 tbsp olive oil\nFresh basil",
-      "Heat the oven to 200°C. Toss tomatoes and garlic with oil and roast for 25 minutes.\nCook the pasta, reserving a little cooking water.\nToss everything together and finish with basil.",
-      False,
+      id: 2,
+      title: "Roasted tomato pasta",
+      description: "A tray of tomatoes does most of the work.",
+      minutes: 35,
+      ingredients: "400g cherry tomatoes\n2 cloves garlic\n200g pasta\n2 tbsp olive oil\nFresh basil",
+      instructions: "Heat the oven to 200°C. Toss tomatoes and garlic with oil and roast for 25 minutes.\nCook the pasta, reserving a little cooking water.\nToss everything together and finish with basil.",
+      favorite: False,
     ),
     Recipe(
-      3,
-      "Apple overnight oats",
-      "Tomorrow’s breakfast, sorted tonight.",
-      5,
-      "80g rolled oats\n150ml milk of your choice\n1 apple, grated\n2 tbsp yoghurt\nA pinch of cinnamon",
-      "Stir all the ingredients together in a jar.\nCover and refrigerate overnight.\nAdd more milk to loosen before serving.",
-      False,
+      id: 3,
+      title: "Apple overnight oats",
+      description: "Tomorrow’s breakfast, sorted tonight.",
+      minutes: 5,
+      ingredients: "80g rolled oats\n150ml milk of your choice\n1 apple, grated\n2 tbsp yoghurt\nA pinch of cinnamon",
+      instructions: "Stir all the ingredients together in a jar.\nCover and refrigerate overnight.\nAdd more milk to loosen before serving.",
+      favorite: False,
     ),
   ]
 }
@@ -454,36 +516,25 @@ pub fn init_editor() -> Editor {
 
 pub fn editor_from_recipe(recipe: Recipe) -> Editor {
   Editor(
-    recipe.title,
-    recipe.description,
-    int.to_string(recipe.minutes),
-    recipe.ingredients,
-    recipe.instructions,
-    [],
+    title: recipe.title,
+    description: recipe.description,
+    minutes: int.to_string(recipe.minutes),
+    ingredients: recipe.ingredients,
+    instructions: recipe.instructions,
+    errors: [],
   )
 }
 
-pub fn update_editor(model: Editor, msg: EditorMsg) -> Editor {
-  let model = Editor(..model, errors: [])
-  case msg {
-    TitleChanged(value) -> Editor(..model, title: value)
-    DescriptionChanged(value) -> Editor(..model, description: value)
-    MinutesChanged(value) -> Editor(..model, minutes: value)
-    IngredientsChanged(value) -> Editor(..model, ingredients: value)
-    InstructionsChanged(value) -> Editor(..model, instructions: value)
-  }
-}
-
 pub fn validate_editor(
-  model: Editor,
-  id: Int,
-  favorite: Bool,
+  editor: Editor,
+  id id: RecipeId,
+  favorite favorite: Bool,
 ) -> Result(Recipe, List(String)) {
-  let minutes = model.minutes |> int.parse |> result.unwrap(0)
-  let title = string.trim(model.title)
-  let description = string.trim(model.description)
-  let ingredients = string.trim(model.ingredients)
-  let instructions = string.trim(model.instructions)
+  let minutes = editor.minutes |> int.parse |> result.unwrap(0)
+  let title = string.trim(editor.title)
+  let description = string.trim(editor.description)
+  let ingredients = string.trim(editor.ingredients)
+  let instructions = string.trim(editor.instructions)
   let errors =
     [
       #(title == "", "Give your recipe a title."),
@@ -503,25 +554,28 @@ pub fn validate_editor(
   case errors {
     [] ->
       Ok(Recipe(
-        id,
-        title,
-        description,
-        minutes,
-        ingredients,
-        instructions,
-        favorite,
+        id: id,
+        title: title,
+        description: description,
+        minutes: minutes,
+        ingredients: ingredients,
+        instructions: instructions,
+        favorite: favorite,
       ))
     _ -> Error(errors)
   }
 }
 
-pub fn editor_with_errors(model: Editor, errors: List(String)) -> Editor {
-  Editor(..model, errors: errors)
+pub fn editor_with_errors(
+  editor: Editor,
+  errors errors: List(String),
+) -> Editor {
+  Editor(..editor, errors: errors)
 }
 
 // -- Routes --------------------------------------------------------------
 
-pub fn parse_route(hash: String) -> Route {
+pub fn parse_route(hash: RouteHash) -> Route {
   let hash = string.replace(hash, "#", "")
   case string.split(hash, "/") {
     [""] | ["", ""] -> Collection
@@ -540,7 +594,7 @@ pub fn parse_route(hash: String) -> Route {
   }
 }
 
-pub fn route_path(route: Route) -> String {
+pub fn route_path(route: Route) -> RouteHash {
   case route {
     Collection -> "#/"
     Detail(id) -> "#/recipe/" <> int.to_string(id)
@@ -632,7 +686,11 @@ pub fn screen(model: Model) -> Screen {
           }
         Edit(id) ->
           case current_recipe(model) {
-            Ok(_) -> ScreenEdit(model.editor, route_path(Detail(id)))
+            Ok(_) ->
+              ScreenEdit(
+                editor: model.editor,
+                cancel_path: route_path(Detail(id)),
+              )
             Error(_) -> ScreenNotFound
           }
         NotFound -> ScreenNotFound
@@ -642,12 +700,12 @@ pub fn screen(model: Model) -> Screen {
 }
 
 pub fn visible_recipes(model: Model) -> List(Recipe) {
-  filter_recipes(model.recipes, model.query, model.favorites)
+  filter_recipes(model.recipes, query: model.query, filter: model.filter)
 }
 
 pub fn current_recipe(model: Model) -> Result(Recipe, Nil) {
   case model.route {
-    Detail(id) | Edit(id) -> find_recipe(model.recipes, id)
+    Detail(id) | Edit(id) -> find_recipe(model.recipes, id: id)
     _ -> Error(Nil)
   }
 }
@@ -657,7 +715,7 @@ pub fn can_import(model: Model) -> Bool {
 }
 
 pub fn saving_message(model: Model) -> String {
-  case model.saving {
+  case model.save_status {
     Saved -> "Kept in this browser · No account needed"
     Saving -> "Saving in this browser…"
     SaveFailed(reason) -> reason
@@ -665,7 +723,7 @@ pub fn saving_message(model: Model) -> String {
 }
 
 pub fn can_retry_save(model: Model) -> Bool {
-  case model.saving {
+  case model.save_status {
     SaveFailed(_) -> True
     Saved | Saving -> False
   }
@@ -682,16 +740,16 @@ fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
 fn load() -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "save")
-fn save(source: String, revision: Int) -> Effect(Msg)
+fn save(source: String, save_id save_id: SaveId) -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "fetchSamples")
-fn fetch_samples(request: Int) -> Effect(Msg)
+fn fetch_samples(request: ImportRequestId) -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "watchRoute")
 fn watch_route() -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "navigate")
-fn navigate(hash: String) -> Effect(Msg)
+fn navigate(hash: RouteHash) -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "focusErrors")
 fn focus_errors() -> Effect(Msg)

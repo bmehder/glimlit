@@ -68,7 +68,7 @@ There is no built-in JSX support, and the examples do not require it.
 - The counter keeps its count in the model because the count is the application.
 - Todos keep edits in the model to demonstrate an explicit editing workflow.
 - Postcard Studio updates its model on input because the preview changes live.
-- The recipe box uses a child editor model for validation and restoration, but
+- The recipe box uses an editor model for validation and restoration, but
   leaves removal confirmation to the browser. Cancelling it sends no message
   and performs no storage write.
 - The homepage code tabs model selection while a focus effect coordinates the

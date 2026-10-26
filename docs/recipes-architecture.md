@@ -11,7 +11,7 @@ that every app should have this structure.
 The [project philosophy](philosophy.md) describes the framework boundary and
 choices about browser-owned state.
 
-The recipe box exercises a parent model, a child editor, multiple screens,
+The recipe box exercises an application model, an editor, multiple screens,
 shared state, browser navigation, JSON validation, local persistence, and HTTP
 requests. It uses the existing runtime without new framework APIs.
 
@@ -33,13 +33,15 @@ uses section comments to separate the editor, recipe operations, routes, codec,
 and shared view queries without introducing more modules.
 
 The JavaScript views live together in `view.mjs`, with section comments for the
-page, collection, recipe details, editor, and shared input handling. Each screen
-still has its own template function.
+page, collection, recipe details, editor, shared storage/import status, and DOM
+helpers. Each screen has its own template function, with local `handle…` callbacks
+and display preparation above its markup. Imports retain their exported names,
+grouped by role.
 
 The source bridge resolves these modules by location. Only the new HTML page
 was added to Vite's production page list; no recipe-specific aliases were added.
 
-## Parent state and child messages
+## Model and messages
 
 The parent derives a `Screen` from storage readiness, the route, and the current
 collection. It resolves missing recipes and editor return paths in Gleam; the
@@ -47,15 +49,34 @@ JavaScript view only selects a template for that screen. Screen values are
 derived on demand, not stored alongside the model. Save messages, retry
 availability, and import availability are also derived in Gleam.
 
+The Gleam types name numeric roles explicitly: `RecipeId`, `SaveId`,
+`ImportRequestId`, and `CookingMinutes`. `RouteHash` names hash-based locations.
+These are aliases for readability; they do not enforce distinct runtime types or
+validate values. Constructor labels make recipe fields and screen payloads
+explicit without changing the stored JSON schema.
+
+The model names save tracking explicitly: `save_status: SaveStatus`,
+`save_id: SaveId`, and `import_request_id: ImportRequestId`.
+
+The model uses explicit alternatives instead of ambiguous flags:
+`RecipeFilter` is `AllRecipes` or `FavoritesOnly`, `SampleImportState` is
+`ImportIdle` or `ImportInProgress`. The view derives booleans for HTML attributes.
+Each recipe's `favorite` field is a `Bool`, matching the stored JSON field.
+
 The parent owns the collection, current route, search/filter settings, storage
-state, save revision, import request ID, and editor model. Recipe changes stay
+state, save ID, import request ID, and editor model. Recipe changes stay
 in one collection so details, favourites, and search use the same data.
 
-The editor knows only its field values and validation errors. Its update
-function returns an editor model; it does not save, navigate, or access the
-parent collection. The parent wraps field changes in `EditorChanged(EditorMsg)`
-and delegates them to `update_editor`. The editor view receives a child dispatch
-callback, so it does not import the parent app's messages.
+The editor stores its field values and validation errors in the model. Its field
+changes are ordinary variants of the single `Msg` type and are handled directly
+in `update`, alongside submission, persistence, routing, and imports. The editor
+template uses the same dispatcher as the rest of the app; there is no separate
+message type or wrapping step.
+
+Message names identify their source: `User…` for user actions, `Http…` for sample
+request results, `LocalStorage…` for persistence results, and `BrowserHashChanged`
+for hash navigation. Payload labels distinguish request IDs, save IDs, JSON,
+and failure reasons.
 
 The parent keeps submission, deletion, restoration, and import handling directly
 in one update function. Each message branch builds its next model in local steps,
@@ -77,20 +98,21 @@ models where there is state to manage; simple rendering functions need no model.
 
 Removing a recipe uses `window.confirm` in the click handler. The browser owns
 the confirmation UI; cancellation sends no message. Confirmation dispatches
-`DeleteConfirmed(id)`, and update removes the recipe and requests saving. There
+`UserConfirmedDelete(id)`, and update removes the recipe and requests saving. There
 is no pending-confirmation flag or open/close message cycle in the model.
 
 The editor uses native required/min/max/step validation before submitting.
 Gleam validates the submitted recipe as well, including whitespace-only content
 and the same duration bounds. It deliberately keeps a draft in the model to
-demonstrate child state, validation feedback, and restoration. That is an app choice. A simpler submit-only form
+demonstrate editor state, validation feedback, and restoration. That is an app choice. A simpler submit-only form
 could let inputs hold their values and read FormData on submission instead.
 The framework does not require a message for every keystroke.
 
 ## Routes and app lifetime
 
 Routes use hashes, such as `#/recipe/2/edit`. They support reloads and browser
-Back/Forward without server rewrite rules. This is app-specific routing in `recipes.gleam`, not a new framework router.
+Back/Forward without server rewrite rules. This is app-specific routing in
+`recipes.gleam`, not a new framework router.
 
 Links use ordinary `href` values. A subscription listens for `hashchange`, emits
 the initial hash, and returns a listener cleanup. The runtime gives the app one
@@ -126,7 +148,7 @@ requests a save. A failed save keeps the changed model and offers **Retry saving
 The app does not pretend that failed writes succeeded or reload stale storage
 over edits. Reloading before a failed write is recovered can lose in-memory changes.
 
-Each save carries a revision. Only the latest revision can change save status.
+Each save carries an ID. Only the latest save ID can change save status.
 The actual storage writes are synchronous and scheduled in list order. Revision
 checks alone would not make writes to an asynchronous server arrive in order;
 a remote backend would need its own concurrency strategy.
@@ -150,8 +172,8 @@ It is not a backend for saving recipes or sharing them across devices.
 
 ## What this demonstrates and what remains open
 
-- A parent model and wrapped child messages provide useful composition without
-  a new runtime API. The parent remains the place where cross-screen decisions meet.
+- One model, one message type, and one update function coordinate the screens
+  without a new runtime API. Editor fields and shared collection state stay explicit.
 - Plain view functions can share the parent's state without prop-drilling a
   framework context or starting separate app lifetimes.
 - App-specific hash routing and a single subscription are enough for these
@@ -159,7 +181,7 @@ It is not a backend for saving recipes or sharing them across devices.
 - Generated Gleam declarations and runtime JSDoc types check the JavaScript
   views/effects/subscription through `npm run check`. They do not prove that an
   external declaration matches its implementation.
-- Request IDs and save revisions are explicit app state. They work here, but
+- Request IDs and save IDs are explicit app state. They work here, but
   extracting helpers should wait until another example shows the same need.
 - This small multi-screen app provides evidence for conventions. It does not
   establish large-application performance, accessibility completeness, backend

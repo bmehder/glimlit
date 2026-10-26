@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-export function nextThemeKey(onNext) {
+export function nextThemeKey(handleNext) {
 	return {
 		start: emit => {
 			const listener = event => {
@@ -16,7 +16,7 @@ export function nextThemeKey(onNext) {
 					event.altKey
 				)
 					return
-				if (event.key.toLowerCase() === 'n') emit(onNext())
+				if (event.key.toLowerCase() === 'n') emit(handleNext())
 			}
 			window.addEventListener('keydown', listener)
 			return () => window.removeEventListener('keydown', listener)

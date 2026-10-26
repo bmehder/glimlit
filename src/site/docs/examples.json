@@ -25,7 +25,7 @@
   },
   "subscription": {
     "language": "javascript",
-    "source": "export function every(milliseconds, onTick) {\n  return {\n    start: emit => {\n      const timer = setInterval(() => emit(onTick(Date.now())), milliseconds)\n      return () => clearInterval(timer)\n    },\n  }\n}"
+    "source": "export function every(milliseconds, handleTick) {\n  return {\n    start: emit => {\n      const timer = setInterval(() => emit(handleTick(Date.now())), milliseconds)\n      return () => clearInterval(timer)\n    },\n  }\n}"
   },
   "manage": {
     "language": "javascript",
@@ -65,6 +65,6 @@
   },
   "browser-confirmation": {
     "language": "javascript",
-    "source": "html`\n  <button @click=${() => {\n    if (window.confirm('Remove this recipe?')) {\n      dispatch(new DeleteConfirmed(recipe.id))\n    }\n  }}>Remove recipe</button>\n`"
+    "source": "html`\n  <button @click=${() => {\n    if (window.confirm('Remove this recipe?')) {\n      dispatch(new UserConfirmedDelete(recipe.id))\n    }\n  }}>Remove recipe</button>\n`"
   }
 }

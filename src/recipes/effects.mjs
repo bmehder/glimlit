@@ -1,14 +1,14 @@
 // @ts-check
 
 import {
-	Msg$StorageReturned as StorageReturned,
-	Msg$StorageEmpty as StorageEmpty,
-	Msg$StorageLoadFailed as StorageLoadFailed,
-	Msg$CollectionSaved as CollectionSaved,
-	Msg$CollectionSaveFailed as CollectionSaveFailed,
-	Msg$SamplesReturned as SamplesReturned,
-	Msg$SamplesFailed as SamplesFailed,
-	Msg$RouteChanged as RouteChanged,
+	Msg$LocalStorageReturnedRecipes,
+	Msg$LocalStorageHadNoRecipes,
+	Msg$LocalStorageLoadFailed,
+	Msg$LocalStorageSavedRecipes,
+	Msg$LocalStorageSaveFailed,
+	Msg$HttpReturnedSamples,
+	Msg$HttpSamplesRequestFailed,
+	Msg$BrowserHashChanged,
 } from './recipes.mjs'
 import { hashRoute } from './subscriptions.mjs'
 
@@ -18,20 +18,23 @@ export const storageKey = 'glimlit.recipes.v1'
 /** @returns {import('../runtime/runner.mjs').Effect<string | null, Msg>} */
 export const load = () => ({
 	perform: () => localStorage.getItem(storageKey),
-	onSuccess: saved => (saved === null ? StorageEmpty() : StorageReturned(saved)),
+	onSuccess: saved =>
+		saved === null
+			? Msg$LocalStorageHadNoRecipes()
+			: Msg$LocalStorageReturnedRecipes(saved),
 	onFailure: () =>
-		StorageLoadFailed(
+		Msg$LocalStorageLoadFailed(
 			'Browser storage is unavailable. Try again, or start with the starter recipes in memory.',
 		),
 })
 
-/** @param {string} source @param {number} revision @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
-export const save = (source, revision) => ({
+/** @param {string} source @param {number} saveId @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
+export const save = (source, saveId) => ({
 	perform: () => localStorage.setItem(storageKey, source),
-	onSuccess: () => CollectionSaved(revision),
+	onSuccess: () => Msg$LocalStorageSavedRecipes(saveId),
 	onFailure: () =>
-		CollectionSaveFailed(
-			revision,
+		Msg$LocalStorageSaveFailed(
+			saveId,
 			'Could not save in this browser. Your changes are still here; retry before leaving.',
 		),
 })
@@ -43,9 +46,9 @@ export const fetchSamples = request => ({
 		if (!response.ok) throw new Error(`Sample request failed: ${response.status}`)
 		return response.text()
 	},
-	onSuccess: source => SamplesReturned(request, source),
+	onSuccess: source => Msg$HttpReturnedSamples(request, source),
 	onFailure: () =>
-		SamplesFailed(
+		Msg$HttpSamplesRequestFailed(
 			request,
 			'Could not load the samples. Your collection is unchanged. Check your connection and try again.',
 		),
@@ -56,7 +59,7 @@ export const watchRoute = () => ({
 	perform: ({ subscriptions, dispatch }) =>
 		subscriptions.start(
 			'recipes-route',
-			hashRoute(hash => RouteChanged(hash)),
+			hashRoute(hash => Msg$BrowserHashChanged(hash)),
 			dispatch,
 		),
 })

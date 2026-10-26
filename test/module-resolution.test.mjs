@@ -88,14 +88,14 @@ export { main as second } from 'gleam:nested/second/widget'
       const file = join(directory, 'src/nested/second', filename)
       const change = new Promise((resolve, reject) => {
         const timeout = setTimeout(() => reject(new Error(`${filename} edit was not watched`)), 5000)
-        const onChange = changed => {
+        const handleChange = changed => {
           if (changed === file) {
-            server.watcher.off('change', onChange)
+            server.watcher.off('change', handleChange)
             clearTimeout(timeout)
             resolve()
           }
         }
-        server.watcher.on('change', onChange)
+        server.watcher.on('change', handleChange)
       })
       await writeFile(file, source)
       await change

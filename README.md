@@ -65,7 +65,7 @@ The [Demos page](http://127.0.0.1:3000/demos/) introduces three runnable example
 - [Todos](http://127.0.0.1:3000/demos/todos/): effects, persistence, network requests,
   and subscriptions.
 - [Recipe box](http://127.0.0.1:3000/recipes/): an exploration of multiple screens,
-  a child editor, and shared state. It demonstrates what Glimlit can handle beyond
+  an editor, and shared state. It demonstrates what Glimlit can handle beyond
   its primary use case, rather than the expected shape of a Glimlit project.
 
 Each page starts its own Gleam module directly. The recipe box and beginner
@@ -346,17 +346,17 @@ Like an effect, its description is inert until used.
 The following timer description comes from the todo example’s `subscriptions.mjs`:
 
 ```js
-export function every(milliseconds, onTick) {
+export function every(milliseconds, handleTick) {
   return {
     start: emit => {
-      const timer = setInterval(() => emit(onTick(Date.now())), milliseconds)
+      const timer = setInterval(() => emit(handleTick(Date.now())), milliseconds)
       return () => clearInterval(timer)
     },
   }
 }
 ```
 
-`onTick` creates a message from the current time; `emit` sends that message back
+`handleTick` creates a message from the current time; `emit` sends that message back
 into the app's update loop. It is an ordinary callback supplied by the manager,
 which wraps the app's dispatcher with a check that this subscription is still
 active. Subscriptions can therefore produce messages without knowing the model
@@ -426,7 +426,7 @@ src/
   counter/               Small example app: model, update, and view
   todos/                 Example app with storage, fetch, and subscriptions
   tutorial/              Finished Postcard Studio app that readers edit
-  recipes/               Multi-screen recipe box with a child editor
+  recipes/               Multi-screen recipe box with an editor
   site/                  Website code; not part of the framework
     code_tabs/           Homepage tabs: a small Glimlit app
     home.css             Homepage and demos layout

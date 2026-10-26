@@ -97,9 +97,9 @@ See [the project philosophy](philosophy.md) for state ownership. Small interacti
 islands are the primary use case; the important benefit is a small amount of
 framework to understand while retaining access to real elements and native behavior.
 
-The recipe box linked from Demos demonstrates a parent model, wrapped child
-messages, routing, validation, persistence, and sample imports without new runtime
-APIs. Its removal confirmation uses the browser and sends only the confirmed
+The recipe box linked from Demos demonstrates multiple screens, editor state,
+routing, validation, persistence, and sample imports through one model, message
+type, and update function, without new runtime APIs. Its removal confirmation uses the browser and sends only the confirmed
 decision to update. See [the architecture notes](recipes-architecture.md).
 
 Larger-app conventions can still improve, but new abstractions should be justified
