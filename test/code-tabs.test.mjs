@@ -6,7 +6,7 @@ import {
   Tab$isView, Tab$View, Tab$isModelAndUpdate, Tab$ModelAndUpdate, Tab$isEffects, Tab$Effects,
   Navigation$Next, Navigation$Previous, Navigation$First, Navigation$Last,
   Msg$UserSelectedTab, Msg$UserNavigatedTab,
-} from '../build/dev/javascript/glimlit/site/code_tabs/code_tabs.mjs'
+} from '../build/dev/javascript/glimlit/code_tabs/code_tabs.mjs'
 import { run } from '../src/runtime/runner.mjs'
 
 test('homepage clicks select tabs without moving focus or mutating the old model', () => {

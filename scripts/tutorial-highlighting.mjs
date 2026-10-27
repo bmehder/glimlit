@@ -4,8 +4,8 @@ import { createHighlighter } from 'shiki'
 
 const virtualId = 'virtual:tutorial-highlighting'
 const resolvedId = `\0${virtualId}`
-const examplesPath = fileURLToPath(new URL('../src/site/tutorial/examples.json', import.meta.url))
-const checkpointsPath = fileURLToPath(new URL('../docs/tutorial/', import.meta.url))
+const examplesPath = fileURLToPath(new URL('../site/tutorial/examples.json', import.meta.url))
+const checkpointsPath = fileURLToPath(new URL('../site/tutorial/checkpoints/', import.meta.url))
 
 export function tutorialHighlighting() {
   let highlighter
@@ -26,8 +26,8 @@ export function tutorialHighlighting() {
       const sources = Object.values(examples)
       const folders = (await readdir(checkpointsPath)).filter(folder => /^\d\d-/.test(folder)).sort()
       for (const folder of folders) {
-        sources.push({ language: 'shellscript', source: `cp docs/tutorial/${folder}/* src/tutorial/` })
-        const directory = new URL(`../docs/tutorial/${folder}/`, import.meta.url)
+        sources.push({ language: 'shellscript', source: `cp site/tutorial/checkpoints/${folder}/* src/postcard/` })
+        const directory = new URL(`../site/tutorial/checkpoints/${folder}/`, import.meta.url)
         for (const filename of (await readdir(directory)).sort()) {
           if (!/\.(gleam|mjs)$/.test(filename)) continue
           const path = fileURLToPath(new URL(filename, directory))

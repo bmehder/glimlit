@@ -1,7 +1,7 @@
 <h1>
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="public/brand/glimlit-wordmark-dark.svg">
-    <img src="public/brand/glimlit-wordmark-light.svg" alt="Glimlit" width="240" height="64">
+    <source media="(prefers-color-scheme: dark)" srcset="site/public/brand/glimlit-wordmark-dark.svg">
+    <img src="site/public/brand/glimlit-wordmark-light.svg" alt="Glimlit" width="240" height="64">
   </picture>
 </h1>
 
@@ -34,7 +34,9 @@ rendering is not implemented.
 
 ## Run it
 
-You need Gleam on your PATH, plus Node.js 20.19+ or 22.12+ and npm.
+You need Gleam on your PATH, plus Node.js 20.19+ or 22.12+ and npm. Run the
+commands from the repository root, which contains `package.json` and `gleam.toml`.
+Vite serves `site/`; Gleam compiles the applications and runtime in `src/`.
 
 ```sh
 npm install
@@ -91,7 +93,7 @@ src/app/
 
 1. Create `src/app/app.gleam` and `src/app/view.mjs` using the
    [starting example in the docs](http://127.0.0.1:3000/docs/#start).
-2. In `demos/counter/index.html`, change the script's import from `gleam:counter/counter` to
+2. In `site/demos/counter/index.html`, change the script's import from `gleam:counter/counter` to
    `gleam:app/app`. Keep its `main()` call and cleanup registration. The page
    already contains the `#app` mount element used by the example.
 3. Run `npm run dev` and open <http://127.0.0.1:3000/demos/counter/>. Use `npm run build`
@@ -118,9 +120,9 @@ with a live preview, colour themes, browser storage, and optional keyboard
 shortcuts. It assumes basic web development and JavaScript knowledge, and
 introduces Gleam, lit-html, and Model–View–Update as you go.
 
-Six complete checkpoints in `docs/tutorial/` start with a static view, add
+Six complete checkpoints in `site/tutorial/checkpoints/` start with a static view, add
 editing and themes without effects, then introduce saving, restoring, and
-subscriptions. The finished app lives in `src/tutorial/`. The tutorial page is
+subscriptions. The finished app lives in `src/postcard/`. The tutorial page is
 also included in production builds and linked from the Demos page.
 
 Each chapter explains the ideas first, then provides complete replacement files
@@ -299,7 +301,7 @@ Calling a message constructor only creates a value; `dispatch(message)` sends it
 to update.
 
 Import these functions from the compiled module, such as `./counter.mjs` or
-`./tutorial.mjs`. The build supplies that module from the adjacent Gleam source;
+`./postcard.mjs`. The build supplies that module from the adjacent Gleam source;
 you do not create it or edit files under `build/`. The examples keep the exported
 names without aliases and call constructor functions directly, without `new`.
 Editor import completion can help you find them.
@@ -470,22 +472,24 @@ src/
     subscriptions.mjs    Generic subscription lifetime manager
   counter/               Small example app: model, update, and view
   todos/                 Todo list with storage and a keyboard shortcut
-  tutorial/              Finished Postcard Studio app that readers edit
   recipes/               Multi-screen recipe box with an editor
-  site/                  Website code; not part of the framework
-    code_tabs/           Homepage tabs: a small Glimlit app
-    home.css             Homepage and demos layout
-    styles.css           Website Tailwind entry point
-    navigation.mjs       Header and shared page links
-    navigation.css       Header styles
-    menu.mjs             Small-screen header menu
-    footer.mjs           Footer using the same page links
-    footer.css           Footer styles
-    chapters.mjs         Active-section tracking for docs and tutorial
-    demos/               Example hub and runner page styles
-    recipes/             Recipe box entry point and styles
-    docs/                Docs page examples, styles, and navigation entry point
-    tutorial/            Tutorial chapters, snippets, and page/postcard styles
+  postcard/              Finished Postcard Studio app that readers edit
+  code_tabs/             Homepage tabs: a small Glimlit app
+site/                    Website root served by Vite
+  index.html             Homepage
+  home.mjs               Homepage tabs entry point
+  home.css               Homepage and demos layout
+  shared/                Navigation, footer, menu, chapter tracking, shared styles
+  demos/                 Demo hub, Counter/Todos pages, and page styles
+  docs/                  API reference page, snippets, styles, and page script
+  tutorial/              Guide page, snippets, styles, and reader
+    checkpoints/         Six complete Postcard Studio app versions
+  recipes/               Recipe box page, browser entry, and styles
+  public/                Logos, favicons, and sample JSON
+
+docs/                    Project philosophy, architecture notes, improvement tracker
+scripts/                 Build and development tooling
+test/                    Runtime and app tests, including type-checking examples
 ```
 
 Start reading with `src/counter/counter.gleam` and `src/counter/view.mjs`.
@@ -500,22 +504,26 @@ apps are not required by the runtime. You will still need a browser entry point,
 a view renderer such as lit-html, and build tooling that connects your Gleam and
 JavaScript modules. This repository is not currently a separately published package.
 
-The website entry points are `index.html` (home), `demos/index.html` (example hub),
-`demos/counter/index.html`, `demos/todos/index.html`, `docs/index.html`,
-`tutorial/index.html`, and `recipes/index.html`. Their supporting code lives under
-`src/site/`. `scripts/site-navigation.mjs` inserts the shared header and footer
-in development and production, without requiring client-side JavaScript.
-The homepage tabs in `src/site/code_tabs/` use Glimlit too: Gleam selects the active
-tab, lit-html renders the tab buttons, and an effect moves keyboard focus. The
-highlighted code panels stay in the initial HTML so the first example is readable
-before JavaScript loads. Shared logos and favicons live in `public/`.
+All website pages live in `site/`, including the homepage and the `/demos/`,
+`/docs/`, `/tutorial/`, and `/recipes/` pages. Each page's HTML, styling, and
+supporting code are together. Shared navigation, footer, menu, and chapter
+tracking live in `site/shared/`. `scripts/site-navigation.mjs` inserts the header
+and footer in development and production without requiring client-side JavaScript.
 
-`docs/tutorial/` contains the six complete app checkpoints. They replace files
-in `src/tutorial/`, leaving the tutorial reader in `src/site/tutorial/` intact.
-`scripts/check-tutorial.mjs` checks them in a temporary project, and
+The homepage tabs in `src/code_tabs/` use Glimlit too: Gleam selects the active
+tab, lit-html renders the buttons, and an effect moves keyboard focus. Gleam
+requests focus for a tab value; the JavaScript effect resolves its DOM ID.
+`site/home.mjs` starts the app. Highlighted code panels stay in the initial HTML
+so the first example is readable before JavaScript loads.
+
+`site/tutorial/checkpoints/` contains the six complete app checkpoints. They
+replace files in `src/postcard/`, leaving the tutorial reader and guide intact.
+The app module is `postcard.gleam`; its adjacent JavaScript imports `./postcard.mjs`.
+`scripts/check-tutorial.mjs` checks the checkpoints in a temporary project, and
 `scripts/tutorial-highlighting.mjs` highlights their code with Shiki at build time.
-`scripts/docs-page.mjs` highlights the docs examples and generates the runtime
-reference from public JSDoc. `docs/mvu-loop.svg` is the README's loop diagram.
+`scripts/docs-page.mjs` highlights reference snippets and generates the runtime
+reference from public JSDoc. Project notes live in `docs/`; `docs/mvu-loop.svg`
+is the README's loop diagram.
 
 `test/` covers the runtime and example app behavior. `build/`, `dist/`, and
 `node_modules/` are generated and should not be edited.

@@ -5,14 +5,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { build, createServer } from 'vite'
-import { gleamImportPlugin } from '@chouquette/gleam-vite-loader'
-import { gleamSource } from '../scripts/gleam-source.mjs'
+import { gleamProject } from '../scripts/gleam-source.mjs'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 
 // Use real compiled modules, repeated basenames, and a package name other than
 // glimlit so the test cannot pass because of this repository's old aliases.
-test('new nested apps resolve in development and production without app aliases', async () => {
+test('a separate website root resolves nested apps and live edits without app aliases', async () => {
   const directory = await realpath(await mkdtemp(join(tmpdir(), 'glimlit-resolution-')))
   let server
   try {
@@ -43,24 +42,25 @@ export const describe = () => decorate(label() + suffix)
       await writeFile(join(folder, 'effects.mjs'), 'export const decorate = text => text\n')
       await writeFile(join(folder, 'custom-helper.js'), 'export const suffix = ":source"\n')
     }
-    await writeFile(join(directory, 'entry.mjs'), `
+    await mkdir(join(directory, 'site'))
+    await writeFile(join(directory, 'site/entry.mjs'), `
 export { main as first } from 'gleam:first/widget'
 export { main as second } from 'gleam:nested/second/widget'
 `)
     let watcherReady
     const config = () => ({
-      root: directory,
+      root: join(directory, 'site'),
       cacheDir: join(directory, '.vite'),
       configFile: false,
       logLevel: 'silent',
-      plugins: [gleamImportPlugin(), gleamSource(), {
+      plugins: [gleamProject(directory), {
         name: 'fixture-watcher-ready',
         configureServer(server) {
           watcherReady = new Promise(resolve => server.watcher.once('ready', resolve))
         },
       }],
     })
-    server = await createServer({ ...config(), server: { middlewareMode: true, watch: { usePolling: true, interval: 50 } } })
+    server = await createServer({ ...config(), server: { middlewareMode: true, fs: { allow: [directory] }, watch: { usePolling: true, interval: 50 } } })
     await watcherReady
     const dev = await server.ssrLoadModule('/entry.mjs')
     assert.equal(dev.first(), 'first:source')
@@ -108,7 +108,9 @@ export { main as second } from 'gleam:nested/second/widget'
     server = undefined
 
     await build({ ...config(), build: {
-      lib: { entry: join(directory, 'entry.mjs'), formats: ['es'], fileName: () => 'apps.mjs' },
+      outDir: join(directory, 'dist'),
+      emptyOutDir: true,
+      lib: { entry: join(directory, 'site/entry.mjs'), formats: ['es'], fileName: () => 'apps.mjs' },
       minify: false,
     } })
     const production = await import(pathToFileURL(join(directory, 'dist/apps.mjs')).href)

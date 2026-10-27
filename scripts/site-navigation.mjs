@@ -1,5 +1,5 @@
-import { navigationMarkup } from '../src/site/navigation.mjs'
-import { footerMarkup } from '../src/site/footer.mjs'
+import { navigationMarkup } from '../site/shared/navigation.mjs'
+import { footerMarkup } from '../site/shared/footer.mjs'
 
 export function siteNavigation() {
   return {

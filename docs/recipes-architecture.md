@@ -23,8 +23,8 @@ requests. It uses the existing runtime without new framework APIs.
 | `src/recipes/view.mjs` | Page, collection, detail, editor, shared status, and input helpers |
 | `src/recipes/effects.mjs` | Storage, fetching, navigation, and focus |
 | `src/recipes/subscriptions.mjs` | Browser hash changes and listener cleanup |
-| `src/site/recipes/` | Website entry point and styling |
-| `public/recipes/samples.json` | Same-origin sample response; no third-party API needed |
+| `site/recipes/` | Website entry point and styling |
+| `site/public/recipes/samples.json` | Same-origin sample response; no third-party API needed |
 | `test/recipes.test.mjs` | Domain, update, effect, and subscription behavior checks |
 
 The app follows the same four-file shape as the smaller examples:

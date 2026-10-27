@@ -1,9 +1,19 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, isAbsolute, relative, resolve, sep } from 'node:path'
+import { gleamImportPlugin } from '@chouquette/gleam-vite-loader'
 
 // Bridge only this project's source and generated files. Dependencies keep
 // their normal resolution, and the Gleam loader handles compilation and HMR.
-export function gleamSource() {
+// The website can have its own Vite root while Gleam still builds from the
+// package root. Keep the compiler and source bridge pointed at the same project.
+export function gleamProject(projectRoot) {
+  const compiler = gleamImportPlugin()
+  const configureCompiler = compiler.configResolved
+  compiler.configResolved = config => configureCompiler({ ...config, root: projectRoot })
+  return [compiler, gleamSource(projectRoot)]
+}
+
+export function gleamSource(projectRoot) {
   let sourceRoot
   let generatedRoot
 
@@ -16,11 +26,12 @@ export function gleamSource() {
     name: 'glimlit-gleam-source',
     enforce: 'pre',
     configResolved(config) {
-      const manifest = readFileSync(resolve(config.root, 'gleam.toml'), 'utf8')
+      const root = projectRoot ?? config.root
+      const manifest = readFileSync(resolve(root, 'gleam.toml'), 'utf8')
       const name = manifest.match(/^[ \t]*name[ \t]*=[ \t]*["']([a-z][a-z0-9_]*)["']/m)?.[1]
       if (!name) throw new Error('Could not read the package name from gleam.toml')
-      sourceRoot = resolve(config.root, 'src')
-      generatedRoot = resolve(config.root, 'build/dev/javascript', name)
+      sourceRoot = resolve(root, 'src')
+      generatedRoot = resolve(root, 'build/dev/javascript', name)
     },
     resolveId(source, importer) {
       if (!importer || !source.startsWith('.')) return

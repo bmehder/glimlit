@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Glimlit combines Gleam’s Model–View–Update architecture with JavaScript tagged template literals powered by lit-html.">
+  <title>Counter example · Glimlit</title>
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/shared/styles.css">
+  <link rel="stylesheet" href="/shared/navigation.css">
+  <link rel="stylesheet" href="/shared/footer.css">
+  <link rel="stylesheet" href="/home.css">
+  <link rel="stylesheet" href="/demos/styles.css">
+</head>
+<body class="min-h-screen bg-slate-950 font-sans text-slate-100">
+  <a class="site-skip" href="#app">Skip to example</a>
+  <div class="site-shell"><!-- site-navigation --></div>
+  <main class="mx-auto my-12 max-w-2xl px-6">
+    <header class="demos-runner-heading"><a href="/demos/">← All examples</a><p class="site-eyebrow">Glimlit example</p><h1>Counter</h1><p>The smallest model–view–update loop. Change the number and watch messages update the model.</p></header>
+    <div id="app"></div>
+    <noscript>This example needs JavaScript.</noscript>
+  </main>
+  <div class="site-shell"><!-- site-footer --></div>
+  <script type="module">
+    import { main } from 'gleam:counter/counter'
+    const stop = main()
+    if (import.meta.hot) import.meta.hot.dispose(stop)
+  </script>
+</body>
+</html>
