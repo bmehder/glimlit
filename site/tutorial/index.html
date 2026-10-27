@@ -30,21 +30,17 @@
       <section class="demos-section" aria-labelledby="finished-title">
         <div class="section-heading"><div><p class="eyebrow">The destination</p><h2 id="finished-title">Try what you’ll build</h2></div><a href="#get-ready">Then make it yourself →</a></div>
         <div id="postcard-app"></div>
-        <noscript>This interactive example needs JavaScript. The tutorial source is also available in the repository’s site/tutorial/checkpoints folder.</noscript>
+        <noscript>This interactive preview needs JavaScript. You can still read the full guide and download its checkpoint files below.</noscript>
       </section>
-      <div id="guide"></div>
+      <div id="guide"><!-- tutorial-guide --></div>
     </main>
     <!-- site-footer -->
   </div>
+  <script type="module" src="/tutorial/page.mjs"></script>
   <script type="module">
     import { main } from 'gleam:postcard/postcard'
-    import { mountGuide } from '/tutorial/guide.mjs'
-    const stopGuide = mountGuide()
     const stop = main()
-    if (import.meta.hot) import.meta.hot.dispose(() => {
-      stopGuide()
-      stop()
-    })
+    if (import.meta.hot) import.meta.hot.dispose(stop)
   </script>
 </body>
 </html>

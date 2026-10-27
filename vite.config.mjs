@@ -1,9 +1,8 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
-import { tutorialHighlighting } from './scripts/tutorial-highlighting.mjs'
+import { contentPages } from './scripts/content-pages.mjs'
 import { siteNavigation } from './scripts/site-navigation.mjs'
-import { docsPage } from './scripts/docs-page.mjs'
 import { gleamProject } from './scripts/gleam-source.mjs'
 
 const local = path => fileURLToPath(new URL(path, import.meta.url))
@@ -14,10 +13,9 @@ export default defineConfig({
   cacheDir: local('./node_modules/.vite'),
   plugins: [
     siteNavigation(),
-    docsPage(),
+    contentPages(),
     gleamProject(projectRoot),
     tailwindcss(),
-    tutorialHighlighting(),
   ],
   build: {
     outDir: local('./dist'),

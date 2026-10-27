@@ -25,7 +25,7 @@ preview belongs in the model. You choose that boundary.
 
 There is one `start` function, a small effect runner, and a subscription manager.
 Routing, forms, dialogs, and application architecture can stay with the browser,
-your app, or libraries you choose. See [the project philosophy](docs/philosophy.md)
+your app, or libraries you choose. See [the project philosophy](notes/philosophy.md)
 for state ownership, examples, and the framework's scope.
 
 This repository contains the framework, working examples, and a beginner tutorial. It is currently
@@ -75,7 +75,7 @@ The [Demos page](http://127.0.0.1:3000/demos/) introduces three runnable example
 
 Each page starts its own Gleam module directly. The tutorial has its own
 page for building Postcard Studio.
-[How the recipe box is built](docs/recipes-architecture.md) explains its module
+[How the recipe box is built](notes/recipes-architecture.md) explains its module
 structure, state and messages, persistence, and failure recovery.
 
 ## Add your own app
@@ -141,7 +141,7 @@ Gleam's `mvu.start` API and usage examples are documented separately on the page
 
 ## The loop
 
-![The MVU loop: Update produces a Model, the Model is rendered by the View, and user events produce Messages that return to Update with the current Model. Update can also request effects, whose result messages return to Update.](docs/mvu-loop.svg)
+![The MVU loop: Update produces a Model, the Model is rendered by the View, and user events produce Messages that return to Update with the current Model. Update can also request effects, whose result messages return to Update.](notes/mvu-loop.svg)
 
 Both `init` and `update` return a model and a list of effects. An empty list means
 there is no work to perform. The runtime stores the new model, renders it, and then
@@ -482,12 +482,12 @@ site/                    Website root served by Vite
   shared/                Navigation, footer, menu, chapter tracking, shared styles
   demos/                 Demo hub, Counter/Todos pages, and page styles
   docs/                  API reference page, snippets, styles, and page script
-  tutorial/              Guide page, snippets, styles, and reader
+  tutorial/              Static guide HTML, snippets, styles, and page controls
     checkpoints/         Six complete Postcard Studio app versions
   recipes/               Recipe box page, browser entry, and styles
   public/                Logos, favicons, and sample JSON
 
-docs/                    Project philosophy, architecture notes, improvement tracker
+notes/                   Project philosophy, architecture notes, improvement tracker
 scripts/                 Build and development tooling
 test/                    Runtime and app tests, including type-checking examples
 ```
@@ -519,11 +519,14 @@ so the first example is readable before JavaScript loads.
 `site/tutorial/checkpoints/` contains the six complete app checkpoints. They
 replace files in `src/postcard/`, leaving the tutorial reader and guide intact.
 The app module is `postcard.gleam`; its adjacent JavaScript imports `./postcard.mjs`.
-`scripts/check-tutorial.mjs` checks the checkpoints in a temporary project, and
-`scripts/tutorial-highlighting.mjs` highlights their code with Shiki at build time.
-`scripts/docs-page.mjs` highlights reference snippets and generates the runtime
-reference from public JSDoc. Project notes live in `docs/`; `docs/mvu-loop.svg`
-is the README's loop diagram.
+`scripts/check-tutorial.mjs` checks the checkpoints in a temporary project.
+`scripts/content-pages.mjs` uses one Shiki highlighter for Docs and the tutorial,
+expands checkpoint files into the guide, and generates the API reference from
+public JSDoc. The complete tutorial is delivered as HTML, including highlighted
+examples and downloadable checkpoint files. `site/tutorial/guide.html` holds the
+lesson content; `site/tutorial/page.mjs` handles copying and chapter tracking.
+The Postcard preview is a separate Glimlit island. Project notes live in `notes/`;
+`notes/mvu-loop.svg` is the README's loop diagram.
 
 `test/` covers the runtime and example app behavior. `build/`, `dist/`, and
 `node_modules/` are generated and should not be edited.
@@ -536,5 +539,5 @@ development updates. The source bridge leaves dependency packages alone.
 
 ## Framework development
 
-See [Framework objections and improvement priorities](docs/framework-objections.md)
+See [Framework objections and improvement priorities](notes/framework-objections.md)
 for adoption concerns, proposed next steps, and criteria for assessing progress.
