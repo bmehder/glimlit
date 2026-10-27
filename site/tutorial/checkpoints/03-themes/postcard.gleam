@@ -1,29 +1,29 @@
 import runtime/effect.{type Effect}
 import runtime/mvu
 
+// -- Types ---------------------------------------------------------------
+
 pub type Theme {
   Coral
   Ocean
   Meadow
 }
 
-pub fn theme_name(theme: Theme) -> String {
-  case theme {
-    Coral -> "coral"
-    Ocean -> "ocean"
-    Meadow -> "meadow"
-  }
-}
+// -- Model ---------------------------------------------------------------
 
 pub type Model {
   Model(title: String, message: String, theme: Theme)
 }
+
+// -- Messages ------------------------------------------------------------
 
 pub type Msg {
   UserChangedTitle(String)
   UserChangedMessage(String)
   UserSelectedTheme(Theme)
 }
+
+// -- Initial state -------------------------------------------------------
 
 pub fn init() -> #(Model, List(Effect(Msg))) {
   #(
@@ -36,6 +36,8 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
   )
 }
 
+// -- Update --------------------------------------------------------------
+
 pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   case msg {
     UserChangedTitle(title) -> #(Model(..model, title: title), [])
@@ -46,8 +48,12 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   }
 }
 
+// -- Browser boundaries --------------------------------------------------
+
 @external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
+
+// -- Start ---------------------------------------------------------------
 
 pub fn main() -> fn() -> Nil {
   mvu.start(init(), update, view)

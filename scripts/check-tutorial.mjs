@@ -39,7 +39,7 @@ try {
       }
       if (${index} >= 2) {
         [model, effects] = app.update(model, app.Msg$UserSelectedTheme(app.Theme$Ocean()));
-        assert.equal(app.theme_name(model.theme), 'ocean');
+        assert.equal(app.Theme$isOcean(model.theme), true);
         assert.deepEqual(toArray(effects), []);
       }
       if (${index} >= 3) {

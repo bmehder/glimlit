@@ -1,8 +1,9 @@
 import {
-  Msg$DesignSaved,
-  Msg$StorageFailed,
-  Msg$StorageReturnedDesign,
-  Msg$StorageWasEmpty,
+  Msg$LocalStorageSavedDesign,
+  Msg$LocalStorageSaveFailed,
+  Msg$LocalStorageRestoreFailed,
+  Msg$LocalStorageReturnedDesign,
+  Msg$LocalStorageWasEmpty,
 } from './postcard.mjs'
 
 const key = 'glimlit.postcard.v1'
@@ -10,15 +11,15 @@ const key = 'glimlit.postcard.v1'
 export function saveDesign(title, message, theme) {
   return {
     perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),
-    onSuccess: () => Msg$DesignSaved(),
-    onFailure: () => Msg$StorageFailed('Could not save. Browser storage may be unavailable.'),
+    onSuccess: () => Msg$LocalStorageSavedDesign(),
+    onFailure: () => Msg$LocalStorageSaveFailed(),
   }
 }
 
 export function loadDesign() {
   return {
     perform: () => localStorage.getItem(key),
-    onSuccess: saved => saved === null ? Msg$StorageWasEmpty() : Msg$StorageReturnedDesign(saved),
-    onFailure: () => Msg$StorageFailed('Could not restore. Browser storage may be unavailable.'),
+    onSuccess: saved => saved === null ? Msg$LocalStorageWasEmpty() : Msg$LocalStorageReturnedDesign(saved),
+    onFailure: () => Msg$LocalStorageRestoreFailed(),
   }
 }

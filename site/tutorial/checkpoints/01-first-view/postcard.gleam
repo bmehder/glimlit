@@ -1,13 +1,19 @@
 import runtime/effect.{type Effect}
 import runtime/mvu
 
+// -- Model ---------------------------------------------------------------
+
 pub type Model {
   Model(title: String, message: String)
 }
 
+// -- Messages ------------------------------------------------------------
+
 pub type Msg {
   NoOp
 }
+
+// -- Initial state -------------------------------------------------------
 
 pub fn init() -> #(Model, List(Effect(Msg))) {
   #(
@@ -19,14 +25,20 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
   )
 }
 
+// -- Update --------------------------------------------------------------
+
 pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   case msg {
     NoOp -> #(model, [])
   }
 }
 
+// -- Browser boundaries --------------------------------------------------
+
 @external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
+
+// -- Start ---------------------------------------------------------------
 
 pub fn main() -> fn() -> Nil {
   mvu.start(init(), update, view)

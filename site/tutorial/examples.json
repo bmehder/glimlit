@@ -28,24 +28,24 @@
     "source": "pub type Msg {\n  UserChangedTitle(String)\n  UserChangedMessage(String)\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(Model(..model, title: title), [])\n    UserChangedMessage(message) -> #(Model(..model, message: message), [])\n  }\n}"
   },
   "input": {
-    "language": "html",
-    "source": "<input\n  .value=${live(Model$Model$title(model))}\n  @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}\n>"
+    "language": "javascript",
+    "source": "const handleTitleInput = event =>\n  dispatch(Msg$UserChangedTitle(event.currentTarget.value))\n\nhtml`\n  <input\n    .value=${live(Model$Model$title(model))}\n    @input=${handleTitleInput}\n  >\n`"
   },
   "themes": {
     "language": "gleam",
-    "source": "pub type Theme {\n  Coral\n  Ocean\n  Meadow\n}\n\npub fn theme_name(theme: Theme) -> String {\n  case theme {\n    Coral -> \"coral\"\n    Ocean -> \"ocean\"\n    Meadow -> \"meadow\"\n  }\n}"
+    "source": "pub type Theme {\n  Coral\n  Ocean\n  Meadow\n}"
   },
   "saveMessage": {
     "language": "gleam",
-    "source": "UserClickedSave -> #(\n  Model(..model, notice: \"Saving…\"),\n  [save_design(model.title, model.message, theme_name(model.theme))],\n)"
+    "source": "UserClickedSave -> {\n  let theme = case model.theme {\n    Coral -> \"coral\"\n    Ocean -> \"ocean\"\n    Meadow -> \"meadow\"\n  }\n  #(Model(..model, notice: Saving), [\n    save_design(model.title, model.message, theme),\n  ])\n}"
   },
   "saveEffect": {
     "language": "javascript",
-    "source": "export function saveDesign(title, message, theme) {\n  return {\n    perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),\n    onSuccess: () => Msg$DesignSaved(),\n    onFailure: () => Msg$StorageFailed(\"Could not save. Browser storage may be unavailable.\"),\n  }\n}"
+    "source": "export function saveDesign(title, message, theme) {\n  return {\n    perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),\n    onSuccess: () => Msg$LocalStorageSavedDesign(),\n    onFailure: () => Msg$LocalStorageSaveFailed(),\n  }\n}"
   },
   "restoreEffect": {
     "language": "javascript",
-    "source": "export function loadDesign() {\n  return {\n    perform: () => localStorage.getItem(key),\n    onSuccess: saved => saved === null ? Msg$StorageWasEmpty() : Msg$StorageReturnedDesign(saved),\n    onFailure: () => Msg$StorageFailed(\"Could not restore. Browser storage may be unavailable.\"),\n  }\n}"
+    "source": "export function loadDesign() {\n  return {\n    perform: () => localStorage.getItem(key),\n    onSuccess: saved => saved === null ? Msg$LocalStorageWasEmpty() : Msg$LocalStorageReturnedDesign(saved),\n    onFailure: () => Msg$LocalStorageRestoreFailed(),\n  }\n}"
   },
   "decode": {
     "language": "gleam",
@@ -53,11 +53,11 @@
   },
   "cleanup": {
     "language": "javascript",
-    "source": "window.addEventListener(\"keydown\", listener)\nreturn () => window.removeEventListener(\"keydown\", listener)"
+    "source": "window.addEventListener(\"keydown\", handleKeydown)\nreturn () => window.removeEventListener(\"keydown\", handleKeydown)"
   },
   "subscribe": {
     "language": "javascript",
-    "source": "subscriptions.start(\n  \"postcard-keys\",\n  nextThemeKey(() => Msg$UserPressedNextTheme()),\n)"
+    "source": "subscriptions.start(\n  \"postcard-keys\",\n  nextThemeKey(Msg$UserPressedNextTheme),\n)"
   },
   "check": {
     "language": "shellscript",

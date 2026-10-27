@@ -4,11 +4,14 @@ import { Tab$isView, Tab$isModelAndUpdate, Tab$isEffects } from './code_tabs.mjs
 
 export const focusTab = tab => ({
 	perform: () => {
-		let id
-		if (Tab$isView(tab)) id = 'view-tab'
-		else if (Tab$isModelAndUpdate(tab)) id = 'model-tab'
-		else if (Tab$isEffects(tab)) id = 'effects-tab'
-		else throw new Error('Unknown homepage tab')
+		const id = Tab$isView(tab)
+			? 'view-tab'
+			: Tab$isModelAndUpdate(tab)
+				? 'model-tab'
+				: Tab$isEffects(tab)
+					? 'effects-tab'
+					: null
+		if (id === null) throw new Error('Unknown homepage tab')
 		document.getElementById(id)?.focus()
 	},
 })

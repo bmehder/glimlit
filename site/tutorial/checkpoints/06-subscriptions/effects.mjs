@@ -1,10 +1,11 @@
 import {
-  Msg$DesignSaved,
-  Msg$StorageFailed,
-  Msg$StorageReturnedDesign,
-  Msg$StorageWasEmpty,
-  Msg$ShortcutsChanged,
-  Msg$ShortcutsFailed,
+  Msg$LocalStorageSavedDesign,
+  Msg$LocalStorageSaveFailed,
+  Msg$LocalStorageRestoreFailed,
+  Msg$LocalStorageReturnedDesign,
+  Msg$LocalStorageWasEmpty,
+  Msg$KeyboardShortcutsChanged,
+  Msg$KeyboardShortcutsFailed,
   Msg$UserPressedNextTheme,
 } from './postcard.mjs'
 import { nextThemeKey } from './subscriptions.mjs'
@@ -14,16 +15,16 @@ const key = 'glimlit.postcard.v1'
 export function saveDesign(title, message, theme) {
   return {
     perform: () => localStorage.setItem(key, JSON.stringify({ title, message, theme })),
-    onSuccess: () => Msg$DesignSaved(),
-    onFailure: () => Msg$StorageFailed('Could not save. Browser storage may be unavailable.'),
+    onSuccess: () => Msg$LocalStorageSavedDesign(),
+    onFailure: () => Msg$LocalStorageSaveFailed(),
   }
 }
 
 export function loadDesign() {
   return {
     perform: () => localStorage.getItem(key),
-    onSuccess: saved => saved === null ? Msg$StorageWasEmpty() : Msg$StorageReturnedDesign(saved),
-    onFailure: () => Msg$StorageFailed('Could not restore. Browser storage may be unavailable.'),
+    onSuccess: saved => saved === null ? Msg$LocalStorageWasEmpty() : Msg$LocalStorageReturnedDesign(saved),
+    onFailure: () => Msg$LocalStorageRestoreFailed(),
   }
 }
 
@@ -31,12 +32,12 @@ export function setShortcuts(enabled) {
   return {
     perform: ({ subscriptions }) => {
       if (enabled) {
-        subscriptions.start('postcard-keys', nextThemeKey(() => Msg$UserPressedNextTheme()))
+        subscriptions.start('postcard-keys', nextThemeKey(Msg$UserPressedNextTheme))
       } else {
         subscriptions.stop('postcard-keys')
       }
     },
-    onSuccess: () => Msg$ShortcutsChanged(enabled),
-    onFailure: () => Msg$ShortcutsFailed('Could not change keyboard shortcuts.'),
+    onSuccess: () => Msg$KeyboardShortcutsChanged(enabled),
+    onFailure: () => Msg$KeyboardShortcutsFailed(),
   }
 }

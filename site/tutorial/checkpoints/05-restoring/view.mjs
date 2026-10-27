@@ -10,9 +10,19 @@ import {
   Theme$Meadow,
   Msg$UserSelectedTheme,
   Model$Model$theme,
-  theme_name,
+  Theme$isCoral,
+  Theme$isOcean,
+  Theme$isMeadow,
   Msg$UserClickedSave,
   Model$Model$notice,
+  Notice$isUnsaved,
+  Notice$isSaving,
+  Notice$isSaved,
+  Notice$isSaveFailed,
+  Notice$isRestoreFailed,
+  Notice$isNoSavedDesign,
+  Notice$isRestored,
+  Notice$isInvalidSavedDesign,
   Msg$UserClickedRestore,
 } from './postcard.mjs'
 
@@ -20,34 +30,46 @@ export function view(model, dispatch) {
   const app = document.getElementById('postcard-app')
   if (!app) throw new Error('Missing #postcard-app mount element')
 
+  const handleTitleInput = event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))
+  const handleMessageInput = event => dispatch(Msg$UserChangedMessage(event.currentTarget.value))
+  const handleSaveClick = () => dispatch(Msg$UserClickedSave())
+  const handleRestoreClick = () => dispatch(Msg$UserClickedRestore())
+
+  function themeButton(label, value) {
+    const handleThemeClick = () => dispatch(Msg$UserSelectedTheme(value))
+    return html`<button type="button" class="theme-option"
+      aria-pressed=${themeName(Model$Model$theme(model)) === themeName(value)}
+      @click=${handleThemeClick}>${label}</button>`
+  }
+
   render(html`
     <div class="studio">
       <div class="studio-controls">
         <label for="postcard-title">A title for your postcard</label>
         <input id="postcard-title" maxlength="80"
           .value=${live(Model$Model$title(model))}
-          @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}>
+          @input=${handleTitleInput}>
         <label for="postcard-message">Your message</label>
         <textarea id="postcard-message" rows="4" maxlength="400"
           .value=${live(Model$Model$message(model))}
-          @input=${event => dispatch(Msg$UserChangedMessage(event.currentTarget.value))}></textarea>
+          @input=${handleMessageInput}></textarea>
         <fieldset>
           <legend>Choose a colour</legend>
           <div class="theme-options">
-            ${themeButton('Coral', Theme$Coral(), model, dispatch)}
-            ${themeButton('Ocean', Theme$Ocean(), model, dispatch)}
-            ${themeButton('Meadow', Theme$Meadow(), model, dispatch)}
+            ${themeButton('Coral', Theme$Coral())}
+            ${themeButton('Ocean', Theme$Ocean())}
+            ${themeButton('Meadow', Theme$Meadow())}
           </div>
         </fieldset>
         <div class="studio-actions">
-          <button type="button" @click=${() => dispatch(Msg$UserClickedSave())}>Save design</button>
-          <button type="button" class="secondary" @click=${() => dispatch(Msg$UserClickedRestore())}>Restore saved</button>
+          <button type="button" @click=${handleSaveClick}>Save design</button>
+          <button type="button" class="secondary" @click=${handleRestoreClick}>Restore saved</button>
         </div>
-        <p class="studio-status" role="status">${Model$Model$notice(model)}</p>
+        <p class="studio-status" role="status">${noticeText(Model$Model$notice(model))}</p>
       </div>
       <div class="preview-area">
         <p class="preview-label">Live preview</p>
-        <article class="postcard postcard-${theme_name(Model$Model$theme(model))}" aria-label="Your postcard preview">
+        <article class="postcard postcard-${themeName(Model$Model$theme(model))}" aria-label="Your postcard preview">
           <div class="postcard-top"><span>A note from me to you</span><span class="postcard-stamp" aria-hidden="true">✳︎</span></div>
           <h3>${Model$Model$title(model)}</h3>
           <p class="postcard-message">${Model$Model$message(model)}</p>
@@ -58,8 +80,22 @@ export function view(model, dispatch) {
   `, app)
 }
 
-function themeButton(label, value, model, dispatch) {
-  return html`<button type="button" class="theme-option"
-    aria-pressed=${theme_name(Model$Model$theme(model)) === theme_name(value)}
-    @click=${() => dispatch(Msg$UserSelectedTheme(value))}>${label}</button>`
+
+function themeName(theme) {
+  if (Theme$isCoral(theme)) return 'coral'
+  if (Theme$isOcean(theme)) return 'ocean'
+  if (Theme$isMeadow(theme)) return 'meadow'
+  throw new Error('Unknown postcard theme')
+}
+
+function noticeText(notice) {
+  if (Notice$isUnsaved(notice)) return "Your design stays in this tab until you save it."
+  if (Notice$isSaving(notice)) return "Saving…"
+  if (Notice$isSaved(notice)) return "Saved in this browser."
+  if (Notice$isSaveFailed(notice)) return "Could not save. Browser storage may be unavailable."
+  if (Notice$isRestoreFailed(notice)) return "Could not restore. Browser storage may be unavailable."
+  if (Notice$isNoSavedDesign(notice)) return "No saved design yet. Save one first."
+  if (Notice$isRestored(notice)) return "Restored your saved design."
+  if (Notice$isInvalidSavedDesign(notice)) return "The saved design could not be read."
+  throw new Error('Unknown postcard notice')
 }

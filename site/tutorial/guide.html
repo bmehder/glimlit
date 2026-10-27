@@ -288,7 +288,8 @@
 			</p>
 			<!-- code:input -->
 			<p>
-				<code>@input</code> attaches a DOM event listener. The handler reads
+				<code>@input</code> attaches a DOM event listener. We prepare the named
+				handler above the template so the markup stays easy to scan. The handler reads
 				the input’s value, creates a Gleam message with its generated
 				JavaScript constructor, and sends it with <code>dispatch</code>. The
 				runtime calls <code>update</code>, stores the next model, and calls
@@ -337,7 +338,8 @@
 				arbitrary string where a theme is expected.
 			</p>
 			<p>
-				The view uses <code>theme_name</code> to pick the CSS class
+				The view’s local <code>themeName</code> function uses generated theme
+				predicates to pick the CSS class
 				<code>postcard-coral</code>, <code>postcard-ocean</code>, or
 				<code>postcard-meadow</code>. The theme buttons send messages just like
 				the text inputs do. Their <code>aria-pressed</code> attributes
@@ -370,7 +372,10 @@
 			</p>
 			<!-- code:saveMessage -->
 			<p>
-				Add <code>notice: String</code> to the model for feedback, and messages
+				Add a <code>Notice</code> type with <code>Unsaved</code>,
+				<code>Saving</code>, <code>Saved</code>, and <code>SaveFailed</code>
+				variants, and a <code>notice: Notice</code> field to the model. The view’s
+				<code>noticeText</code> function chooses the feedback wording. Add messages
 				for saving, success, and failure. Declare <code>save_design</code> as
 				an external function implemented by <code>saveDesign</code> in
 				<code>effects.mjs</code>.
@@ -384,10 +389,10 @@
 				begins.
 			</p>
 			<p>
-				<code>onSuccess</code> creates a <code>DesignSaved</code> message;
-				<code>onFailure</code> creates <code>StorageFailed</code>. Each goes
-				through <code>update</code> to change the notice. These constructors
-				are imported with names such as <code>Msg$DesignSaved</code> and
+				<code>onSuccess</code> creates a <code>LocalStorageSavedDesign</code> message;
+				<code>onFailure</code> creates <code>LocalStorageSaveFailed</code>. Each goes
+				through <code>update</code> to change the notice state. These constructors
+				are imported with names such as <code>Msg$LocalStorageSavedDesign</code> and
 				used directly without aliases or <code>new</code>. The same pattern
 				applies to messages with and without data. Theme values use generated
 				functions such as <code>Theme$Ocean()</code>.
@@ -416,8 +421,9 @@
 			<p>
 				The update function returns <code>[load_design()]</code> when it
 				receives <code>UserClickedRestore</code>. The effect’s result comes
-				back as <code>StorageReturnedDesign(String)</code> or
-				<code>StorageWasEmpty</code>.
+				back as <code>LocalStorageReturnedDesign(String)</code> or
+				<code>LocalStorageWasEmpty</code>. A failed read produces
+				<code>LocalStorageRestoreFailed</code>.
 			</p>
 			<h3>Check data at the boundary</h3>
 			<p>
@@ -433,9 +439,12 @@
 				three <code>Theme</code> variants.
 			</p>
 			<p>
-				<code>json.parse(saved, design_decoder())</code> returns a result:
+				<code>json.parse(saved, decoder)</code> returns a result:
 				<code>Ok</code> contains a valid design; <code>Error</code> means
-				decoding failed. The update function handles both branches. A missing
+				decoding failed. The decoder is defined in the result message’s update
+				branch, where its rules are used. Extend <code>Notice</code> with
+				<code>Restored</code>, <code>NoSavedDesign</code>,
+				<code>InvalidSavedDesign</code>, and <code>RestoreFailed</code>. A missing
 				or invalid design changes the feedback message and preserves what
 				you’re currently editing.
 			</p>
@@ -474,7 +483,9 @@
 			<p>
 				The complete listener ignores input fields (including the shortcuts
 				checkbox), textareas, select controls, editable content, held-down
-				keys, and modifier shortcuts. Typing an “n” into your postcard must
+				keys, events already handled by another listener, composition events,
+				dialogs, and modifier shortcuts (including Shift). It prevents the
+				default action only when it handles the shortcut. Typing an “n” into your postcard must
 				keep working normally.
 			</p>
 			<h3>Start and stop through effects</h3>
@@ -494,8 +505,11 @@
 			<!-- code:subscribe -->
 			<p>
 				The start/stop effect reports success with
-				<code>ShortcutsChanged(enabled)</code>. That message updates the
-				checkbox’s model field. Each key press produces
+				<code>KeyboardShortcutsChanged(enabled)</code>. That message updates the
+				checkbox’s model field. A setup failure produces
+				<code>KeyboardShortcutsFailed</code>; update records
+				<code>ShortcutSetupFailed</code> in the notice, and the view explains it.
+				Each key press produces
 				<code>UserPressedNextTheme</code>, which goes through the same update
 				function as a button click. Update picks the next colour; the listener
 				doesn’t reach into the DOM to change it.

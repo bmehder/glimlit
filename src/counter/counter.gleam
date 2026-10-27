@@ -7,7 +7,6 @@ pub type Model {
 
 pub type Msg {
   UserClickedIncrement
-  UserClickedIncrementBy10
   UserClickedDecrement
   UserClickedReset
 }
@@ -19,7 +18,6 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
 pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   case msg {
     UserClickedIncrement -> #(Model(count: model.count + 1), [])
-    UserClickedIncrementBy10 -> #(Model(count: model.count + 10), [])
     UserClickedDecrement -> #(Model(count: model.count - 1), [])
     UserClickedReset -> #(Model(count: 0), [])
   }

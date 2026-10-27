@@ -1,32 +1,39 @@
 import runtime/effect.{type Effect}
 import runtime/mvu
 
+// -- Types ---------------------------------------------------------------
+
 pub type Theme {
   Coral
   Ocean
   Meadow
 }
 
-pub fn theme_name(theme: Theme) -> String {
-  case theme {
-    Coral -> "coral"
-    Ocean -> "ocean"
-    Meadow -> "meadow"
-  }
+pub type Notice {
+  Unsaved
+  Saving
+  Saved
+  SaveFailed
 }
 
+// -- Model ---------------------------------------------------------------
+
 pub type Model {
-  Model(title: String, message: String, theme: Theme, notice: String)
+  Model(title: String, message: String, theme: Theme, notice: Notice)
 }
+
+// -- Messages ------------------------------------------------------------
 
 pub type Msg {
   UserChangedTitle(String)
   UserChangedMessage(String)
   UserSelectedTheme(Theme)
   UserClickedSave
-  DesignSaved
-  StorageFailed(String)
+  LocalStorageSavedDesign
+  LocalStorageSaveFailed
 }
+
+// -- Initial state -------------------------------------------------------
 
 pub fn init() -> #(Model, List(Effect(Msg))) {
   #(
@@ -34,11 +41,13 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
       title: "Hello from somewhere nice",
       message: "Wish you were here. The days are slow and the coffee is good.",
       theme: Coral,
-      notice: "Your design stays in this tab until you save it.",
+      notice: Unsaved,
     ),
     [],
   )
 }
+
+// -- Update --------------------------------------------------------------
 
 pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   case msg {
@@ -48,21 +57,32 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 
     UserSelectedTheme(theme) -> #(Model(..model, theme: theme), [])
 
-    UserClickedSave -> #(Model(..model, notice: "Saving…"), [
-      save_design(model.title, model.message, theme_name(model.theme)),
-    ])
+    UserClickedSave -> {
+      let theme = case model.theme {
+        Coral -> "coral"
+        Ocean -> "ocean"
+        Meadow -> "meadow"
+      }
+      #(Model(..model, notice: Saving), [
+        save_design(model.title, model.message, theme),
+      ])
+    }
 
-    DesignSaved -> #(Model(..model, notice: "Saved in this browser."), [])
+    LocalStorageSavedDesign -> #(Model(..model, notice: Saved), [])
 
-    StorageFailed(reason) -> #(Model(..model, notice: reason), [])
+    LocalStorageSaveFailed -> #(Model(..model, notice: SaveFailed), [])
   }
 }
+
+// -- Browser boundaries --------------------------------------------------
 
 @external(javascript, "./effects.mjs", "saveDesign")
 fn save_design(title: String, message: String, theme: String) -> Effect(Msg)
 
 @external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
+
+// -- Start ---------------------------------------------------------------
 
 pub fn main() -> fn() -> Nil {
   mvu.start(init(), update, view)

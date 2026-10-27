@@ -3,7 +3,6 @@
 import { html, render } from 'lit-html'
 import {
 	Msg$UserClickedIncrement,
-	Msg$UserClickedIncrementBy10,
 	Msg$UserClickedDecrement,
 	Msg$UserClickedReset,
 	Model$Model$count,
@@ -28,12 +27,6 @@ export function view(model, dispatch) {
 			</p>
 			${button('−', 'Decrease count', Msg$UserClickedDecrement(), dispatch)}
 			${button('+', 'Increase count', Msg$UserClickedIncrement(), dispatch)}
-			${button(
-				'+10',
-				'Increase count by 10',
-				Msg$UserClickedIncrementBy10(),
-				dispatch,
-			)}
 			${button('Reset', 'Reset count', Msg$UserClickedReset(), dispatch)}
 		`,
 		app,

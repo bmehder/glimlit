@@ -3,12 +3,21 @@ import assert from 'node:assert/strict';
 import { from_list as toArray } from '#gleam/array';
 import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
 import {
-  init, update, theme_name, Theme$Ocean,
+  init, update, Theme$Ocean, Theme$isOcean, Theme$isCoral, Theme$isMeadow,
+  Notice$isSaving, Notice$isSaved, Notice$isSaveFailed, Notice$isRestoreFailed,
+  Notice$isShortcutSetupFailed, Msg$KeyboardShortcutsFailed,
   Msg$UserChangedTitle, Msg$UserChangedMessage, Msg$UserSelectedTheme,
   Msg$UserClickedSave, Msg$UserClickedRestore, Msg$UserToggledShortcuts, Msg$UserPressedNextTheme,
-  Msg$StorageReturnedDesign as restored, Msg$StorageWasEmpty as empty,
-  Msg$StorageFailed as failed, Msg$ShortcutsChanged as shortcutsChanged,
+  Msg$LocalStorageReturnedDesign as restored, Msg$LocalStorageWasEmpty as empty,
+  Msg$LocalStorageSaveFailed as failed, Msg$KeyboardShortcutsChanged as shortcutsChanged,
 } from '../build/dev/javascript/glimlit/postcard/postcard.mjs';
+
+function themeName(theme) {
+  if (Theme$isOcean(theme)) return 'ocean';
+  if (Theme$isCoral(theme)) return 'coral';
+  if (Theme$isMeadow(theme)) return 'meadow';
+  throw new Error('Unknown theme');
+}
 
 function replaceGlobal(t, name, value) {
   const original = Object.getOwnPropertyDescriptor(globalThis, name);
@@ -27,10 +36,10 @@ test('postcard editing is immutable and preserves unrelated fields', () => {
   const [coloured, colourEffects] = update(written, Msg$UserSelectedTheme(Theme$Ocean()));
   assert.equal(coloured.title, 'A weekend away');
   assert.equal(coloured.message, 'Hello <script>');
-  assert.equal(theme_name(coloured.theme), 'ocean');
+  assert.equal(themeName(coloured.theme), 'ocean');
   assert.notEqual(initial.title, titled.title);
   assert.equal(initial.message, titled.message);
-  assert.equal(theme_name(initial.theme), 'coral');
+  assert.equal(themeName(initial.theme), 'coral');
   for (const effects of [titleEffects, messageEffects, colourEffects]) assert.deepEqual(toArray(effects), []);
 });
 
@@ -42,7 +51,7 @@ test('saving is deferred, stores a snapshot, and reports success through update'
   const [draft] = update(initial, Msg$UserChangedTitle('Saved title'));
   const [saving, effects] = update(draft, Msg$UserClickedSave());
   assert.equal(calls, 0);
-  assert.match(saving.notice, /Saving/);
+  assert.ok(Notice$isSaving(saving.notice));
   const [newer] = update(saving, Msg$UserChangedTitle('Newer draft'));
   let message;
   await run(toArray(effects)[0], result => { message = result; });
@@ -51,7 +60,7 @@ test('saving is deferred, stores a snapshot, and reports success through update'
   });
   const [done] = update(newer, message);
   assert.equal(done.title, 'Newer draft');
-  assert.match(done.notice, /Saved in this browser/);
+  assert.ok(Notice$isSaved(done.notice));
 });
 
 test('restoring saved JSON restores the design and preserves shortcut state', async t => {
@@ -69,7 +78,7 @@ test('restoring saved JSON restores the design and preserves shortcut state', as
   const [next, followups] = update(enabled, message);
   assert.equal(next.title, 'From the coast');
   assert.equal(next.message, 'See you soon');
-  assert.equal(theme_name(next.theme), 'meadow');
+  assert.equal(themeName(next.theme), 'meadow');
   assert.equal(next.shortcuts, true);
   assert.deepEqual(toArray(followups), []);
 });
@@ -77,7 +86,7 @@ test('restoring saved JSON restores the design and preserves shortcut state', as
 test('missing, invalid, and failed storage preserve the current draft', async t => {
   const [initial] = init();
   const [draft] = update(initial, Msg$UserChangedTitle('Keep my draft'));
-  for (const message of [empty(), failed('Storage blocked'),
+  for (const message of [empty(), failed(),
     ...['not JSON', '{}', 'null', '[]', '{"title":4,"message":"Hi","theme":"coral"}',
       '{"title":"Hi","message":"Hi","theme":"unknown"}'].map(restored),
   ]) {
@@ -96,7 +105,7 @@ test('missing, invalid, and failed storage preserve the current draft', async t 
     await run(toArray(effects)[0], result => { message = result; });
     const [next] = update(draft, message);
     assert.equal(next.title, draft.title);
-    assert.match(next.notice, /Could not/);
+    assert.ok(Notice$isSaveFailed(next.notice) || Notice$isRestoreFailed(next.notice));
   }
 });
 
@@ -115,7 +124,7 @@ test('shortcut messages cycle every theme only while enabled', () => {
   let [model] = update(initial, shortcutsChanged(true));
   for (const expected of ['ocean', 'meadow', 'coral']) {
     [model] = update(model, Msg$UserPressedNextTheme());
-    assert.equal(theme_name(model.theme), expected);
+    assert.equal(themeName(model.theme), expected);
     assert.equal(model.title, initial.title);
   }
 });
@@ -123,11 +132,12 @@ test('shortcut messages cycle every theme only while enabled', () => {
 test('shortcuts ignore editing and modifiers and clean up on disable and app stop', async t => {
   class FakeElement {
     constructor(editing = false) { this.editing = editing; this.isContentEditable = false; }
-    closest() { return this.editing ? this : null; }
+    matches() { return this.editing; }
+    closest(selector) { return selector === 'dialog' && this.dialog ? this : null; }
   }
   const target = new EventTarget();
   replaceGlobal(t, 'window', target);
-  replaceGlobal(t, 'Element', FakeElement);
+  replaceGlobal(t, 'HTMLElement', FakeElement);
   const add = t.mock.method(target, 'addEventListener');
   const remove = t.mock.method(target, 'removeEventListener');
   const runtime = createRuntime();
@@ -140,35 +150,52 @@ test('shortcuts ignore editing and modifiers and clean up on disable and app sto
     await run(toArray(effects)[0], dispatch, runtime);
   }
   function key(options = {}, element = new FakeElement()) {
-    const event = new Event('keydown');
-    for (const [name, value] of Object.entries({ key: 'n', repeat: false, ctrlKey: false, metaKey: false, altKey: false, ...options })) {
+    const event = new Event('keydown', { cancelable: true });
+    for (const [name, value] of Object.entries({ key: 'n', repeat: false, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, isComposing: false, ...options })) {
       Object.defineProperty(event, name, { value });
     }
     Object.defineProperty(event, 'target', { value: element });
+    if (options.prevented) event.preventDefault();
     target.dispatchEvent(event);
+    return event;
   }
   assert.equal(add.mock.callCount(), 0);
   await toggle();
   assert.equal(model.shortcuts, true);
   assert.equal(add.mock.callCount(), 1);
-  key();
-  assert.equal(theme_name(model.theme), 'ocean');
-  for (const options of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { repeat: true }, { key: 'x' }]) key(options);
+  assert.equal(key().defaultPrevented, true);
+  assert.equal(themeName(model.theme), 'ocean');
+  for (const options of [{ ctrlKey: true }, { metaKey: true }, { altKey: true }, { repeat: true }, { shiftKey: true }, { isComposing: true }, { prevented: true }, { key: 'x' }]) key(options);
   key({}, new FakeElement(true));
+  const dialog = new FakeElement();
+  dialog.dialog = true;
+  key({}, dialog);
   const editable = new FakeElement();
   editable.isContentEditable = true;
   key({}, editable);
-  assert.equal(theme_name(model.theme), 'ocean');
+  assert.equal(themeName(model.theme), 'ocean');
   key({ key: 'N' });
-  assert.equal(theme_name(model.theme), 'meadow');
+  assert.equal(themeName(model.theme), 'meadow');
   await toggle();
   assert.equal(remove.mock.callCount(), 1);
   assert.equal(remove.mock.calls[0].arguments[1], add.mock.calls[0].arguments[1]);
   key();
-  assert.equal(theme_name(model.theme), 'meadow');
+  assert.equal(themeName(model.theme), 'meadow');
   await toggle();
   stop(runtime);
   assert.equal(remove.mock.callCount(), 2);
   key();
-  assert.equal(theme_name(model.theme), 'meadow');
+  assert.equal(themeName(model.theme), 'meadow');
+});
+
+
+test('failed shortcut setup preserves the design and checkbox state', () => {
+  const [initial] = init();
+  const [next, effects] = update(initial, Msg$KeyboardShortcutsFailed());
+  assert.equal(next.title, initial.title);
+  assert.equal(next.message, initial.message);
+  assert.equal(next.theme, initial.theme);
+  assert.equal(next.shortcuts, initial.shortcuts);
+  assert.ok(Notice$isShortcutSetupFailed(next.notice));
+  assert.deepEqual(toArray(effects), []);
 });

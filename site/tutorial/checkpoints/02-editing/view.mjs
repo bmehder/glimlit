@@ -11,17 +11,20 @@ export function view(model, dispatch) {
   const app = document.getElementById('postcard-app')
   if (!app) throw new Error('Missing #postcard-app mount element')
 
+  const handleTitleInput = event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))
+  const handleMessageInput = event => dispatch(Msg$UserChangedMessage(event.currentTarget.value))
+
   render(html`
     <div class="studio">
       <div class="studio-controls">
         <label for="postcard-title">A title for your postcard</label>
         <input id="postcard-title" maxlength="80"
           .value=${live(Model$Model$title(model))}
-          @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}>
+          @input=${handleTitleInput}>
         <label for="postcard-message">Your message</label>
         <textarea id="postcard-message" rows="4" maxlength="400"
           .value=${live(Model$Model$message(model))}
-          @input=${event => dispatch(Msg$UserChangedMessage(event.currentTarget.value))}></textarea>
+          @input=${handleMessageInput}></textarea>
       </div>
       <div class="preview-area">
         <p class="preview-label">Live preview</p>

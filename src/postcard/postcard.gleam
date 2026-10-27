@@ -3,65 +3,58 @@ import gleam/json
 import runtime/effect.{type Effect}
 import runtime/mvu
 
+// -- Types ---------------------------------------------------------------
+
 pub type Theme {
   Coral
   Ocean
   Meadow
 }
 
-pub fn theme_name(theme: Theme) -> String {
-  case theme {
-    Coral -> "coral"
-    Ocean -> "ocean"
-    Meadow -> "meadow"
-  }
+pub type Notice {
+  Unsaved
+  Saving
+  Saved
+  SaveFailed
+  RestoreFailed
+  NoSavedDesign
+  Restored
+  InvalidSavedDesign
+  ShortcutSetupFailed
 }
 
-fn design_decoder() -> decode.Decoder(#(String, String, Theme)) {
-  use title <- decode.field("title", decode.string)
-  use message <- decode.field("message", decode.string)
-  use name <- decode.field("theme", decode.string)
-  case name {
-    "coral" -> decode.success(#(title, message, Coral))
-    "ocean" -> decode.success(#(title, message, Ocean))
-    "meadow" -> decode.success(#(title, message, Meadow))
-    _ -> decode.failure(#("", "", Coral), "a postcard theme")
-  }
-}
-
-fn next_theme(theme: Theme) -> Theme {
-  case theme {
-    Coral -> Ocean
-    Ocean -> Meadow
-    Meadow -> Coral
-  }
-}
+// -- Model ---------------------------------------------------------------
 
 pub type Model {
   Model(
     title: String,
     message: String,
     theme: Theme,
-    notice: String,
+    notice: Notice,
     shortcuts: Bool,
   )
 }
+
+// -- Messages ------------------------------------------------------------
 
 pub type Msg {
   UserChangedTitle(String)
   UserChangedMessage(String)
   UserSelectedTheme(Theme)
   UserClickedSave
-  DesignSaved
-  StorageFailed(String)
+  LocalStorageSavedDesign
+  LocalStorageSaveFailed
+  LocalStorageRestoreFailed
   UserClickedRestore
-  StorageReturnedDesign(String)
-  StorageWasEmpty
+  LocalStorageReturnedDesign(String)
+  LocalStorageWasEmpty
   UserToggledShortcuts
-  ShortcutsChanged(Bool)
-  ShortcutsFailed(String)
+  KeyboardShortcutsChanged(Bool)
+  KeyboardShortcutsFailed
   UserPressedNextTheme
 }
+
+// -- Initial state -------------------------------------------------------
 
 pub fn init() -> #(Model, List(Effect(Msg))) {
   #(
@@ -69,12 +62,14 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
       title: "Hello from somewhere nice",
       message: "Wish you were here. The days are slow and the coffee is good.",
       theme: Coral,
-      notice: "Your design stays in this tab until you save it.",
+      notice: Unsaved,
       shortcuts: False,
     ),
     [],
   )
 }
+
+// -- Update --------------------------------------------------------------
 
 pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   case msg {
@@ -84,54 +79,83 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 
     UserSelectedTheme(theme) -> #(Model(..model, theme: theme), [])
 
-    UserClickedSave -> #(Model(..model, notice: "Saving…"), [
-      save_design(model.title, model.message, theme_name(model.theme)),
-    ])
+    UserClickedSave -> {
+      let theme = case model.theme {
+        Coral -> "coral"
+        Ocean -> "ocean"
+        Meadow -> "meadow"
+      }
+      #(Model(..model, notice: Saving), [
+        save_design(model.title, model.message, theme),
+      ])
+    }
 
-    DesignSaved -> #(Model(..model, notice: "Saved in this browser."), [])
+    LocalStorageSavedDesign -> #(Model(..model, notice: Saved), [])
 
-    StorageFailed(reason) -> #(Model(..model, notice: reason), [])
+    LocalStorageSaveFailed -> #(Model(..model, notice: SaveFailed), [])
+
+    LocalStorageRestoreFailed -> #(Model(..model, notice: RestoreFailed), [])
 
     UserClickedRestore -> #(model, [load_design()])
 
-    StorageWasEmpty -> #(
-      Model(..model, notice: "No saved design yet. Save one first."),
-      [],
-    )
+    LocalStorageWasEmpty -> #(Model(..model, notice: NoSavedDesign), [])
 
-    StorageReturnedDesign(saved) -> {
-      case json.parse(saved, design_decoder()) {
+    LocalStorageReturnedDesign(saved) -> {
+      let decoder = {
+        use title <- decode.field("title", decode.string)
+        use message <- decode.field("message", decode.string)
+        use name <- decode.field("theme", decode.string)
+        case name {
+          "coral" -> decode.success(#(title, message, Coral))
+          "ocean" -> decode.success(#(title, message, Ocean))
+          "meadow" -> decode.success(#(title, message, Meadow))
+          _ -> decode.failure(#("", "", Coral), "a postcard theme")
+        }
+      }
+      case json.parse(saved, decoder) {
         Ok(#(title, message, theme)) -> #(
           Model(
             ..model,
             title: title,
             message: message,
             theme: theme,
-            notice: "Restored your saved design.",
+            notice: Restored,
           ),
           [],
         )
-        Error(_) -> #(
-          Model(..model, notice: "The saved design could not be read."),
-          [],
-        )
+        Error(_) -> #(Model(..model, notice: InvalidSavedDesign), [])
       }
     }
 
     UserToggledShortcuts -> #(model, [set_shortcuts(!model.shortcuts)])
 
-    ShortcutsChanged(enabled) -> #(Model(..model, shortcuts: enabled), [])
+    KeyboardShortcutsChanged(enabled) -> #(
+      Model(..model, shortcuts: enabled),
+      [],
+    )
 
-    ShortcutsFailed(reason) -> #(Model(..model, notice: reason), [])
+    KeyboardShortcutsFailed -> #(
+      Model(..model, notice: ShortcutSetupFailed),
+      [],
+    )
 
     UserPressedNextTheme -> {
       case model.shortcuts {
-        True -> #(Model(..model, theme: next_theme(model.theme)), [])
+        True -> {
+          let theme = case model.theme {
+            Coral -> Ocean
+            Ocean -> Meadow
+            Meadow -> Coral
+          }
+          #(Model(..model, theme: theme), [])
+        }
         False -> #(model, [])
       }
     }
   }
 }
+
+// -- Browser boundaries --------------------------------------------------
 
 @external(javascript, "./effects.mjs", "saveDesign")
 fn save_design(title: String, message: String, theme: String) -> Effect(Msg)
@@ -144,6 +168,8 @@ fn set_shortcuts(enabled: Bool) -> Effect(Msg)
 
 @external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
+
+// -- Start ---------------------------------------------------------------
 
 pub fn main() -> fn() -> Nil {
   mvu.start(init(), update, view)

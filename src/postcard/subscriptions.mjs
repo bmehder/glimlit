@@ -3,23 +3,28 @@
 export function nextThemeKey(handleNext) {
 	return {
 		start: emit => {
-			const listener = event => {
+			const handleKeydown = event => {
 				const editing =
-					event.target instanceof Element &&
-					(event.target.closest('input, textarea, select') ||
-						event.target.isContentEditable)
+					event.target instanceof HTMLElement &&
+					(event.target.matches('input, textarea, select') ||
+						event.target.isContentEditable ||
+						event.target.closest('dialog'))
 				if (
 					editing ||
+					event.defaultPrevented ||
+					event.isComposing ||
 					event.repeat ||
 					event.ctrlKey ||
 					event.metaKey ||
-					event.altKey
-				)
-					return
-				if (event.key.toLowerCase() === 'n') emit(handleNext())
+					event.altKey ||
+					event.shiftKey
+				) return
+				if (event.key.toLowerCase() !== 'n') return
+				event.preventDefault()
+				emit(handleNext())
 			}
-			window.addEventListener('keydown', listener)
-			return () => window.removeEventListener('keydown', listener)
+			window.addEventListener('keydown', handleKeydown)
+			return () => window.removeEventListener('keydown', handleKeydown)
 		},
 	}
 }
