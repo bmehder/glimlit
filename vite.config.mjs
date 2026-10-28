@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
+import { initialViews } from './scripts/initial-views.mjs'
 import { contentPages } from './scripts/content-pages.mjs'
 import { siteNavigation } from './scripts/site-navigation.mjs'
 import { gleamProject } from './scripts/gleam-source.mjs'
@@ -14,6 +15,7 @@ export default defineConfig({
   plugins: [
     siteNavigation(),
     contentPages(),
+    initialViews(),
     gleamProject(projectRoot),
     tailwindcss(),
   ],

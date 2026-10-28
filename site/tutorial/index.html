@@ -39,7 +39,7 @@
   <script type="module" src="/tutorial/page.mjs"></script>
   <script type="module">
     import { main } from 'gleam:postcard/postcard'
-    const stop = main()
+    const stop = main(document.getElementById('postcard-app'))
     if (import.meta.hot) import.meta.hot.dispose(stop)
   </script>
 </body>

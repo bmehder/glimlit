@@ -20,13 +20,13 @@
   <div class="site-shell"><!-- site-navigation --></div>
   <main class="mx-auto my-12 max-w-2xl px-6">
     <header class="demos-runner-heading"><a href="/demos/">← All examples</a><p class="site-eyebrow">Glimlit example</p><h1>Counter</h1><p>The smallest model–view–update loop. Change the number and watch messages update the model.</p></header>
-    <div id="app"></div>
+    <div id="app"><!-- glimlit:counter --></div>
     <noscript>This example needs JavaScript.</noscript>
   </main>
   <div class="site-shell"><!-- site-footer --></div>
   <script type="module">
     import { main } from 'gleam:counter/counter'
-    const stop = main()
+    const stop = main(document.getElementById('app'))
     if (import.meta.hot) import.meta.hot.dispose(stop)
   </script>
 </body>

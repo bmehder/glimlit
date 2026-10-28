@@ -26,7 +26,7 @@
   <div class="site-shell"><!-- site-footer --></div>
   <script type="module">
     import { main } from 'gleam:todos/todos'
-    const stop = main()
+    const stop = main(document.getElementById('app'))
     if (import.meta.hot) import.meta.hot.dispose(stop)
   </script>
 </body>

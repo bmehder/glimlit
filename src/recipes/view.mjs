@@ -1,6 +1,6 @@
 // @ts-check
 
-import { html, render, nothing } from 'lit-html'
+import { html, nothing } from 'lit-html'
 import { live } from 'lit-html/directives/live.js'
 import { repeat } from 'lit-html/directives/repeat.js'
 import { from_list } from '#gleam/array'
@@ -79,16 +79,10 @@ import {
 
 /** @param {Model} model @param {Dispatch} dispatch */
 export function view(model, dispatch) {
-	const mount = document.getElementById('recipe-app')
-	if (!mount) throw new Error('Missing #recipe-app mount element')
-
-	render(
-		html`
+	return html`
 			${saveStatus(model, dispatch)} ${renderScreen(screen(model), model, dispatch)}
 			${can_import(model) ? sampleImport(model, dispatch) : nothing}
-		`,
-		mount,
-	)
+		`
 }
 
 /** @param {Screen} screen @param {Model} model @param {Dispatch} dispatch */

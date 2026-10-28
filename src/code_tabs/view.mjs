@@ -1,6 +1,8 @@
 // @ts-nocheck
 
-import { html, render } from 'lit-html'
+import { html } from 'lit-html'
+import { unsafeHTML } from 'lit-html/directives/unsafe-html.js'
+import { examples } from './examples.mjs'
 import {
 	Tab$View,
 	Tab$ModelAndUpdate,
@@ -18,9 +20,6 @@ import {
 } from './code_tabs.mjs'
 
 export function view(model, dispatch) {
-	const tablist = document.querySelector('.code-tabs')
-	if (!tablist) throw new Error('Missing homepage tab list')
-
 	const entries = [
 		{
 			tab: Tab$View(),
@@ -65,33 +64,29 @@ export function view(model, dispatch) {
 
 	const currentTab = Model$Model$selected(model)
 
-	// Keep the highlighted code in the initial HTML, readable before JS starts.
-	entries.forEach(({ matches, panel }) => {
-		document.getElementById(panel).hidden = !matches(currentTab)
-	})
-
-	tablist
-		.querySelectorAll('[data-static-tab]')
-		.forEach(fallback => fallback.remove())
-
-	render(
-		html`${entries.map(({ tab, id, matches, label, file, panel }) => {
-			const active = matches(currentTab)
-			const handleSelectTab = () => dispatch(Msg$UserSelectedTab(tab))
-			
-			return html`<button
-				id=${id}
-				type="button"
-				role="tab"
-				aria-selected=${String(active)}
-				aria-controls=${panel}
-				tabindex=${active ? 0 : -1}
-				@click=${handleSelectTab}
-				@keydown=${handleKeydown}
-			>
-				${label}<span>${file}</span>
-			</button>`
-		})}`,
-		tablist,
-	)
+	return html`<div class="code-window"
+		aria-label="Gleam returns a model and effects separately; lit-html renders the view, and effect results return as messages">
+		<div class="code-window-bar"><span class="window-dots" aria-hidden="true">● ● ●</span><span>Two languages. One app.</span></div>
+		<div class="code-tabs" role="tablist" aria-label="Explore the view, model, and effects">
+			${entries.map(({ tab, id, matches, label, file, panel }) => {
+				const active = matches(currentTab)
+				const handleSelectTab = () => dispatch(Msg$UserSelectedTab(tab))
+				return html`<button id=${id} type="button" role="tab"
+					aria-selected=${String(active)} aria-controls=${panel}
+					tabindex=${active ? 0 : -1}
+					@click=${handleSelectTab} @keydown=${handleKeydown}>
+					${label}<span>${file}</span>
+				</button>`
+			})}
+		</div>
+		${entries.map(({ id, matches, panel }) => html`<div
+			id=${panel} class="code-panel" role="tabpanel" aria-labelledby=${id}
+			tabindex="0" ?hidden=${!matches(currentTab)}>
+			${unsafeHTML(examples[panel.replace('-example', '')])}
+		</div>`)}
+		<div class="code-connection">Model → view · effects → runner · messages → update</div>
+		<p class="code-explanation">Return a pair: the next model and a list of effects. The runtime renders the
+			model, then performs the work. <code>[]</code> means no work to run.</p>
+		<p class="code-caption">An illustration of the flow. The tutorial walks through complete, runnable files.</p>
+	</div>`
 }

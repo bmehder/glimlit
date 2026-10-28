@@ -98,8 +98,8 @@
 			<p>
 				The page, styles, and build setup are already connected.
 				<code>site/tutorial/index.html</code> calls your app’s
-				<code>main()</code> function. It provides a
-				<code>postcard-app</code> element for your view. You don’t need to
+				<code>main(root)</code> function. It provides a
+				<code>postcard-app</code> element as the root for your templates. You don’t need to
 				change the counter or todo app, or write a new build configuration.
 			</p>
 			<h3>Three ideas we’ll use</h3>
@@ -206,7 +206,7 @@
 			<p>
 				<code>html</code> is a JavaScript tag function applied to a template
 				literal, the expression inside backticks. <code>lit-html</code> turns
-				that template into DOM nodes; <code>render</code> puts them in the
+				that template into DOM nodes. The view returns it; Glimlit puts it in the
 				mount element. Expressions inside <code>${...}</code> provide dynamic
 				values. Text values render as text, so typing an HTML tag into a
 				message will not execute it.
@@ -240,7 +240,9 @@
 				<code>@external</code> tells Gleam that the implementation of
 				<code>view</code> lives in JavaScript. Its declaration states the types
 				Gleam expects. <code>dispatch</code> is a function that accepts a
-				message. <code>Nil</code> means there is no useful return value,
+				message. The view returns <code>View</code>, an external type representing a
+				lit-html template. The page passes its root element into <code>main</code>. Glimlit then
+				commits that template to the mount. <code>Nil</code> means there is no useful return value,
 				similar to JavaScript’s <code>undefined</code>. The function returned
 				by <code>main</code> stops the app; the page already handles calling it
 				when needed.

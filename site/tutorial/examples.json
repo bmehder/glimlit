@@ -17,11 +17,11 @@
   },
   "render": {
     "language": "javascript",
-    "source": "render(html`\n  <h3>${Model$Model$title(model)}</h3>\n  <p>${Model$Model$message(model)}</p>\n`, app)"
+    "source": "export function view(model, dispatch) {\n  return html`\n    <h3>${Model$Model$title(model)}</h3>\n    <p>${Model$Model$message(model)}</p>\n  `\n}"
   },
   "external": {
     "language": "gleam",
-    "source": "@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil\n\npub fn main() -> fn() -> Nil {\n  mvu.start(init(), update, view)\n}"
+    "source": "import runtime/view.{type Root, type View}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> View\n\npub fn main(root: Root) -> fn() -> Nil {\n  mvu.start(init(), update, view, root)\n}"
   },
   "update": {
     "language": "gleam",

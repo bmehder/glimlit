@@ -5,7 +5,7 @@
   },
   "start": {
     "language": "gleam",
-    "source": "import runtime/effect.{type Effect}\nimport runtime/mvu\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\npub fn init() -> #(Model, List(Effect(Msg))) {\n  #(Model(title: \"Hello\"), [])\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(Model(..model, title: title), [])\n  }\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil\n\npub fn main() -> fn() -> Nil {\n  mvu.start(init(), update, view)\n}"
+    "source": "import runtime/effect.{type Effect}\nimport runtime/mvu\nimport runtime/view.{type Root, type View}\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\npub fn init() -> #(Model, List(Effect(Msg))) {\n  #(Model(title: \"Hello\"), [])\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(Model(..model, title: title), [])\n  }\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> View\n\npub fn main(root: Root) -> fn() -> Nil {\n  mvu.start(init(), update, view, root)\n}"
   },
   "update": {
     "language": "gleam",
@@ -13,7 +13,7 @@
   },
   "view": {
     "language": "javascript",
-    "source": "import { html, render } from 'lit-html'\nimport { live } from 'lit-html/directives/live.js'\nimport {\n  Model$Model$title,\n  Msg$UserChangedTitle,\n} from './app.mjs'\n\nexport function view(model, dispatch) {\n  const app = document.getElementById('app')\n  if (!app) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${Model$Model$title(model)}</h1>\n    <input .value=${live(Model$Model$title(model))}\n      @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}>\n  `, app)\n}"
+    "source": "import { html } from 'lit-html'\nimport { live } from 'lit-html/directives/live.js'\nimport {\n  Model$Model$title,\n  Msg$UserChangedTitle,\n} from './app.mjs'\n\nexport function view(model, dispatch) {\n  return html`\n    <h1>${Model$Model$title(model)}</h1>\n    <input .value=${live(Model$Model$title(model))}\n      @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}>\n  `\n}"
   },
   "boundary": {
     "language": "gleam",
@@ -33,11 +33,11 @@
   },
   "cleanup": {
     "language": "javascript",
-    "source": "import { main } from 'gleam:app/app'\n\nconst stop = main()\n\n// Vite calls stop before replacing this entry module during development.\nif (import.meta.hot) import.meta.hot.dispose(stop)\n\n// If your page removes the app, call stop() at that point too."
+    "source": "import { main } from 'gleam:app/app'\n\nconst stop = main(document.getElementById('app'))\n\n// Vite calls stop before replacing this entry module during development.\nif (import.meta.hot) import.meta.hot.dispose(stop)\n\n// If your page removes the app, call stop() at that point too."
   },
   "signature": {
     "language": "gleam",
-    "source": "pub fn start(\n  initial: #(model, List(Effect(msg))),\n  update: fn(model, msg) -> #(model, List(Effect(msg))),\n  view: fn(model, fn(msg) -> Nil) -> Nil,\n) -> fn() -> Nil"
+    "source": "pub fn start(\n  initial: #(model, List(Effect(msg))),\n  update: fn(model, msg) -> #(model, List(Effect(msg))),\n  view: fn(model, fn(msg) -> Nil) -> View,\n  root: Root,\n) -> fn() -> Nil"
   },
   "mount": {
     "language": "html",
@@ -53,7 +53,7 @@
   },
   "typed-view": {
     "language": "javascript",
-    "source": "// @ts-check\nimport { html, render } from 'lit-html'\nimport { Model$Model$title, Msg$UserChangedTitle } from './app.mjs'\n\n/** @typedef {import('./app.mjs').Model$} Model */\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/** @param {Model} model @param {(message: Msg) => void} dispatch */\nexport function view(model, dispatch) {\n  const mount = document.getElementById('app')\n  if (!mount) throw new Error('Missing #app mount element')\n\n  render(html`\n    <h1>${Model$Model$title(model)}</h1>\n    <button @click=${() => dispatch(Msg$UserChangedTitle('Hello'))}>\n      Reset title\n    </button>\n  `, mount)\n}"
+    "source": "// @ts-check\nimport { html } from 'lit-html'\nimport { Model$Model$title, Msg$UserChangedTitle } from './app.mjs'\n\n/** @typedef {import('./app.mjs').Model$} Model */\n/** @typedef {import('./app.mjs').Msg$} Msg */\n\n/** @param {Model} model @param {(message: Msg) => void} dispatch */\nexport function view(model, dispatch) {\n  return html`\n    <h1>${Model$Model$title(model)}</h1>\n    <button @click=${() => dispatch(Msg$UserChangedTitle('Hello'))}>\n      Reset title\n    </button>\n  `\n}"
   },
   "typed-effect": {
     "language": "javascript",
@@ -73,6 +73,6 @@
   },
   "view-boundary": {
     "language": "gleam",
-    "source": "pub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil"
+    "source": "import runtime/view.{type Root, type View}\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> View"
   }
 }

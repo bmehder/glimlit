@@ -6,6 +6,7 @@ import gleam/result
 import gleam/string
 import runtime/effect.{type Effect}
 import runtime/mvu
+import runtime/view.{type Root, type View}
 
 // -- Types ---------------------------------------------------------------
 
@@ -732,7 +733,7 @@ pub fn can_retry_save(model: Model) -> Bool {
 // -- View ----------------------------------------------------------------
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
+fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
 
 // -- Effects -------------------------------------------------------------
 
@@ -759,6 +760,6 @@ fn focus_content() -> Effect(Msg)
 
 // -- Entry point ---------------------------------------------------------
 
-pub fn main() -> fn() -> Nil {
-  mvu.start(init(), update, view)
+pub fn main(root: Root) -> fn() -> Nil {
+  mvu.start(init(), update, view, root)
 }

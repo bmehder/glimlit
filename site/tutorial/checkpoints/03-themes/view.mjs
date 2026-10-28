@@ -1,4 +1,4 @@
-import { html, render } from 'lit-html'
+import { html } from 'lit-html'
 import { live } from 'lit-html/directives/live.js'
 import {
   Model$Model$title,
@@ -16,9 +16,6 @@ import {
 } from './postcard.mjs'
 
 export function view(model, dispatch) {
-  const app = document.getElementById('postcard-app')
-  if (!app) throw new Error('Missing #postcard-app mount element')
-
   const handleTitleInput = event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))
   const handleMessageInput = event => dispatch(Msg$UserChangedMessage(event.currentTarget.value))
 
@@ -29,7 +26,7 @@ export function view(model, dispatch) {
       @click=${handleThemeClick}>${label}</button>`
   }
 
-  render(html`
+  return html`
     <div class="studio">
       <div class="studio-controls">
         <label for="postcard-title">A title for your postcard</label>
@@ -59,7 +56,7 @@ export function view(model, dispatch) {
         </article>
       </div>
     </div>
-  `, app)
+  `
 }
 
 

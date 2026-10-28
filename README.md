@@ -94,8 +94,10 @@ src/app/
 1. Create `src/app/app.gleam` and `src/app/view.mjs` using the
    [starting example in the docs](http://127.0.0.1:3000/docs/#start).
 2. In `site/demos/counter/index.html`, change the script's import from `gleam:counter/counter` to
-   `gleam:app/app`. Keep its `main()` call and cleanup registration. The page
-   already contains the `#app` mount element used by the example.
+   `gleam:app/app`. Remove the Counter-specific `<!-- glimlit:counter -->`
+   build marker to leave an empty `<div id="app"></div>` for the new app.
+   Keep `main(document.getElementById('app'))` and cleanup registration.
+   App startup is the same whether its host supplies initial HTML or an empty mount.
 3. Run `npm run dev` and open <http://127.0.0.1:3000/demos/counter/>. Use `npm run build`
    to build the same app for production.
 
@@ -148,17 +150,18 @@ there is no work to perform. The runtime stores the new model, renders it, and t
 runs the effects. View events and effect callbacks send messages back to `update`,
 along with the current model, completing the loop.
 
-Inside `src/runtime/mvu.gleam`, initialisation and message updates share the
-private `render_and_run` function. It stores the model, creates the guarded
-dispatch callback, renders the view, and runs the effects in that order.
-`start` handles setup and returns cleanup; `dispatch` calls `update` with the
-current model. Apps still use the same `mvu.start(init(), update, view)` API.
+`src/runtime/mvu.gleam` binds rendering to the root supplied by the host.
+Its internal `runtime/loop` stores the model, creates the guarded dispatch
+callback, obtains and commits the view, then schedules effects in that order.
+Views return templates. `mvu.start(init(), update, view, root)` selects rendering
+internally and returns cleanup; app developers do not choose a renderer.
 
 A minimal Gleam app looks like this:
 
 ```gleam
 import runtime/effect.{type Effect}
 import runtime/mvu
+import runtime/view.{type Root, type View}
 
 pub type Model {
   Model(count: Int)
@@ -179,14 +182,42 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 }
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
+fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
 
-pub fn main() -> fn() -> Nil {
-  mvu.start(init(), update, view)
+pub fn main(root: Root) -> fn() -> Nil {
+  mvu.start(init(), update, view, root)
 }
 ```
 
-The returned function stops the app and cleans up its subscriptions.
+The returned function stops the app and cleans up its subscriptions. The host
+supplies the renderer; ordinary browser startup looks like this:
+
+```js
+import { main } from 'gleam:counter/counter'
+
+const stop = main(document.getElementById('app'))
+if (import.meta.hot) import.meta.hot.dispose(stop)
+```
+
+This is a trial change to the view/startup contract: views return a lit-html
+`TemplateResult` instead of calling `render()` themselves, and app startup is
+always `main(root)`. Glimlit hydrates the first view when the root has the
+`data-glimlit-ssr` marker supplied by the host's initial-HTML integration.
+Otherwise it renders into the empty mount normally. After successful hydration,
+the marker is removed and all later updates render normally. Marked roots must
+contain matching Lit SSR HTML; malformed marked HTML or a structural hydration error stops startup rather than
+silently replacing the initial interface. No public rendering-mode argument or
+renderer import is needed.
+
+The server-only `renderInitial(init(), view)` in `src/runtime/server.mjs` produces
+initial HTML without running effects. The host puts that HTML inside a root
+marked `data-glimlit-ssr`; the website's build plugin does this for the homepage
+tabs and Counter. Other examples currently start with empty roots. Hydration is
+synchronous and completes with the real dispatcher before effects run. The
+current browser implementation includes the small experimental Lit hydration
+client for all apps so this needs no preparation step or asynchronous startup.
+See [the rendering experiment](notes/view-rendering-experiment.md) for the trial
+API, verified behavior, and remaining form-control and initialization limitations.
 
 ## Views with lit-html
 
@@ -201,6 +232,8 @@ For example, here is a counter view in Lustre, following its
 [view and event conventions](https://lustre.hexdocs.pm/guide/01-quickstart.html):
 
 ```gleam
+import runtime/view.{type Root, type View}
+
 import gleam/int
 import lustre/element.{type Element}
 import lustre/element/html
@@ -228,24 +261,22 @@ The equivalent Glimlit view imports the message constructor and model accessor
 from Gleam's compiled `counter.mjs` module:
 
 ```js
-import { html, render } from 'lit-html'
+import { html } from 'lit-html'
 import {
   Msg$UserClickedIncrement,
   Model$Model$count,
 } from './counter.mjs'
 
 export function view(model, dispatch) {
-  const app = document.getElementById('app')
-  if (!app) throw new Error('Missing #app mount element')
 
-  render(html`
+  return html`
     <div>
       <p>${Model$Model$count(model)}</p>
       <button @click=${() => dispatch(Msg$UserClickedIncrement())}>
         Increment
       </button>
     </div>
-  `, app)
+  `
 }
 ```
 
@@ -511,10 +542,12 @@ tracking live in `site/shared/`. `scripts/site-navigation.mjs` inserts the heade
 and footer in development and production without requiring client-side JavaScript.
 
 The homepage tabs in `src/code_tabs/` use Glimlit too: Gleam selects the active
-tab, lit-html renders the buttons, and an effect moves keyboard focus. Gleam
+tab, its shared template describes the buttons and panels, and an effect moves keyboard focus. Gleam
 requests focus for a tab value; the JavaScript effect resolves its DOM ID.
-`site/home.mjs` starts the app. Highlighted code panels stay in the initial HTML
-so the first example is readable before JavaScript loads.
+`scripts/initial-views.mjs` renders the shared template into initial HTML in
+both development and production. `site/home.mjs` hydrates it when JavaScript loads.
+Fixed highlighted snippets live in `src/code_tabs/examples.mjs`; no highlighter
+runs in the browser, and the page has no duplicate fallback button markup.
 
 `site/tutorial/checkpoints/` contains the six complete app checkpoints. They
 replace files in `src/postcard/`, leaving the tutorial reader and guide intact.

@@ -11,6 +11,8 @@
     "test:tutorial-checkpoints": "gleam build && node scripts/check-tutorial.mjs"
   },
   "dependencies": {
+    "@lit-labs/ssr": "^4.1.0",
+    "@lit-labs/ssr-client": "^1.1.8",
     "lit-html": "^3.3.1"
   },
   "devDependencies": {

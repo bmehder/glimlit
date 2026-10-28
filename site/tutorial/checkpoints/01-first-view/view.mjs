@@ -1,14 +1,11 @@
-import { html, render } from 'lit-html'
+import { html } from 'lit-html'
 import {
   Model$Model$title,
   Model$Model$message,
 } from './postcard.mjs'
 
 export function view(model, dispatch) {
-  const app = document.getElementById('postcard-app')
-  if (!app) throw new Error('Missing #postcard-app mount element')
-
-  render(html`
+  return html`
     <div class="studio">
       <div class="preview-area">
         <p class="preview-label">Live preview</p>
@@ -20,5 +17,5 @@ export function view(model, dispatch) {
         </article>
       </div>
     </div>
-  `, app)
+  `
 }

@@ -16,6 +16,8 @@
     "src/**/view.mjs",
     "src/**/effects.mjs",
     "src/**/subscriptions.mjs",
-    "src/runtime/runner.mjs"
+    "src/runtime/runner.mjs",
+    "src/runtime/render.mjs",
+    "src/runtime/server.mjs"
   ]
 }

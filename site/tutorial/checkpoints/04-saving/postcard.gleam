@@ -1,5 +1,6 @@
 import runtime/effect.{type Effect}
 import runtime/mvu
+import runtime/view.{type Root, type View}
 
 // -- Types ---------------------------------------------------------------
 
@@ -80,10 +81,10 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 fn save_design(title: String, message: String, theme: String) -> Effect(Msg)
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> Nil
+fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
 
 // -- Start ---------------------------------------------------------------
 
-pub fn main() -> fn() -> Nil {
-  mvu.start(init(), update, view)
+pub fn main(root: Root) -> fn() -> Nil {
+  mvu.start(init(), update, view, root)
 }

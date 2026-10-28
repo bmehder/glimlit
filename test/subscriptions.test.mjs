@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSubscriptions } from '../src/runtime/subscriptions.mjs';
 import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
-import { start } from '../build/dev/javascript/glimlit/runtime/mvu.mjs';
+import { start } from '../build/dev/javascript/glimlit/runtime/loop.mjs';
 import { from_list as toArray, to_list as toList } from '#gleam/array';
 
 const settle = () => new Promise(resolve => setImmediate(resolve));
@@ -92,7 +92,7 @@ test('start returns app cleanup and old view callbacks cannot update a stopped a
     perform: ({ subscriptions }) => subscriptions.start('resource', { start: () => () => { cleaned++; } }),
     onSuccess: () => 1,
   };
-  const dispose = start([0, toList([initialEffect])], (model, message) => [model + message, toList([])], (model, dispatch) => { renders.push(model); send = dispatch; });
+  const dispose = start([0, toList([initialEffect])], (model, message) => [model + message, toList([])], (model, dispatch) => { renders.push(model); send = dispatch; }, () => {});
   await settle();
   dispose();
   send(10);
@@ -123,7 +123,7 @@ test('all sources share their app dispatcher across renders while separate apps 
       : [model + message.add, toList([])], (model, dispatch) => {
       rendered.push(model);
       send = dispatch;
-    });
+    }, () => {});
     t.after(dispose);
     return { emitters, cleaned, rendered, dispose, send: message => send(message) };
   }

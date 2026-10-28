@@ -1,6 +1,6 @@
 // @ts-check
 
-import { html, render, nothing } from 'lit-html'
+import { html, nothing } from 'lit-html'
 import { from_list } from '#gleam/array'
 import { repeat } from 'lit-html/directives/repeat.js'
 import { live } from 'lit-html/directives/live.js'
@@ -44,9 +44,6 @@ import {
 
 /** @param {Model} model @param {Dispatch} dispatch */
 export function view(model, dispatch) {
-	const app = document.getElementById('app')
-	if (!app) throw new Error('Missing #app mount element')
-
 	/** @type {Todo[]} */
 	const todos = from_list(Model$Model$todos(model))
 	const remaining = todos.filter(
@@ -66,8 +63,7 @@ export function view(model, dispatch) {
 	const shortcutText = shortcutMessage(Model$Model$shortcut_status(model))
 	const rows = repeat(todos, todo => Todo$Todo$id(todo), todoRow)
 
-	render(
-		html`
+	return html`
 			<header class="mb-8">
 				<h2 class="text-2xl font-semibold tracking-tight">Todos</h2>
 			</header>
@@ -105,9 +101,7 @@ export function view(model, dispatch) {
 					`}
 			<p class="mt-8 text-xs text-slate-500">${storageText}</p>
 			<p class="mt-2 text-xs text-slate-500" role="status">${shortcutText}</p>
-		`,
-		app,
-	)
+		`
 
 	/** @param {Todo} todo */
 	function todoRow(todo) {

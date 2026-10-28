@@ -34,59 +34,7 @@
           </div>
           <p class="hero-footnote">For small interactive islands. Gleam + lit-html. Your choice of CSS.</p>
         </div>
-        <div class="code-window"
-          aria-label="Gleam returns a model and effects separately; lit-html renders the view, and effect results return as messages">
-          <div class="code-window-bar"><span class="window-dots" aria-hidden="true">● ● ●</span><span>Two languages. One
-              app.</span></div>
-          <div class="code-tabs" role="tablist" aria-label="Explore the view, model, and effects">
-            <button data-static-tab id="view-tab" type="button" role="tab" aria-selected="true"
-              aria-controls="view-example" tabindex="0">View<span>view.mjs</span></button>
-            <button data-static-tab id="model-tab" type="button" role="tab" aria-selected="false"
-              aria-controls="model-example" tabindex="-1">Model &amp; update<span>postcard.gleam</span></button>
-            <button data-static-tab id="effects-tab" type="button" role="tab" aria-selected="false"
-              aria-controls="effects-example" tabindex="-1">Effects<span>effects.mjs</span></button>
-          </div>
-          <div id="model-example" class="code-panel" role="tabpanel" aria-labelledby="model-tab" tabindex="0" hidden>
-            <pre><code><span class="syntax-keyword">pub fn</span> <span class="syntax-function">update</span>(model, msg) {
-  <span class="syntax-keyword">case</span> msg {
-    <span class="syntax-type">UserChangedTitle</span>(title) -&gt; #(
-      <span class="syntax-type">Model</span>(..model, title: title), <span class="syntax-comment">// next model</span>
-      [<span class="syntax-function">saveTitle</span>(title)], <span class="syntax-comment">// requested work</span>
-    )
-    <span class="syntax-type">TitleSaved</span> -&gt; #(model, [<span class="syntax-function">log</span>(<span class="syntax-string">"Title saved."</span>)])
-    <span class="syntax-type">TitleSaveFailed</span> -&gt;
-      #(model, [<span class="syntax-function">log</span>(<span class="syntax-string">"Save failed."</span>)])
-  }
-}</code></pre>
-          </div>
-          <div id="view-example" class="code-panel" role="tabpanel" aria-labelledby="view-tab" tabindex="0">
-            <pre><code><span class="syntax-function">html</span>`
-  <span class="syntax-tag">&lt;h1&gt;</span>${Model$Model$title(model)}<span class="syntax-tag">&lt;/h1&gt;</span>
-  <span class="syntax-tag">&lt;input</span>
-    <span class="syntax-property">.value</span>=${Model$Model$title(model)}
-    <span class="syntax-property">@input</span>=${event =&gt; <span class="syntax-function">dispatch</span>(
-      <span class="syntax-function">Msg$UserChangedTitle</span>(event.currentTarget.value)
-    )}
-  <span class="syntax-tag">&gt;</span>
-`</code></pre>
-          </div>
-          <div id="effects-example" class="code-panel" role="tabpanel" aria-labelledby="effects-tab" tabindex="0"
-            hidden>
-            <pre><code><span class="syntax-keyword">export const</span> <span class="syntax-function">saveTitle</span> = title =&gt; ({
-  <span class="syntax-property">perform</span>: () =&gt; localStorage.<span class="syntax-function">setItem</span>(<span class="syntax-string">'title'</span>, title),
-  <span class="syntax-property">onSuccess</span>: () =&gt; <span class="syntax-function">Msg$TitleSaved</span>(),
-  <span class="syntax-property">onFailure</span>: () =&gt; <span class="syntax-function">Msg$TitleSaveFailed</span>(),
-})
-
-<span class="syntax-keyword">export const</span> <span class="syntax-function">log</span> = message =&gt; ({
-  <span class="syntax-property">perform</span>: () =&gt; console.<span class="syntax-function">log</span>(message),
-})</code></pre>
-          </div>
-          <div class="code-connection">Model → view · effects → runner · messages → update</div>
-          <p class="code-explanation">Return a pair: the next model and a list of effects. The runtime renders the
-            model, then performs the work. <code>[]</code> means no work to run.</p>
-          <p class="code-caption">An illustration of the flow. The tutorial walks through complete, runnable files.</p>
-        </div>
+        <div id="code-tabs-app"><!-- glimlit:code_tabs --></div>
       </section>
       <section class="home-principles" aria-labelledby="principles-title">
         <div class="section-intro">
