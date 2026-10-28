@@ -1,11 +1,15 @@
 # Template-returning views — 28 October 2026
 
-This is a trial of one view contract, informed by the separate Astro experiment
-and its `GLIMLIT-FOLLOWUPS.md`. It changes the original repository's app/startup
-API; it does not preserve the old rendering view callback as another supported
-path. The Astro project has now been migrated to the same runtime, as recorded below.
+The current implementation grew out of the separate Astro experiment and its
+`GLIMLIT-FOLLOWUPS.md`. Glimlit now uses one template-returning view contract and
+root-based startup. The Astro project has migrated to the same runtime. This
+record separates current behavior from earlier experiments and remaining work.
 
-## The contract being tried
+For an explanation of the current code and a reading order, see
+[the runtime walkthrough](runtime-walkthrough.md). This file retains the
+experiment history, verification, and open questions.
+
+## Current view and startup contract
 
 A JavaScript `view(model, dispatch, context)` returns a lit-html `TemplateResult`. It does
 not look up a mount or call `render()`. Event handlers can still work with browser
@@ -31,16 +35,16 @@ A malformed marked root fails startup. A structural hydration mismatch fails rat
 silently replacing the existing DOM. App startup is identical for both cases;
 app developers do not import a renderer or select a rendering mode.
 
-The internal `runtime/loop` stores each new model, obtains its view with the real
-dispatcher, commits the description synchronously, then schedules effects. Its
-model, update, effects, dispatch guarding, and subscription cleanup retain their
-existing responsibilities. The loop remains independent of Lit and the DOM;
-`runtime/mvu` binds it to the root using the browser rendering layer. The loop's
-renderer callback is an internal mechanism for isolation and unit tests, not a
-second app startup contract.
+`runtime/mvu.gleam` now contains startup and the internal loop together. The loop
+stores each new model, obtains its view with the real dispatcher, commits it
+synchronously, then schedules effects. Its internal renderer callback keeps loop
+tests independent of the DOM; app startup binds that callback to the root using
+`render.mjs`. Mutable-reference operations have moved into `runner.mjs`.
+The previous `loop.gleam` and `browser.mjs` files were consolidated without
+changing app startup, view contracts, or application imports.
 
-The returned cleanup is synchronous. It stops subscriptions and ignores old
-callbacks; the host still owns when to call it and whether to remove the DOM.
+The returned cleanup is synchronous. It stops subscriptions and ignores messages from old
+dispatch callbacks; the host still owns when to call it and whether to remove the DOM.
 This revision supersedes the earlier trial that asked callers to choose
 `renderInto` or `hydrateInto` and pass a renderer into `main`.
 
@@ -96,26 +100,20 @@ This helper is not a general HTML sanitizer.
   preview browser-rendered. No `data-ssr-value` rewrite was added to the runtime.
   Other native form defaults also need deliberate verification.
 - Edits, focus, and interaction before delayed hydration need a policy and more
-  testing. This prototype does not promise that controlled inputs preserve edits
+  testing. The current implementation does not guarantee that controlled inputs preserve edits
   made before hydration.
 - Matching initial state and template structure are the host/app's responsibility.
   Initialization must be deterministic. Host input validation, safe transport,
   snapshots for nondeterministic initialization, and later prop updates are not
   implemented. Supplying the same input is insufficient if `init` uses random
   numbers, current time, or other changing data.
-- Each view/effect now receives instance context: the browser root and an
-  `id(name)` helper. Server context provides the matching ID helper without DOM
-  access. Browser roots without IDs receive unique IDs; SSR roots must retain
-  their host-assigned ID. Focus effects query within the root. Postcard/Todos
-  keyboard subscriptions attach to that root. Storage and URL namespaces remain
-  explicit app conventions; sharing those resources can still be intentional.
 - Server markup is visible immediately, but interaction still needs JavaScript.
   These apps have no general non-JavaScript form submission behavior. Preventing
   every source of layout shift (fonts, CSS, responsive changes) is not guaranteed.
 
-The next useful design review is how instance context should reach views/effects
-without global DOM lookups, and
-how native form values should survive server rendering and delayed hydration.
+Instance context now reaches views and effects through the shared runtime. The
+next design questions concern native form values and edits before hydration,
+initialization data transfer, and the delivery cost of hydration support.
 
 
 ## Instance-context and Astro migration

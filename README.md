@@ -23,14 +23,17 @@ element properties, DOM events, native forms, and confirmation dialogs directly.
 A draft used only on submission can stay in its input; a value driving a live
 preview belongs in the model. You choose that boundary.
 
-There is one `start` function, a small effect runner, and a subscription manager.
+There is one app startup entry, `mvu.start`, with a small effect runner and a
+subscription manager.
 Routing, forms, dialogs, and application architecture can stay with the browser,
 your app, or libraries you choose. See [the project philosophy](notes/philosophy.md)
 for state ownership, examples, and the framework's scope.
 
-This repository contains the framework, working examples, and a beginner tutorial. It is currently
-a browser application, rather than a separately published package. Server-side
-rendering is not implemented.
+This repository contains the framework, working examples, and a beginner tutorial.
+It is not currently a separately published package. Initial HTML generation and
+browser hydration use the same lit-html views; the rendering dependencies are
+experimental. See [Rendering, hydration, and instance context](#rendering-hydration-and-instance-context)
+for current behavior and limits.
 
 ## Run it
 
@@ -150,11 +153,15 @@ there is no work to perform. The runtime stores the new model, renders it, and t
 runs the effects. View events and effect callbacks send messages back to `update`,
 along with the current model, completing the loop.
 
-`src/runtime/mvu.gleam` binds rendering to the root supplied by the host.
-Its internal `runtime/loop` stores the model, creates the guarded dispatch
+`src/runtime/mvu.gleam` contains startup and the complete MVU loop. It binds
+rendering to the host's root, stores the model, creates the guarded dispatch
 callback, obtains and commits the view, then schedules effects in that order.
 Views return templates. `mvu.start(init(), update, view, root)` selects rendering
 internally and returns cleanup; app developers do not choose a renderer.
+
+For a guided code-reading order and a trace of startup, hydration, effects, and
+cleanup, read [Understanding the current runtime](notes/runtime-walkthrough.md).
+It also summarizes the API changes from the earlier mount-in-the-view approach.
 
 A minimal Gleam app looks like this:
 
@@ -190,7 +197,7 @@ pub fn main(root: Root) -> fn() -> Nil {
 ```
 
 The returned function stops the app and cleans up its subscriptions. The host
-supplies the renderer; ordinary browser startup looks like this:
+supplies the root element; ordinary browser startup looks like this:
 
 ```js
 import { main } from 'gleam:counter/counter'
@@ -199,9 +206,10 @@ const stop = main(document.getElementById('app'))
 if (import.meta.hot) import.meta.hot.dispose(stop)
 ```
 
-This is a trial change to the view/startup contract: views return a lit-html
-`TemplateResult` instead of calling `render()` themselves, and app startup is
-always `main(root)`. Glimlit hydrates the first view when the root has the
+## Rendering, hydration, and instance context
+
+Views return a lit-html `TemplateResult`, and app startup is always `main(root)`.
+The host supplies an empty mount or initial HTML; Glimlit handles the first view. Glimlit hydrates the first view when the root has the
 `data-glimlit-ssr` marker supplied by the host's initial-HTML integration.
 Otherwise it renders into the empty mount normally. After successful hydration,
 the marker is removed and all later updates render normally. Marked roots must
@@ -216,8 +224,7 @@ tabs and Counter. Other examples currently start with empty roots. Hydration is
 synchronous and completes with the real dispatcher before effects run. The
 current browser implementation includes the small experimental Lit hydration
 client for all apps so this needs no preparation step or asynchronous startup.
-See [the rendering experiment](notes/view-rendering-experiment.md) for the trial
-API, verified behavior, and remaining form-control and initialization limitations.
+See [the rendering experiment](notes/view-rendering-experiment.md) for verification and remaining form-control and initialization questions.
 
 Views also receive a third argument, `context`. Its `id(name)` helper prefixes
 local element IDs with the mount's ID, so labels, dialogs, and tabs can be repeated
@@ -231,6 +238,21 @@ stable IDs assigned by their host.
 Storage keys and URL routing remain app choices, not runtime namespaces. Postcard
 uses its established shared storage key by default; a host can explicitly give
 it a `data-storage-key` when separate saved designs are wanted.
+
+### Current coverage and open work
+
+| Area | Current behavior |
+| --- | --- |
+| Startup and updates | One `main(root)` call; views return templates; rendering completes before effects run. |
+| Repeated instances | Per-root model, scoped IDs, effect context, keyboard sources, and cleanup; storage and route policies remain app-defined. |
+| This website | Counter and homepage code tabs have initial HTML and hydrate. Todos, Recipes, and the tutorial's Postcard preview render in the browser. |
+| Astro integration | Counter, Postcard, and code tabs hydrate from their shared views. The Postcard textarea bridge belongs to that host adapter. |
+
+Lit Labs SSR and hydration remain experimental dependencies. Initial textarea
+values and edits made before delayed hydration still need work. Host-provided
+initialization data, snapshots for nondeterministic initialization, and later
+host prop updates are not implemented. The browser must begin with the same
+model, template structure, and root ID used for its initial HTML.
 
 ## Views with lit-html
 
@@ -509,11 +531,14 @@ website navigation, styles, or dependency on the example apps.
 ```text
 src/
   runtime/               Reusable Glimlit framework
-    mvu.gleam            Model storage, dispatch, and rendering loop
+    mvu.gleam            Startup, model storage, dispatch, and MVU loop
     effect.gleam         Typed JavaScript effect boundary
-    browser.mjs          Private mutable model reference
-    runner.mjs           Generic effect runner and app lifetime
-    subscriptions.mjs    Generic subscription lifetime manager
+    view.gleam           View, Root, and Context type declarations
+    instance.mjs         Instance identity and scoped IDs
+    render.mjs           Browser rendering and first-view hydration
+    runner.mjs           Effect execution, app lifetime, mutable references
+    subscriptions.mjs    Keyed subscription lifetimes and cleanup
+    server.mjs           Initial HTML generation without running effects
   counter/               Small example app: model, update, and view
   todos/                 Todo list with storage and a keyboard shortcut
   recipes/               Multi-screen recipe box with an editor

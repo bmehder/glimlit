@@ -3,6 +3,18 @@
 import { createContext } from './instance.mjs'
 import { createSubscriptions } from './subscriptions.mjs'
 
+// Mutable model reference used by the Gleam loop.
+/** @template Value @param {Value} value @returns {{value: Value}} */
+export const mutableRef = value => ({ value })
+
+/** @template Value @param {{value: Value}} ref @returns {Value} */
+export const read = ({ value }) => value
+
+/** @template Value @param {{value: Value}} ref @param {Value} value @returns {void} */
+export const write = (ref, value) => {
+	ref.value = value
+}
+
 /** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg> | null, context: import('./instance.mjs').InstanceContext}} Runtime */
 /** @template Msg @typedef {import('./instance.mjs').InstanceContext & {subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>, dispatch: (message: Msg) => void}} Context */
 

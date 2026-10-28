@@ -2,7 +2,7 @@ import { createRuntime } from '../src/runtime/runner.mjs'
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { to_list as toList } from '#gleam/array';
-import { start } from '../build/dev/javascript/glimlit/runtime/loop.mjs';
+import { start_loop as start } from '../build/dev/javascript/glimlit/runtime/mvu.mjs';
 
 test('dispatch uses the latest model even through an earlier view callback', () => {
   const rendered = [];
