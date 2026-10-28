@@ -4,7 +4,7 @@ import gleam/list
 import gleam/string
 import runtime/effect.{type Effect}
 import runtime/mvu
-import runtime/view.{type Root, type View}
+import runtime/view.{type Context, type Root, type View}
 
 // -- Types ---------------------------------------------------------------
 
@@ -281,7 +281,7 @@ fn status_decoder() -> decode.Decoder(Status) {
 // -- View ----------------------------------------------------------------
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
+fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
 // -- Effects -------------------------------------------------------------
 

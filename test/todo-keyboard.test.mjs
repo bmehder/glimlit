@@ -67,7 +67,7 @@ test('todo keyboard messages request a deferred focus effect and shutdown stops 
     else delete globalThis.document
   })
   let [model, effects] = app.init()
-  const runtime = createRuntime()
+  const runtime = createRuntime(Object.assign(target, { nodeType: 1, id: 'todos', hasAttribute: () => false, querySelector: () => ({ focus: () => focus.push('new-todo') }) }))
   t.after(() => stop(runtime))
   const pending = []
   const dispatch = message => {

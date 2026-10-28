@@ -1,19 +1,21 @@
 // @ts-check
 
+import { createContext } from './instance.mjs'
 import { createSubscriptions } from './subscriptions.mjs'
 
-/** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg> | null}} Runtime */
-/** @template Msg @typedef {{subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>, dispatch: (message: Msg) => void}} Context */
+/** @template Msg @typedef {{active: boolean, subscriptions: import('./subscriptions.mjs').Subscriptions<Msg> | null, context: import('./instance.mjs').InstanceContext}} Runtime */
+/** @template Msg @typedef {import('./instance.mjs').InstanceContext & {subscriptions: import('./subscriptions.mjs').Subscriptions<Msg>, dispatch: (message: Msg) => void}} Context */
 
 /**
  * Create an independent runtime. Its subscription manager is created by the first
  * run call and keeps that app dispatcher for all of its sources.
  * @public
  * @template Msg
+ * @param {HTMLElement} [root]
  * @returns {Runtime<Msg>}
  */
-export function createRuntime() {
-	return { active: true, subscriptions: null }
+export function createRuntime(root) {
+	return { active: true, subscriptions: null, context: root ? createContext(root) : { id: name => name } }
 }
 
 /**
@@ -62,7 +64,7 @@ export function run(effect, dispatch, runtime = createRuntime()) {
 			if (runtime.active) {
 				// All sources in an app share the first effect's guarded dispatcher.
 				const subscriptions = runtime.subscriptions ??= createSubscriptions(send)
-				return effect.perform({ subscriptions, dispatch: send })
+				return effect.perform({ ...runtime.context, subscriptions, dispatch: send })
 			}
 		})
 		.then(

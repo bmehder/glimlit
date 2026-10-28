@@ -241,7 +241,10 @@
 				<code>view</code> lives in JavaScript. Its declaration states the types
 				Gleam expects. <code>dispatch</code> is a function that accepts a
 				message. The view returns <code>View</code>, an external type representing a
-				lit-html template. The page passes its root element into <code>main</code>. Glimlit then
+				lit-html template. The page passes its root element into <code>main</code>. The view also receives
+				<code>context</code>: its <code>id(name)</code> helper creates IDs belonging
+				to that app instance, so labels keep pointing to their own inputs when a
+				page contains more than one postcard. Glimlit then
 				commits that template to the mount. <code>Nil</code> means there is no useful return value,
 				similar to JavaScript’s <code>undefined</code>. The function returned
 				by <code>main</code> stops the app; the page already handles calling it
@@ -498,7 +501,9 @@
 				<code>!</code> flips the boolean.
 			</p>
 			<p>
-				The <code>setShortcuts</code> effect uses the runtime’s subscription
+				The <code>setShortcuts</code> effect receives the app’s <code>root</code>
+				and passes it to the keyboard source. Key events from that root bubble
+				to its listener; shortcuts in another postcard stay independent. It uses the runtime’s subscription
 				manager, which already knows where to send your app’s messages.
 				It starts or stops a subscription under the key
 				<code>postcard-keys</code>. Starting an already active key does
@@ -524,7 +529,7 @@
 			</p>
 			<!-- checkpoint:06-subscriptions -->
 			<aside class="try-it"><p><strong>Try it.</strong> Enable shortcuts, then click the postcard preview to move focus
-				away from the checkbox. Press N outside an input field to cycle
+				away from the checkbox. Press N inside the postcard, outside an input field, to cycle
 				colours. The order should be Coral → Ocean → Meadow → Coral. Type
 				“nice” in the message: it should only enter text. Disable shortcuts,
 				click the preview, and press N again: the colour should stay put.</p></aside>

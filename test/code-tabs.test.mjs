@@ -7,7 +7,7 @@ import {
   Navigation$Next, Navigation$Previous, Navigation$First, Navigation$Last,
   Msg$UserSelectedTab, Msg$UserNavigatedTab,
 } from '../build/dev/javascript/glimlit/code_tabs/code_tabs.mjs'
-import { run } from '../src/runtime/runner.mjs'
+import { createRuntime, run } from '../src/runtime/runner.mjs'
 
 test('homepage clicks select tabs without moving focus or mutating the old model', () => {
   const [initial, initialEffects] = init()
@@ -20,13 +20,9 @@ test('homepage clicks select tabs without moving focus or mutating the old model
 })
 
 test('homepage keyboard navigation wraps and defers focus until its effect runs', async t => {
-  const previousDocument = globalThis.document
   const focused = []
-  globalThis.document = { getElementById: id => ({ focus: () => focused.push(id) }) }
-  t.after(() => {
-    if (previousDocument === undefined) delete globalThis.document
-    else globalThis.document = previousDocument
-  })
+  const root = { id: 'tabs', nodeType: 1, hasAttribute: () => false, querySelector: selector => ({ focus: () => focused.push(selector) }) }
+  const runtime = createRuntime(root)
   const cases = [
     [Tab$View(), Navigation$Previous(), 'effects-tab'],
     [Tab$Effects(), Navigation$Next(), 'view-tab'],
@@ -47,7 +43,7 @@ test('homepage keyboard navigation wraps and defers focus until its effect runs'
     assert.equal(focused.length, before)
     const work = toArray(effects)
     assert.equal(work.length, 1)
-    await run(work[0], () => assert.fail('Focusing a tab should not send a message'))
-    assert.equal(focused.at(-1), expected)
+    await run(work[0], () => assert.fail('Focusing a tab should not send a message'), runtime)
+    assert.equal(focused.at(-1), `[id="tabs-${expected}"]`)
   }
 })

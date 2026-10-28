@@ -31,7 +31,8 @@ import {
 	Model$Model$shortcuts,
 } from './postcard.mjs'
 
-export function view(model, dispatch) {
+export function view(model, dispatch, context) {
+	const { id } = context
 	const handleTitleInput = event =>
 		dispatch(Msg$UserChangedTitle(event.currentTarget.value))
 	const handleMessageInput = event =>
@@ -56,16 +57,16 @@ export function view(model, dispatch) {
 	return html`
 			<div class="studio">
 				<div class="studio-controls">
-					<label for="postcard-title">A title for your postcard</label>
+					<label for=${id('postcard-title')}>A title for your postcard</label>
 					<input
-						id="postcard-title"
+						id=${id('postcard-title')}
 						maxlength="80"
 						.value=${live(Model$Model$title(model))}
 						@input=${handleTitleInput}
 					/>
-					<label for="postcard-message">Your message</label>
+					<label for=${id('postcard-message')}>Your message</label>
 					<textarea
-						id="postcard-message"
+						id=${id('postcard-message')}
 						rows="4"
 						maxlength="400"
 						.value=${live(Model$Model$message(model))}
@@ -88,9 +89,9 @@ export function view(model, dispatch) {
 					<p class="studio-status" role="status">
 						${noticeText(Model$Model$notice(model))}
 					</p>
-					<label class="shortcut-toggle" for="postcard-shortcuts">
+					<label class="shortcut-toggle" for=${id('postcard-shortcuts')}>
 						<input
-							id="postcard-shortcuts"
+							id=${id('postcard-shortcuts')}
 							type="checkbox"
 							.checked=${Model$Model$shortcuts(model)}
 							@change=${handleShortcutsChange}
@@ -98,7 +99,7 @@ export function view(model, dispatch) {
 						Enable keyboard shortcuts
 					</label>
 					<p class="studio-hint">
-						Press N outside an input field to cycle colours. Turn shortcuts off to
+						Press N inside the postcard, outside an input field, to cycle colours. Turn shortcuts off to
 						remove the listener.
 					</p>
 				</div>

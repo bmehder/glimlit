@@ -30,9 +30,9 @@ export function loadDesign() {
 
 export function setShortcuts(enabled) {
   return {
-    perform: ({ subscriptions }) => {
+    perform: ({ subscriptions, root }) => {
       if (enabled) {
-        subscriptions.start('postcard-keys', nextThemeKey(Msg$UserPressedNextTheme))
+        subscriptions.start('postcard-keys', nextThemeKey(Msg$UserPressedNextTheme, root))
       } else {
         subscriptions.stop('postcard-keys')
       }

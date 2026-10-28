@@ -6,7 +6,7 @@ import gleam/result
 import gleam/string
 import runtime/effect.{type Effect}
 import runtime/mvu
-import runtime/view.{type Root, type View}
+import runtime/view.{type Context, type Root, type View}
 
 // -- Types ---------------------------------------------------------------
 
@@ -733,7 +733,7 @@ pub fn can_retry_save(model: Model) -> Bool {
 // -- View ----------------------------------------------------------------
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
+fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
 // -- Effects -------------------------------------------------------------
 

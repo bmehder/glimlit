@@ -20,8 +20,8 @@ pub fn start(
   update: fn(model, msg) -> #(model, List(Effect(msg))),
   view: fn(model, fn(msg) -> Nil) -> view,
   render: fn(view) -> Nil,
+  runtime: Runtime(msg),
 ) -> fn() -> Nil {
-  let runtime = effect.runtime()
   let #(initial_model, _) = initial
   let model = mutable_ref(initial_model)
   render_and_run(initial, model, update, view, render, runtime)

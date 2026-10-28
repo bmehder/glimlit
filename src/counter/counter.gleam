@@ -1,6 +1,6 @@
 import runtime/effect.{type Effect}
 import runtime/mvu
-import runtime/view.{type Root, type View}
+import runtime/view.{type Context, type Root, type View}
 
 pub type Model {
   Model(count: Int)
@@ -25,7 +25,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 }
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
+fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
 pub fn main(root: Root) -> fn() -> Nil {
   mvu.start(init(), update, view, root)

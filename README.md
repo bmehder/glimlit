@@ -161,7 +161,7 @@ A minimal Gleam app looks like this:
 ```gleam
 import runtime/effect.{type Effect}
 import runtime/mvu
-import runtime/view.{type Root, type View}
+import runtime/view.{type Context, type Root, type View}
 
 pub type Model {
   Model(count: Int)
@@ -182,7 +182,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 }
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
+fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
 pub fn main(root: Root) -> fn() -> Nil {
   mvu.start(init(), update, view, root)
@@ -209,8 +209,8 @@ contain matching Lit SSR HTML; malformed marked HTML or a structural hydration e
 silently replacing the initial interface. No public rendering-mode argument or
 renderer import is needed.
 
-The server-only `renderInitial(init(), view)` in `src/runtime/server.mjs` produces
-initial HTML without running effects. The host puts that HTML inside a root
+The server-only `renderInitial(init(), view, rootId)` in `src/runtime/server.mjs` produces
+initial HTML without running effects. The host supplies a stable root ID, then puts that HTML inside a root
 marked `data-glimlit-ssr`; the website's build plugin does this for the homepage
 tabs and Counter. Other examples currently start with empty roots. Hydration is
 synchronous and completes with the real dispatcher before effects run. The
@@ -218,6 +218,19 @@ current browser implementation includes the small experimental Lit hydration
 client for all apps so this needs no preparation step or asynchronous startup.
 See [the rendering experiment](notes/view-rendering-experiment.md) for the trial
 API, verified behavior, and remaining form-control and initialization limitations.
+
+Views also receive a third argument, `context`. Its `id(name)` helper prefixes
+local element IDs with the mount's ID, so labels, dialogs, and tabs can be repeated
+without collisions. A simple view can ignore it. In the browser, `context.root`
+is the app's element; effect contexts contain the same `root` and `id` helper.
+Server views receive identity without a browser element. Keep DOM interaction
+inside event handlers or effects, rather than while describing server HTML.
+Unnamed browser mounts receive generated IDs; prerendered mounts must retain
+stable IDs assigned by their host.
+
+Storage keys and URL routing remain app choices, not runtime namespaces. Postcard
+uses its established shared storage key by default; a host can explicitly give
+it a `data-storage-key` when separate saved designs are wanted.
 
 ## Views with lit-html
 
@@ -232,7 +245,7 @@ For example, here is a counter view in Lustre, following its
 [view and event conventions](https://lustre.hexdocs.pm/guide/01-quickstart.html):
 
 ```gleam
-import runtime/view.{type Root, type View}
+import runtime/view.{type Context, type Root, type View}
 
 import gleam/int
 import lustre/element.{type Element}
@@ -420,7 +433,7 @@ reject the runner's Promise; they do not automatically update the model.
 A subscription has one operation: `start(emit)`, which returns a cleanup function.
 Like an effect, its description is inert until used.
 
-Todos uses a keyboard subscription for a list feature: pressing **N** outside an
+Todos uses a keyboard subscription for a list feature: pressing **N** while the app is focused and outside an
 input focuses the new-todo field. It ignores text fields, editable content,
 open dialogs, repeated key presses, handled events, and modifier shortcuts.
 
@@ -435,8 +448,8 @@ app dispatcher, so each start call needs only a key and a source:
 ```js
 export function watchShortcuts() {
 	return {
-		perform: ({ subscriptions }) =>
-			subscriptions.start('todo-keyboard', newTodoKey(Msg$UserPressedNewTodoShortcut)),
+		perform: ({ subscriptions, root }) =>
+			subscriptions.start('todo-keyboard', newTodoKey(Msg$UserPressedNewTodoShortcut, root)),
 		onSuccess: Msg$KeyboardShortcutsStarted,
 		onFailure: () => Msg$KeyboardShortcutsFailed('Could not listen for key presses.'),
 	}
@@ -457,14 +470,14 @@ UserPressedNewTodoShortcut -> #(model, [focus_new_todo()])
 ```js
 export function focusNewTodo() {
   return {
-    perform: () => document.getElementById('new-todo')?.focus(),
+    perform: ({ root }) => root?.querySelector('input')?.focus(),
   }
 }
 ```
 
 The subscription reports an event, update decides what to do, and the effect
 moves browser focus. Saving todos remains a separate effect. Open
-`/demos/todos/`, click outside the inputs, and press N to try it. Typing an N into
+`/demos/todos/`, click inside the app but outside the inputs, and press N to try it. Typing an N into
 an input still works normally.
 
 Each app has its own subscription manager, with independent string keys:

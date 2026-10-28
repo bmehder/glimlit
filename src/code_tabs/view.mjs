@@ -19,31 +19,34 @@ import {
 	Tab$isEffects,
 } from './code_tabs.mjs'
 
-export function view(model, dispatch) {
+export function view(model, dispatch, context) {
 	const entries = [
 		{
 			tab: Tab$View(),
-			id: 'view-tab',
+			id: context.id('view-tab'),
 			matches: Tab$isView,
 			label: 'View',
 			file: 'view.mjs',
-			panel: 'view-example',
+			panel: context.id('view-example'),
+			source: examples.view,
 		},
 		{
 			tab: Tab$ModelAndUpdate(),
-			id: 'model-tab',
+			id: context.id('model-tab'),
 			matches: Tab$isModelAndUpdate,
 			label: 'Model & update',
 			file: 'postcard.gleam',
-			panel: 'model-example',
+			panel: context.id('model-example'),
+			source: examples.model,
 		},
 		{
 			tab: Tab$Effects(),
-			id: 'effects-tab',
+			id: context.id('effects-tab'),
 			matches: Tab$isEffects,
 			label: 'Effects',
 			file: 'effects.mjs',
-			panel: 'effects-example',
+			panel: context.id('effects-example'),
+			source: examples.effects,
 		},
 	]
 
@@ -79,10 +82,10 @@ export function view(model, dispatch) {
 				</button>`
 			})}
 		</div>
-		${entries.map(({ id, matches, panel }) => html`<div
+		${entries.map(({ id, matches, panel, source }) => html`<div
 			id=${panel} class="code-panel" role="tabpanel" aria-labelledby=${id}
 			tabindex="0" ?hidden=${!matches(currentTab)}>
-			${unsafeHTML(examples[panel.replace('-example', '')])}
+			${unsafeHTML(source)}
 		</div>`)}
 		<div class="code-connection">Model → view · effects → runner · messages → update</div>
 		<p class="code-explanation">Return a pair: the next model and a list of effects. The runtime renders the

@@ -1,3 +1,4 @@
+import { createRuntime } from '../src/runtime/runner.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { html } from 'lit-html'
@@ -22,7 +23,7 @@ test('the rendering layer commits the first view with real handlers before effec
     description => {
       events.push(['render', description.model])
       click = description.handleClick
-    })
+    }, createRuntime())
   const firstClick = click
   assert.deepEqual(events, [['render', 0]])
   await new Promise(resolve => setImmediate(resolve))
@@ -37,13 +38,13 @@ test('initial HTML uses the same templates without executing browser effects', a
   let performed = false
   const effect = { perform() { performed = true; throw new Error('Server ran browser work') } }
   const [model] = counter.init()
-  const output = await renderInitial([model, to_list([effect])], counterView)
+  const output = await renderInitial([model, to_list([effect])], counterView, 'counter')
   assert.match(output, /<output[^>]*>/)
   assert.match(output, /Increase count/)
   assert.match(output, /lit-part/)
   assert.equal(performed, false)
 
-  const tabsHtml = await renderInitial(tabs.init(), tabsView)
+  const tabsHtml = await renderInitial(tabs.init(), tabsView, 'tabs')
   assert.equal((tabsHtml.match(/role="tabpanel"/g) ?? []).length, 3)
   assert.equal((tabsHtml.match(/ hidden/g) ?? []).length, 2)
   assert.ok(tabsHtml.includes('syntax-function'))
@@ -53,10 +54,12 @@ test('initial HTML uses the same templates without executing browser effects', a
 test('Postcard templates are independent of the DOM and escape untrusted text', async () => {
   let [model] = postcard.init()
   ;[model] = postcard.update(model, postcard.Msg$UserChangedTitle('<script>alert("x")</script>'))
-  const output = await renderInitial([model, to_list([])], postcardView)
+  const output = await renderInitial([model, to_list([])], postcardView, 'postcard')
   assert.ok(output.includes('&lt;script&gt;'))
   assert.ok(!output.includes('<script>'))
   assert.match(output, /postcard-coral/)
+  assert.match(output, /for="postcard-postcard-title"/)
+  assert.match(output, /id="postcard-postcard-title"/)
   // Lit SSR does not serialize textarea.value. This is a known blocker for
   // enabling Postcard prerendering on the website, not a framework workaround.
   assert.match(output, /<textarea[^>]*><\/textarea>/)
@@ -65,7 +68,7 @@ test('Postcard templates are independent of the DOM and escape untrusted text', 
 test('a rendering failure stops startup before any effects are scheduled', async () => {
   let performed = false
   assert.throws(() => start([0, to_list([{ perform() { performed = true } }])],
-    model => [model, to_list([])], () => html`<p>Hello</p>`, () => { throw new Error('Hydration failed') }), /Hydration failed/)
+    model => [model, to_list([])], () => html`<p>Hello</p>`, () => { throw new Error('Hydration failed') }, createRuntime()), /Hydration failed/)
   await new Promise(resolve => setImmediate(resolve))
   assert.equal(performed, false)
 })
@@ -79,7 +82,7 @@ test('public startup rejects missing roots and malformed marked HTML before star
   for (const root of [null, undefined, () => {}]) {
     assert.throws(() => mount(initial, update, view, root), /Missing Glimlit mount element/)
   }
-  const malformed = { nodeType: 1, hasAttribute: () => true, childNodes: [] }
+  const malformed = { id: 'marked', nodeType: 1, hasAttribute: () => true, childNodes: [] }
   assert.throws(() => mount(initial, update, view, malformed), /Marked Glimlit roots require initial HTML/)
   await new Promise(resolve => setImmediate(resolve))
   assert.equal(performed, false)

@@ -1,3 +1,4 @@
+import { createRuntime } from '../src/runtime/runner.mjs'
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { from_list as toArray, to_list as toList } from '#gleam/array';
@@ -51,7 +52,7 @@ test('effects start in list order and the second can finish before the first', a
       return new Promise(resolve => finish.push(() => { events.push(`${label} finished`); resolve(); }));
     },
   })));
-  const dispose = start([0, effects], () => assert.fail('No messages expected'), () => {}, () => {});
+  const dispose = start([0, effects], () => assert.fail('No messages expected'), () => {}, () => {}, createRuntime());
   t.after(dispose);
   await settle();
   assert.deepEqual(events, ['First started', 'Second started']);
@@ -69,7 +70,7 @@ test('runtime renders before performing effects and callbacks use the latest mod
   const load = { perform: () => { events.push(['effect', 'load']); return 2; }, onSuccess: value => value };
   start([0, toList([load])], (model, msg) => [model + msg, toList([])], (model, dispatch) => {
     events.push(['view', model]); send = dispatch;
-  }, () => {});
+  }, () => {}, createRuntime());
   const firstSend = send;
   await settle();
   firstSend(3);
@@ -101,7 +102,7 @@ test('effects returned by update run after rendering and dispatch their result',
   const save = { perform: () => { events.push(['effect', 'save']); return 10; }, onSuccess: value => value };
   start([0, toList([])], (model, msg) => [model + msg, toList(msg === 1 ? [save] : [])], (model, dispatch) => {
     events.push(['view', model]); send = dispatch;
-  }, () => {});
+  }, () => {}, createRuntime());
   send(1);
   await settle();
   assert.deepEqual(events, [['view', 0], ['view', 1], ['effect', 'save'], ['view', 11]]);

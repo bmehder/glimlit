@@ -2,7 +2,7 @@ import gleam/dynamic/decode
 import gleam/json
 import runtime/effect.{type Effect}
 import runtime/mvu
-import runtime/view.{type Root, type View}
+import runtime/view.{type Context, type Root, type View}
 
 // -- Types ---------------------------------------------------------------
 
@@ -168,7 +168,7 @@ fn load_design() -> Effect(Msg)
 fn set_shortcuts(enabled: Bool) -> Effect(Msg)
 
 @external(javascript, "./view.mjs", "view")
-fn view(model: Model, dispatch: fn(Msg) -> Nil) -> View
+fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
 // -- Start ---------------------------------------------------------------
 

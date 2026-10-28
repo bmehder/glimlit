@@ -4,7 +4,7 @@ import {
   Model$Model$message,
 } from './postcard.mjs'
 
-export function view(model, dispatch) {
+export function view(model, dispatch, context) {
   return html`
     <div class="studio">
       <div class="preview-area">

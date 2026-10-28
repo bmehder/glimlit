@@ -16,8 +16,8 @@ const key = 'glimlit.postcard.v1'
 
 export function saveDesign(title, message, theme) {
 	return {
-		perform: () =>
-			localStorage.setItem(key, JSON.stringify({ title, message, theme })),
+		perform: ({ root }) =>
+			localStorage.setItem(root?.dataset.storageKey ?? key, JSON.stringify({ title, message, theme })),
 		onSuccess: () => Msg$LocalStorageSavedDesign(),
 		onFailure: () => Msg$LocalStorageSaveFailed(),
 	}
@@ -25,7 +25,7 @@ export function saveDesign(title, message, theme) {
 
 export function loadDesign() {
 	return {
-		perform: () => localStorage.getItem(key),
+		perform: ({ root }) => localStorage.getItem(root?.dataset.storageKey ?? key),
 		onSuccess: saved =>
 			saved === null
 				? Msg$LocalStorageWasEmpty()
@@ -36,9 +36,9 @@ export function loadDesign() {
 
 export function setShortcuts(enabled) {
 	return {
-		perform: ({ subscriptions }) => {
+		perform: ({ subscriptions, root }) => {
 			if (enabled) {
-				subscriptions.start('postcard-keys', nextThemeKey(Msg$UserPressedNextTheme))
+				subscriptions.start('postcard-keys', nextThemeKey(Msg$UserPressedNextTheme, root))
 			} else {
 				subscriptions.stop('postcard-keys')
 			}

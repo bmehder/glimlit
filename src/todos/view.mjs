@@ -42,8 +42,9 @@ import {
 /** @typedef {Event & { currentTarget: HTMLInputElement }} InputElementEvent */
 /** @typedef {(event: InputElementEvent) => void} InputHandler */
 
-/** @param {Model} model @param {Dispatch} dispatch */
-export function view(model, dispatch) {
+/** @param {Model} model @param {Dispatch} dispatch @param {import('../runtime/instance.mjs').InstanceContext} context */
+export function view(model, dispatch, context) {
+	const { id } = context
 	/** @type {Todo[]} */
 	const todos = from_list(Model$Model$todos(model))
 	const remaining = todos.filter(
@@ -69,9 +70,9 @@ export function view(model, dispatch) {
 			</header>
 			<form class="flex gap-3" @submit=${handleNewTodoSubmit}>
 				<div class="min-w-0 flex-1">
-					<label class="sr-only" for="new-todo">New todo</label>
+					<label class="sr-only" for=${id('new-todo')}>New todo</label>
 					<input
-						id="new-todo"
+						id=${id('new-todo')}
 						class="w-full rounded-lg border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:border-teal-400 focus:outline-none"
 						placeholder="What needs doing?"
 						autocomplete="off"
@@ -114,7 +115,16 @@ export function view(model, dispatch) {
 		const handleToggleCompletion = () =>
 			dispatch(Msg$UserToggledTodoCompletion(Todo$Todo$id(todo)))
 		const handleEdit = () => dispatch(Msg$UserClickedEditTodo(Todo$Todo$id(todo)))
-		const handleDelete = () => openDeleteDialog(Todo$Todo$id(todo))
+		/** @param {Event} event */
+		const handleDelete = event => {
+			const target = event.currentTarget
+			if (!(target instanceof HTMLElement)) return
+			const dialog = target.closest('li')?.querySelector('dialog')
+			if (dialog instanceof HTMLDialogElement) {
+				dialog.returnValue = ''
+				dialog.showModal()
+			}
+		}
 		/** @param {Event} event */
 		const handleDeleteDialogClose = event => {
 			const dialog = event.currentTarget
@@ -140,22 +150,22 @@ export function view(model, dispatch) {
 					${button('Delete', handleDelete)}
 				</div>
 				<dialog
-					id=${`delete-todo-${Todo$Todo$id(todo)}`}
+					id=${id(`delete-todo-${Todo$Todo$id(todo)}`)}
 					class="m-auto w-[calc(100%-3rem)] max-w-md rounded-2xl border border-slate-600 bg-slate-900 p-7 text-slate-100 shadow-2xl backdrop:bg-slate-950/70"
-					aria-labelledby=${`delete-title-${Todo$Todo$id(todo)}`}
-					aria-describedby=${`delete-description-${Todo$Todo$id(todo)}`}
+					aria-labelledby=${id(`delete-title-${Todo$Todo$id(todo)}`)}
+					aria-describedby=${id(`delete-description-${Todo$Todo$id(todo)}`)}
 					@close=${handleDeleteDialogClose}
 				>
 					<form method="dialog">
 						<h2
 							class="text-2xl font-semibold"
-							id=${`delete-title-${Todo$Todo$id(todo)}`}
+							id=${id(`delete-title-${Todo$Todo$id(todo)}`)}
 						>
 							Delete todo?
 						</h2>
 						<p
 							class="mt-3 text-slate-300 wrap-anywhere"
-							id=${`delete-description-${Todo$Todo$id(todo)}`}
+							id=${id(`delete-description-${Todo$Todo$id(todo)}`)}
 						>
 							“${Todo$Todo$title(todo)}” will be removed from your list.
 						</p>
@@ -197,11 +207,11 @@ export function view(model, dispatch) {
 		return html`
 			<form class="mt-4 flex flex-wrap items-end gap-3" @submit=${handleEditSubmit}>
 				<div class="min-w-0 flex-1 basis-48">
-					<label class="mb-2 block text-sm text-slate-400" for=${`edit-${todoId}`}
+					<label class="mb-2 block text-sm text-slate-400" for=${id(`edit-${todoId}`)}
 						>Edit todo</label
 					>
 					<input
-						id=${`edit-${todoId}`}
+						id=${id(`edit-${todoId}`)}
 						class="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 focus:border-teal-400 focus:outline-none"
 						.value=${live(text)}
 						@input=${handleEditInput}
@@ -218,7 +228,7 @@ export function view(model, dispatch) {
 	}
 }
 
-/** @param {string} label @param {() => void} handleClick */
+/** @param {string} label @param {(event: Event) => void} handleClick */
 function button(label, handleClick) {
 	return html`<button
 		type="button"
@@ -227,16 +237,6 @@ function button(label, handleClick) {
 	>
 		${label}
 	</button>`
-}
-
-/** @param {number} todoId */
-function openDeleteDialog(todoId) {
-	const dialog = document.getElementById(`delete-todo-${todoId}`)
-	if (dialog instanceof HTMLDialogElement) {
-		// Escape does not replace the previous result, so reset it on each opening.
-		dialog.returnValue = ''
-		dialog.showModal()
-	}
 }
 
 /** @param {import('./todos.mjs').StorageState$} storage */
@@ -252,7 +252,7 @@ function storageMessage(storage) {
 function shortcutMessage(shortcutStatus) {
 	if (ShortcutStatus$isStarting(shortcutStatus)) return 'Starting keyboard shortcut…'
 	if (ShortcutStatus$isListening(shortcutStatus))
-		return 'Press "n" outside an input field to focus the new-todo input.'
+		return 'Press "n" inside this app, outside an input field, to focus the new-todo input.'
 	if (ShortcutStatus$isShortcutFailed(shortcutStatus))
 		return `Keyboard shortcut unavailable. ${ShortcutStatus$ShortcutFailed$reason(shortcutStatus)}`
 	throw new Error('Unknown todo keyboard shortcut state')

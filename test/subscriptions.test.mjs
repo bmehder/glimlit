@@ -92,7 +92,7 @@ test('start returns app cleanup and old view callbacks cannot update a stopped a
     perform: ({ subscriptions }) => subscriptions.start('resource', { start: () => () => { cleaned++; } }),
     onSuccess: () => 1,
   };
-  const dispose = start([0, toList([initialEffect])], (model, message) => [model + message, toList([])], (model, dispatch) => { renders.push(model); send = dispatch; }, () => {});
+  const dispose = start([0, toList([initialEffect])], (model, message) => [model + message, toList([])], (model, dispatch) => { renders.push(model); send = dispatch; }, () => {}, createRuntime());
   await settle();
   dispose();
   send(10);
@@ -123,7 +123,7 @@ test('all sources share their app dispatcher across renders while separate apps 
       : [model + message.add, toList([])], (model, dispatch) => {
       rendered.push(model);
       send = dispatch;
-    }, () => {});
+    }, () => {}, createRuntime());
     t.after(dispose);
     return { emitters, cleaned, rendered, dispose, send: message => send(message) };
   }

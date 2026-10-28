@@ -3,11 +3,11 @@
 This is a trial of one view contract, informed by the separate Astro experiment
 and its `GLIMLIT-FOLLOWUPS.md`. It changes the original repository's app/startup
 API; it does not preserve the old rendering view callback as another supported
-path. The Astro project has not been changed by this work.
+path. The Astro project has now been migrated to the same runtime, as recorded below.
 
 ## The contract being tried
 
-A JavaScript `view(model, dispatch)` returns a lit-html `TemplateResult`. It does
+A JavaScript `view(model, dispatch, context)` returns a lit-html `TemplateResult`. It does
 not look up a mount or call `render()`. Event handlers can still work with browser
 elements when invoked; describing the initial view must be safe without a DOM.
 Gleam declares the external return as `runtime/view.View`. As with other opaque
@@ -44,7 +44,7 @@ callbacks; the host still owns when to call it and whether to remove the DOM.
 This revision supersedes the earlier trial that asked callers to choose
 `renderInto` or `hydrateInto` and pass a renderer into `main`.
 
-`renderInitial(init(), view)` in the server-only `runtime/server.mjs` renders the
+`renderInitial(init(), view, rootId)` in the server-only `runtime/server.mjs` renders the
 initial model with Lit SSR and ignores its effect list. Browser effects and
 subscriptions are never started by this helper. Templates are escaped by Lit;
 the fixed homepage highlighted snippets deliberately use trusted `unsafeHTML`.
@@ -103,10 +103,12 @@ This helper is not a general HTML sanitizer.
   snapshots for nondeterministic initialization, and later prop updates are not
   implemented. Supplying the same input is insufficient if `init` uses random
   numbers, current time, or other changing data.
-- A bound renderer gives each mount its own Lit DOM container. It does not scope
-  existing global selectors in effects, assign unique IDs, namespace storage,
-  or arbitrate global keyboard shortcuts and recipe routes. Two Counter instances
-  work; repeated instances of every app are not claimed to be isolated yet.
+- Each view/effect now receives instance context: the browser root and an
+  `id(name)` helper. Server context provides the matching ID helper without DOM
+  access. Browser roots without IDs receive unique IDs; SSR roots must retain
+  their host-assigned ID. Focus effects query within the root. Postcard/Todos
+  keyboard subscriptions attach to that root. Storage and URL namespaces remain
+  explicit app conventions; sharing those resources can still be intentional.
 - Server markup is visible immediately, but interaction still needs JavaScript.
   These apps have no general non-JavaScript form submission behavior. Preventing
   every source of layout shift (fonts, CSS, responsive changes) is not guaranteed.
@@ -114,3 +116,24 @@ This helper is not a general HTML sanitizer.
 The next useful design review is how instance context should reach views/effects
 without global DOM lookups, and
 how native form values should survive server rendering and delayed hydration.
+
+
+## Instance-context and Astro migration
+
+Views now receive a third argument, `context`, with `id(name)` and a browser-only
+`root`. Effects receive the same identity/root fields alongside subscriptions
+and dispatch. Public startup remains `main(root)`; model/update/message types
+are unchanged. SSR hosts call `renderInitial(init(), view, rootId)` and retain
+that root ID in the browser. A view without IDs can ignore the extra argument.
+
+Two Postcards have been exercised with browser-only, hydrated, mixed, and unnamed
+mounts: IDs and label targets are unique; edits, root-scoped shortcuts, and cleanup
+are independent. Saved designs can be isolated through Postcard's explicit
+`data-storage-key` app option; the default remains the original shared key.
+
+The Astro project uses copied runtime files identical except for the required
+Gleam import namespace (`glimlit_apps/runtime`). All five apps use the new view
+contract. App-local rendering/hydration wrappers have been removed. Astro's
+local storage-key helper was moved out of the runtime into app support; its
+existing per-instance storage and recipe routing policies are preserved. The
+Postcard textarea serialization bridge remains an Astro-only prototype.

@@ -46,10 +46,10 @@ export function log(message) {
 /** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
 export function watchShortcuts() {
 	return {
-		perform: ({ subscriptions }) =>
+		perform: ({ subscriptions, root }) =>
 			subscriptions.start(
 				'todo-keyboard',
-				newTodoKey(Msg$UserPressedNewTodoShortcut),
+				newTodoKey(Msg$UserPressedNewTodoShortcut, root),
 			),
 		onSuccess: Msg$KeyboardShortcutsStarted,
 		onFailure: () =>
@@ -60,6 +60,6 @@ export function watchShortcuts() {
 /** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
 export function focusNewTodo() {
 	return {
-		perform: () => document.getElementById('new-todo')?.focus(),
+		perform: ({ root }) => root?.querySelector('input')?.focus(),
 	}
 }

@@ -7,19 +7,20 @@ import {
   Msg$UserChangedMessage,
 } from './postcard.mjs'
 
-export function view(model, dispatch) {
+export function view(model, dispatch, context) {
+  const { id } = context
   const handleTitleInput = event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))
   const handleMessageInput = event => dispatch(Msg$UserChangedMessage(event.currentTarget.value))
 
   return html`
     <div class="studio">
       <div class="studio-controls">
-        <label for="postcard-title">A title for your postcard</label>
-        <input id="postcard-title" maxlength="80"
+        <label for=${id('postcard-title')}>A title for your postcard</label>
+        <input id=${id('postcard-title')} maxlength="80"
           .value=${live(Model$Model$title(model))}
           @input=${handleTitleInput}>
-        <label for="postcard-message">Your message</label>
-        <textarea id="postcard-message" rows="4" maxlength="400"
+        <label for=${id('postcard-message')}>Your message</label>
+        <textarea id=${id('postcard-message')} rows="4" maxlength="400"
           .value=${live(Model$Model$message(model))}
           @input=${handleMessageInput}></textarea>
       </div>

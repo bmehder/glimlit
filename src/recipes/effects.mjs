@@ -72,13 +72,16 @@ export const navigate = hash => ({
 
 /** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
 export const focusErrors = () => ({
-	perform: () => document.getElementById('recipe-errors')?.focus(),
+	perform: ({ root }) => {
+		const errors = root?.querySelector('[data-recipe-errors]')
+		if (errors instanceof HTMLElement) errors.focus()
+	},
 })
 
 /** @returns {import('../runtime/runner.mjs').Effect<void, Msg>} */
 export const focusContent = () => ({
-	perform: () => {
-		const heading = document.querySelector('#recipe-app h2')
+	perform: ({ root }) => {
+		const heading = root?.querySelector('h2')
 		if (heading instanceof HTMLElement) {
 			heading.tabIndex = -1
 			heading.focus()

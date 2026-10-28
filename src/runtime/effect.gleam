@@ -1,4 +1,5 @@
 import gleam/javascript/promise.{type Promise}
+import runtime/view.{type Root}
 
 pub type Effect(msg)
 
@@ -6,6 +7,9 @@ pub type Runtime(msg)
 
 @external(javascript, "./runner.mjs", "createRuntime")
 pub fn runtime() -> Runtime(msg)
+
+@external(javascript, "./runner.mjs", "createRuntime")
+pub fn runtime_at(root: Root) -> Runtime(msg)
 
 @external(javascript, "./runner.mjs", "stop")
 pub fn stop(runtime: Runtime(msg)) -> Nil

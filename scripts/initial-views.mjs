@@ -29,14 +29,16 @@ export function initialViews() {
 			async handler(html) {
 				for (const match of html.matchAll(/(<div\b[^>]*>)(\s*)<!-- glimlit:(counter|code_tabs) -->/g)) {
 					const app = match[3]
+					const rootId = match[1].match(/\bid="([^"]+)"/)?.[1]
+					if (!rootId) throw new Error('Prerendered Glimlit mounts need an ID')
 					let initial
 					if (server) {
 						const { renderInitial } = await server.ssrLoadModule(`${root}src/runtime/server.mjs`)
 						const { init } = await server.ssrLoadModule(`${root}build/dev/javascript/glimlit/${app}/${app}.mjs`)
 						const { view } = await server.ssrLoadModule(`${root}src/${app}/view.mjs`)
-						initial = await renderInitial(init(), view)
+						initial = await renderInitial(init(), view, rootId)
 					} else {
-						const { stdout } = await execute(process.execPath, ['scripts/render-initial.mjs', app], { cwd: root })
+						const { stdout } = await execute(process.execPath, ['scripts/render-initial.mjs', app, rootId], { cwd: root })
 						initial = stdout
 					}
 					html = html.replace(match[0], () => `${match[1].slice(0, -1)} data-glimlit-ssr>${match[2]}${initial}`)

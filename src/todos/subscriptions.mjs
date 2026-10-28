@@ -3,9 +3,10 @@
 /**
  * @template Msg
  * @param {() => Msg} handleNewTodo
+ * @param {HTMLElement} [root]
  * @returns {import('../runtime/subscriptions.mjs').Subscription<Msg>}
  */
-export function newTodoKey(handleNewTodo) {
+export function newTodoKey(handleNewTodo, root) {
 	return {
 		start: emit => {
 			/** @param {KeyboardEvent} event */
@@ -28,6 +29,10 @@ export function newTodoKey(handleNewTodo) {
 				if (event.key.toLowerCase() !== 'n') return
 				event.preventDefault()
 				emit(handleNewTodo())
+			}
+			if (root) {
+				root.addEventListener('keydown', handleKeydown)
+				return () => root.removeEventListener('keydown', handleKeydown)
 			}
 			window.addEventListener('keydown', handleKeydown)
 			return () => window.removeEventListener('keydown', handleKeydown)

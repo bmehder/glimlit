@@ -1,6 +1,6 @@
 // @ts-nocheck
 
-export function nextThemeKey(handleNext) {
+export function nextThemeKey(handleNext, root) {
 	return {
 		start: emit => {
 			const handleKeydown = event => {
@@ -23,8 +23,9 @@ export function nextThemeKey(handleNext) {
 				event.preventDefault()
 				emit(handleNext())
 			}
-			window.addEventListener('keydown', handleKeydown)
-			return () => window.removeEventListener('keydown', handleKeydown)
+			const target = root ?? window
+			target.addEventListener('keydown', handleKeydown)
+			return () => target.removeEventListener('keydown', handleKeydown)
 		},
 	}
 }

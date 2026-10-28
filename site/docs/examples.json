@@ -5,7 +5,7 @@
   },
   "start": {
     "language": "gleam",
-    "source": "import runtime/effect.{type Effect}\nimport runtime/mvu\nimport runtime/view.{type Root, type View}\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\npub fn init() -> #(Model, List(Effect(Msg))) {\n  #(Model(title: \"Hello\"), [])\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(Model(..model, title: title), [])\n  }\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> View\n\npub fn main(root: Root) -> fn() -> Nil {\n  mvu.start(init(), update, view, root)\n}"
+    "source": "import runtime/effect.{type Effect}\nimport runtime/mvu\nimport runtime/view.{type Context, type Root, type View}\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\npub fn init() -> #(Model, List(Effect(Msg))) {\n  #(Model(title: \"Hello\"), [])\n}\n\npub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {\n  case msg {\n    UserChangedTitle(title) -> #(Model(..model, title: title), [])\n  }\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View\n\npub fn main(root: Root) -> fn() -> Nil {\n  mvu.start(init(), update, view, root)\n}"
   },
   "update": {
     "language": "gleam",
@@ -37,7 +37,7 @@
   },
   "signature": {
     "language": "gleam",
-    "source": "pub fn start(\n  initial: #(model, List(Effect(msg))),\n  update: fn(model, msg) -> #(model, List(Effect(msg))),\n  view: fn(model, fn(msg) -> Nil) -> View,\n  root: Root,\n) -> fn() -> Nil"
+    "source": "pub fn start(\n  initial: #(model, List(Effect(msg))),\n  update: fn(model, msg) -> #(model, List(Effect(msg))),\n  view: fn(model, fn(msg) -> Nil, Context) -> View,\n  root: Root,\n) -> fn() -> Nil"
   },
   "mount": {
     "language": "html",
@@ -73,6 +73,6 @@
   },
   "view-boundary": {
     "language": "gleam",
-    "source": "import runtime/view.{type Root, type View}\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil) -> View"
+    "source": "import runtime/view.{type Context, type Root, type View}\n\npub type Model {\n  Model(title: String)\n}\n\npub type Msg {\n  UserChangedTitle(String)\n}\n\n@external(javascript, \"./view.mjs\", \"view\")\nfn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View"
   }
 }
