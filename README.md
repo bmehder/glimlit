@@ -246,13 +246,15 @@ it a `data-storage-key` when separate saved designs are wanted.
 | Startup and updates | One `main(root)` call; views return templates; rendering completes before effects run. |
 | Repeated instances | Per-root model, scoped IDs, effect context, keyboard sources, and cleanup; storage and route policies remain app-defined. |
 | This website | Counter and homepage code tabs have initial HTML and hydrate. Todos, Recipes, and the tutorial's Postcard preview render in the browser. |
-| Astro integration | Counter, Postcard, and code tabs hydrate from their shared views. The Postcard textarea bridge belongs to that host adapter. |
+| Astro integration | Counter, Postcard, and code tabs hydrate from their shared views. Both hosts use the isolated server-only textarea compatibility adapter. |
 
-Lit Labs SSR and hydration remain experimental dependencies. Initial textarea
-values and edits made before delayed hydration still need work. Host-provided
+Lit Labs SSR and hydration remain experimental dependencies. Initial textarea values require the explicit compatibility marker documented in the rendering notes;
+edits made before delayed hydration still need work. Host-provided
 initialization data, snapshots for nondeterministic initialization, and later
 host prop updates are not implemented. The browser must begin with the same
 model, template structure, and root ID used for its initial HTML.
+
+For server-rendered forms, see the [tested initial-value limitations](notes/view-rendering-experiment.md#initial-form-values-with-ssr): text input values serialize, but textarea values, select values, and boolean property bindings need care.
 
 ## Views with lit-html
 
@@ -539,6 +541,7 @@ src/
     runner.mjs           Effect execution, app lifetime, mutable references
     subscriptions.mjs    Keyed subscription lifetimes and cleanup
     server.mjs           Initial HTML generation without running effects
+    lit-ssr-compat.mjs    Temporary server-only textarea compatibility
   counter/               Small example app: model, update, and view
   todos/                 Todo list with storage and a keyboard shortcut
   recipes/               Multi-screen recipe box with an editor

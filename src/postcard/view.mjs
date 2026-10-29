@@ -69,6 +69,7 @@ export function view(model, dispatch, context) {
 						id=${id('postcard-message')}
 						rows="4"
 						maxlength="400"
+						data-ssr-value=${Model$Model$message(model)}
 						.value=${live(Model$Model$message(model))}
 						@input=${handleMessageInput}
 					></textarea>

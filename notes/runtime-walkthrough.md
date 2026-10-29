@@ -27,7 +27,7 @@ longer the public API.
 
 ## Runtime directory
 
-The runtime has eight files. Startup and the loop are together; rendering,
+The runtime has eight core files plus a temporary server-only compatibility adapter. Startup and the loop are together; rendering,
 identity, effects, and subscription lifetimes keep their own boundaries.
 
 | File | Responsibility |
@@ -40,6 +40,7 @@ identity, effects, and subscription lifetimes keep their own boundaries.
 | [runner.mjs](../src/runtime/runner.mjs) | Effect execution, app lifetime, and the loop's mutable-reference operations |
 | [subscriptions.mjs](../src/runtime/subscriptions.mjs) | Keyed subscription setup, stopping, and cleanup |
 | [server.mjs](../src/runtime/server.mjs) | Initial HTML generation without running effects |
+| [lit-ssr-compat.mjs](../src/runtime/lit-ssr-compat.mjs) | Temporary, server-only initial textarea serialization |
 
 ## Start with Counter
 
@@ -168,6 +169,13 @@ are also app policy, not automatic runtime namespaces.
 to produce HTML through Lit SSR. It ignores the returned effects; browser storage,
 network requests, and subscriptions do not run through this helper.
 
+The helper delegates serialization to the temporary, server-only
+[lit-ssr-compat.mjs](../src/runtime/lit-ssr-compat.mjs) adapter. Empty textareas
+marked with `data-ssr-value` receive escaped initial text while retaining the
+ordinary `.value` binding for browser updates. This adapter is shared with the
+Astro experiment and does not change the MVU loop. See the
+[usage and limits](view-rendering-experiment.md#temporary-textarea-compatibility-adapter).
+
 For this website, [initial-views.mjs](../scripts/initial-views.mjs) fills build
 markers in page HTML and marks the containing root with `data-glimlit-ssr`.
 The homepage code tabs and Counter use this in development and production.
@@ -212,8 +220,8 @@ left in place; the runtime guards message dispatch, not arbitrary JavaScript.
 
 - Lit SSR and its hydration client remain experimental dependencies.
 - Postcard's textarea `.value` is not serialized into initial text by Lit SSR.
-  This website therefore keeps its preview browser-rendered. Astro retains a
-  local textarea bridge; that workaround is not runtime behavior.
+  Both hosts use the isolated server-only compatibility adapter for marked
+  defaults; this website still keeps its Postcard preview browser-rendered.
 - Preservation of edits made before delayed hydration is not guaranteed.
 - Initial state transfer and later host prop updates are not implemented.
 - IDs and root-scoped helpers support isolation; applications still need to

@@ -1,7 +1,6 @@
 // @ts-check
 import { contextForId } from './instance.mjs'
-import { render } from '@lit-labs/ssr'
-import { collectResult } from '@lit-labs/ssr/lib/render-result.js'
+import { renderWithSsrCompatibility } from './lit-ssr-compat.mjs'
 
 /**
  * Produce initial HTML using the same view as the browser. Initialization must
@@ -14,5 +13,5 @@ import { collectResult } from '@lit-labs/ssr/lib/render-result.js'
  */
 export function renderInitial(initial, view, rootId) {
 	const [model] = initial
-	return collectResult(render(view(model, () => {}, contextForId(rootId))))
+	return renderWithSsrCompatibility(view(model, () => {}, contextForId(rootId)))
 }

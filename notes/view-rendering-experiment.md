@@ -83,8 +83,8 @@ This helper is not a general HTML sanitizer.
 - Counter instances mounted into two roots maintain separate state.
 - Browser checks exercise Postcard with both ordinary rendering and hydration:
   editing, themes, save/restore, keyboard subscriptions, and stopping the app.
-  Postcard hydration works once started, but its initial textarea is incomplete
-  before hydration, as described below.
+  Postcard initial textarea text is supplied by the explicit compatibility adapter
+  described below, then the same element hydrates and updates.
 - Type checks, app/runtime tests, tutorial checkpoint compilation/behavior checks,
   and production builds accompany the experiment.
 
@@ -96,9 +96,9 @@ This helper is not a general HTML sanitizer.
   rendering remains a separate server-only entry. Installation/distribution
   policy and possible internal delivery optimizations are undecided.
 - Lit SSR does not serialize a textarea's `.value` into its initial contents.
-  The Postcard server test records this limitation, and the website keeps that
-  preview browser-rendered. No `data-ssr-value` rewrite was added to the runtime.
-  Other native form defaults also need deliberate verification.
+  The isolated server-only compatibility adapter fills explicitly marked textarea
+  defaults. The website still keeps its Postcard preview browser-rendered.
+  See the initial-form-values findings below for other tested bindings.
 - Edits, focus, and interaction before delayed hydration need a policy and more
   testing. The current implementation does not guarantee that controlled inputs preserve edits
   made before hydration.
@@ -134,4 +134,67 @@ Gleam import namespace (`glimlit_apps/runtime`). All five apps use the new view
 contract. App-local rendering/hydration wrappers have been removed. Astro's
 local storage-key helper was moved out of the runtime into app support; its
 existing per-instance storage and recipe routing policies are preserved. The
-Postcard textarea serialization bridge remains an Astro-only prototype.
+Postcard textarea compatibility now uses the same isolated server adapter in both projects.
+
+
+### Initial form values with SSR
+
+A property binding can work in the browser without producing equivalent initial
+server HTML. With the currently installed Lit SSR packages:
+
+| Binding | Initial server HTML |
+| --- | --- |
+| Input `.value=${text}` | Serializes a `value` attribute. |
+| Textarea `.value=${text}`, including `live(text)` | Leaves the textarea empty. `.defaultValue` does not solve this. |
+| Select `.value=${choice}` | Does not select the matching option. Use `?selected=${matches}` on each option. |
+| Checkbox/radio `?checked=${checked}` | Correctly includes or omits the boolean attribute. |
+| Option `?selected=${selected}` | Correctly includes or omits the boolean attribute. |
+
+Use boolean attribute bindings for checked/selected state in shared server/browser
+views. The tested renderer serializes `.checked=${false}` and `.selected=${false}`
+as `checked="false"` and `selected="false"`; HTML treats either attribute's presence
+as true. These findings cover these bindings, not every native control or property.
+Browser-only property binding behavior is unchanged.
+
+Lit recommends textarea `.value`; dynamic child expressions inside textarea are
+unsuitable for editable views. Server-only templates can emit textarea text but
+cannot hydrate as the same interactive template. Custom element renderers do not
+provide a native-element hook to resolve this automatically. See
+[Lit expression guidance](https://lit.dev/docs/templates/expressions/#invalid-locations)
+and [server-only templates](https://github.com/lit/lit/blob/main/packages/labs/ssr/README.md#server-only-templates).
+
+Both hosts use the temporary `lit-ssr-compat.mjs` server adapter for explicitly
+marked textarea defaults. It is separate from the MVU loop and browser renderer,
+and is not a general form solution. Preserving edits made before
+hydration is a separate unresolved question. Keep these limits explicit rather
+than adding control-specific HTML rewriting to the runtime.
+
+
+## Temporary textarea compatibility adapter
+
+`lit-ssr-compat.mjs` is a server-only, removable workaround for a Lit SSR limitation.
+`renderInitial` uses it automatically; Astro's server adapter calls the same
+`renderWithSsrCompatibility(template)` entry point. No browser rendering API changes.
+
+Keep the ordinary property binding and explicitly supply the same initial value:
+
+```javascript
+html`<textarea
+  data-ssr-value=${message}
+  .value=${live(message)}
+  @input=${handleMessageInput}
+></textarea>`
+```
+
+The adapter parses Lit's output with parse5, locates marked empty textareas, and
+inserts escaped text at their source offsets. It preserves all other output,
+including hydration markers, and accounts for HTML's removal of the first leading
+newline. Keep the textarea's literal contents empty and include its closing tag;
+conflicting contents fail explicitly. The marker stays present in both templates.
+Unmarked textareas retain Lit's normal behavior. This requires a server-only parse5
+dependency and buffers/parses the rendered HTML; it is not a streaming solution.
+
+It handles initial textarea text only. Keep native `?checked` and `?selected`
+bindings for other form defaults. It does not preserve edits made before hydration
+or turn forms into a separate state system. Revisit or remove this adapter if Lit
+adds compatible native textarea serialization; no upstream delivery date is assumed.

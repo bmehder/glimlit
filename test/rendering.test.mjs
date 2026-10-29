@@ -60,9 +60,8 @@ test('Postcard templates are independent of the DOM and escape untrusted text', 
   assert.match(output, /postcard-coral/)
   assert.match(output, /for="postcard-postcard-title"/)
   assert.match(output, /id="postcard-postcard-title"/)
-  // Lit SSR does not serialize textarea.value. This is a known blocker for
-  // enabling Postcard prerendering on the website, not a framework workaround.
-  assert.match(output, /<textarea[^>]*><\/textarea>/)
+  // Explicit initial text is supplied by the server-only compatibility adapter.
+  assert.match(output, /<textarea[^>]*>Wish you were here\./)
 })
 
 test('a rendering failure stops startup before any effects are scheduled', async () => {
