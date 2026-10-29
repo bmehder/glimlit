@@ -153,8 +153,9 @@ its `perform` function after the view has been committed. The effect receives
 success or failure callback produces another message, which repeats the loop.
 
 The keyboard effect passes its root to `nextThemeKey`. That source listens for
-key events bubbling through this app's root. The manager sends emitted messages
-to this app's dispatcher. Stopping one instance removes its own listener without
+key events bubbling through this app's root. The subscription receives `dispatch`,
+which sends messages to the same app update function as the view's dispatcher.
+Its lifetime guard ignores calls after the subscription stops. Stopping one instance removes its own listener without
 stopping another instance's source with the same subscription key.
 
 Root scoping does not automatically separate persistence or URLs. Postcard keeps

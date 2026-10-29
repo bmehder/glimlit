@@ -2,7 +2,7 @@
 
 export function nextThemeKey(handleNext, root) {
 	return {
-		start: emit => {
+		start: dispatch => {
 			const handleKeydown = event => {
 				const editing =
 					event.target instanceof HTMLElement &&
@@ -21,7 +21,7 @@ export function nextThemeKey(handleNext, root) {
 				) return
 				if (event.key.toLowerCase() !== 'n') return
 				event.preventDefault()
-				emit(handleNext())
+				dispatch(handleNext())
 			}
 			const target = root ?? window
 			target.addEventListener('keydown', handleKeydown)

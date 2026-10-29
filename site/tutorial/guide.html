@@ -481,8 +481,10 @@
 				Create <code>subscriptions.mjs</code>. Its
 				<code>nextThemeKey</code> function describes a keyboard listener, but
 				doesn’t attach it yet. The subscription has a
-				<code>start(emit)</code> function that attaches the listener and
-				returns a cleanup function.
+				<code>start(dispatch)</code> function that attaches the listener and
+				returns a cleanup function. The runtime supplies <code>dispatch</code>,
+				which sends a message to update just like the dispatcher in a view.
+				After this subscription stops, calls to its dispatcher are ignored.
 			</p>
 			<!-- code:cleanup -->
 			<p>

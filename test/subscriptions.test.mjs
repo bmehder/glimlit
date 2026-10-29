@@ -10,17 +10,17 @@ const settle = () => new Promise(resolve => setImmediate(resolve));
 test('subscriptions are inert, keyed, independently stoppable, and suppress late messages', () => {
   const manager = createSubscriptions(value => messages.push(value));
   const messages = [];
-  let starts = 0, cleanups = 0, emit;
-  const subscription = { start: send => { starts++; emit = send; return () => { cleanups++; send('cleanup'); }; } };
+  let starts = 0, cleanups = 0, dispatch;
+  const subscription = { start: send => { starts++; dispatch = send; return () => { cleanups++; send('cleanup'); }; } };
   assert.equal(starts, 0);
   manager.start('one', subscription);
-  const oldEmit = emit;
+  const oldDispatch = dispatch;
   manager.start('one', subscription);
   assert.equal(starts, 1);
   manager.start('two', subscription);
   manager.stop('one');
-  oldEmit('late');
-  emit('still active');
+  oldDispatch('late');
+  dispatch('still active');
   manager.stop('one');
   assert.equal(cleanups, 1);
   assert.deepEqual(messages, ['still active']);
@@ -28,11 +28,11 @@ test('subscriptions are inert, keyed, independently stoppable, and suppress late
   assert.equal(cleanups, 2);
 });
 
-test('setup may emit immediately, and cleanup still runs if stopped during setup', () => {
+test('setup may dispatch messages immediately, and cleanup still runs if stopped during setup', () => {
   const manager = createSubscriptions(() => manager.stop('one'));
   let cleaned = 0;
   manager.start('one', {
-    start: emit => { emit('ready'); return () => { cleaned++; }; },
+    start: dispatch => { dispatch('ready'); return () => { cleaned++; }; },
   });
   assert.equal(cleaned, 1);
 });
@@ -53,8 +53,8 @@ test('the same contract works for event listeners, not just timers', async () =>
   const runtime = createRuntime();
   const messages = [];
   const subscription = {
-    start: emit => {
-      const listener = () => emit('changed');
+    start: dispatch => {
+      const listener = () => dispatch('changed');
       target.addEventListener('change', listener);
       return () => target.removeEventListener('change', listener);
     },
@@ -103,14 +103,14 @@ test('start returns app cleanup and old view callbacks cannot update a stopped a
 
 test('all sources share their app dispatcher across renders while separate apps stay isolated', async t => {
   function mount(initial) {
-    const emitters = new Map();
+    const dispatchers = new Map();
     const cleaned = [];
     const rendered = [];
     let send;
     const watch = key => ({
       perform: ({ subscriptions }) => subscriptions.start(key, {
-        start: emit => {
-          emitters.set(key, emit);
+        start: dispatch => {
+          dispatchers.set(key, dispatch);
           return () => cleaned.push(key);
         },
       }),
@@ -125,22 +125,22 @@ test('all sources share their app dispatcher across renders while separate apps 
       send = dispatch;
     }, () => {}, createRuntime());
     t.after(dispose);
-    return { emitters, cleaned, rendered, dispose, send: message => send(message) };
+    return { dispatchers, cleaned, rendered, dispose, send: message => send(message) };
   }
   const first = mount(0), second = mount(100);
   await settle();
   first.send({ add: 10 });
   first.send({ watch: 'second' });
   await settle();
-  first.emitters.get('first')({ add: 2 });
-  first.emitters.get('second')({ add: 3 });
-  second.emitters.get('first')({ add: 4 });
+  first.dispatchers.get('first')({ add: 2 });
+  first.dispatchers.get('second')({ add: 3 });
+  second.dispatchers.get('first')({ add: 4 });
   assert.equal(first.rendered.at(-1), 16);
   assert.equal(second.rendered.at(-1), 105);
   first.dispose();
-  first.emitters.get('first')({ add: 1000 });
-  first.emitters.get('second')({ add: 1000 });
-  second.emitters.get('first')({ add: 5 });
+  first.dispatchers.get('first')({ add: 1000 });
+  first.dispatchers.get('second')({ add: 1000 });
+  second.dispatchers.get('first')({ add: 5 });
   assert.equal(first.rendered.at(-1), 16);
   assert.equal(second.rendered.at(-1), 110);
   assert.deepEqual(first.cleaned, ['first', 'second']);

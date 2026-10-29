@@ -1,6 +1,7 @@
 // @ts-check
 
 /** @typedef {{root?: HTMLElement, id: (name: string) => string}} InstanceContext */
+
 let nextId = 0
 
 /**

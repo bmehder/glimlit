@@ -37,10 +37,10 @@ export const invalidEffect = {
 
 /** @type {import('../../src/runtime/subscriptions.mjs').Subscription<Msg>} */
 export const validSubscription = {
-  start: emit => {
-    emit(Msg$UserTypedNewTodo('Listening'))
-    // @ts-expect-error emit accepts the annotated app message type.
-    emit('not a message')
+  start: dispatch => {
+    dispatch(Msg$UserTypedNewTodo('Listening'))
+    // @ts-expect-error dispatch accepts the annotated app message type.
+    dispatch('not a message')
     return () => {}
   },
 }
@@ -60,5 +60,5 @@ export const subscriptionManager = createSubscriptions(message => {
 subscriptionManager.start('valid', validSubscription);
 // @ts-expect-error The manager already has its dispatcher; start accepts only key and source.
 subscriptionManager.start('invalid-dispatch', validSubscription, () => {});
-// @ts-expect-error Every source must emit this manager's app message type.
-subscriptionManager.start('invalid-messages', { start: emit => { emit(123); return () => {}; } });
+// @ts-expect-error Every source must dispatch this manager's app message type.
+subscriptionManager.start('invalid-messages', { start: dispatch => { dispatch(123); return () => {}; } });

@@ -13,7 +13,7 @@
   },
   "view": {
     "language": "javascript",
-    "source": "import { html } from 'lit-html'\nimport { live } from 'lit-html/directives/live.js'\nimport {\n  Model$Model$title,\n  Msg$UserChangedTitle,\n} from './app.mjs'\n\nexport function view(model, dispatch) {\n  return html`\n    <h1>${Model$Model$title(model)}</h1>\n    <input .value=${live(Model$Model$title(model))}\n      @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}>\n  `\n}"
+    "source": "import { html } from 'lit-html'\nimport { live } from 'lit-html/directives/live.js'\nimport {\n  Model$Model$title,\n  Msg$UserChangedTitle,\n} from './app.mjs'\n\nexport function view(model, dispatch) {\n  return html`\n    <h1>${Model$Model$title(model)}</h1>\n    <input .value=${live(Model$Model$title(model))}\n    @input=${event => dispatch(Msg$UserChangedTitle(event.currentTarget.value))}>\n  `\n}"
   },
   "boundary": {
     "language": "gleam",
@@ -25,7 +25,7 @@
   },
   "subscription": {
     "language": "javascript",
-    "source": "export function every(milliseconds, handleTick) {\n  return {\n    start: emit => {\n      const timer = setInterval(() => emit(handleTick(Date.now())), milliseconds)\n      return () => clearInterval(timer)\n    },\n  }\n}"
+    "source": "export function every(milliseconds, handleTick) {\n  return {\n    start: dispatch => {\n      const timer = setInterval(() => dispatch(handleTick(Date.now())), milliseconds)\n      return () => clearInterval(timer)\n    },\n  }\n}"
   },
   "manage": {
     "language": "javascript",

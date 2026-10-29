@@ -454,15 +454,18 @@ reject the runner's Promise; they do not automatically update the model.
 
 ## Subscriptions describe ongoing messages
 
-A subscription has one operation: `start(emit)`, which returns a cleanup function.
-Like an effect, its description is inert until used.
+A subscription has one operation: `start(dispatch)`, which returns a cleanup function.
+Like an effect, its description is inert until used. This is the same concept as
+the view’s `dispatch`: it sends a message to the app’s update function. The manager
+supplies a dispatcher guarded by this subscription’s lifetime. After the
+subscription stops, calls to that dispatcher are ignored.
 
 Todos uses a keyboard subscription for a list feature: pressing **N** while the app is focused and outside an
 input focuses the new-todo field. It ignores text fields, editable content,
 open dialogs, repeated key presses, handled events, and modifier shortcuts.
 
 The source in `subscriptions.mjs` listens for keydown events, constructs a
-`UserPressedNewTodoShortcut` message, and passes it to `emit`. Its `start` function
+`UserPressedNewTodoShortcut` message, and passes it to `dispatch`. Its `start` function
 returns a cleanup that removes the listener. The subscription does not reach
 into the app's DOM to move focus itself.
 
@@ -482,7 +485,7 @@ export function watchShortcuts() {
 
 The message constructors and `newTodoKey` are imports in `effects.mjs`. Init
 returns `load_todos()` to restore the list and `watch_shortcuts()` to attach the
-keyboard subscription. The manager guards `emit` so a stopped subscription
+keyboard subscription. The manager guards `dispatch` so a stopped subscription
 cannot dispatch late messages.
 
 Update requests focus through another effect:
@@ -508,11 +511,11 @@ Each app has its own subscription manager, with independent string keys:
 
 - Starting an active key does nothing; stopping a missing key is harmless.
 - To change configuration, stop the key and start it again.
-- Setup and cleanup are synchronous; emissions may happen during setup or later.
+- Setup and cleanup are synchronous; messages may be dispatched during setup or later.
 - A start acknowledgement means the subscription's setup function has returned.
-- Stopping disables emissions before cleanup, so late callbacks are ignored.
+- Stopping disables dispatch before cleanup, so late callbacks are ignored.
 
-Setup can emit immediately, and that message can stop the subscription before
+Setup can dispatch a message immediately, and that message can stop the subscription before
 setup returns its cleanup function. The manager still runs that cleanup once
 it becomes available. When stopping all subscriptions, it attempts every cleanup
 even if one fails, then reports the collected errors.

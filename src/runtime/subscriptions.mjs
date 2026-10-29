@@ -1,6 +1,6 @@
 // @ts-check
 
-/** @template Msg @typedef {{start: (emit: (message: Msg) => void) => () => void}} Subscription */
+/** @template Msg @typedef {{start: (dispatch: (message: Msg) => void) => () => void}} Subscription */
 /** @template Msg @typedef {{start: (key: string, subscription: Subscription<Msg>) => void, stop: (key: string) => void, stopAll: () => void}} Subscriptions */
 /** @typedef {{active: boolean, cleanup: () => void}} Entry */
 /** @typedef {Map<string, Entry>} ActiveSubscriptions */
@@ -8,7 +8,7 @@
 /**
  * Create an independent manager with start, stop, and stopAll operations.
  * Active string keys are unique within this manager. Stopping a subscription
- * disables its emit callback before cleanup runs. Every source uses the dispatcher
+ * disables its dispatch callback before cleanup runs. Every source uses the dispatcher
  * supplied when this manager is created.
  * @public
  * @template Msg
@@ -37,9 +37,8 @@ function start(active, key, subscription, dispatch) {
 	const entry = { active: true, cleanup: () => {} }
 	active.set(key, entry)
 	try {
-		// Subscriptions receive emit: dispatch guarded by this entry's lifetime.
-		const emit = whileActive(entry, dispatch)
-		const cleanup = subscription.start(emit)
+		// Each source receives dispatch guarded by this entry's lifetime.
+		const cleanup = subscription.start(whileActive(entry, dispatch))
 		attachCleanup(entry, cleanup)
 	} catch (error) {
 		deactivate(active, key, entry)
@@ -81,7 +80,7 @@ function attachCleanup(entry, cleanup) {
 	if (typeof cleanup !== 'function')
 		throw new TypeError('Subscription must return cleanup')
 	entry.cleanup = cleanup
-	// Setup can emit before returning cleanup. If that message stops the
+	// Setup can dispatch a message before returning cleanup. If that message stops the
 	// subscription, stop() has only the placeholder cleanup to call; run the
 	// real cleanup now that it is available.
 	if (!entry.active) cleanup()

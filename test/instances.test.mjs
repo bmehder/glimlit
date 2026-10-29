@@ -35,11 +35,11 @@ test('unnamed browser roots receive distinct IDs while avoiding existing documen
 test('effect contexts and subscription lifetimes stay isolated between roots', async () => {
   const a = root('one'), b = root('two')
   const first = createRuntime(a), second = createRuntime(b)
-  const contexts = [], messages = [], emitters = [], cleaned = []
+  const contexts = [], messages = [], dispatchers = [], cleaned = []
   const watch = { perform(context) {
     contexts.push(context)
-    context.subscriptions.start('same-key', { start(emit) {
-      emitters.push(emit)
+    context.subscriptions.start('same-key', { start(dispatch) {
+      dispatchers.push(dispatch)
       return () => cleaned.push(context.root)
     } })
   } }
@@ -48,10 +48,10 @@ test('effect contexts and subscription lifetimes stay isolated between roots', a
     await run(watch, message => messages.push(['two', message]), second)
     assert.deepEqual(contexts.map(context => context.root), [a, b])
     assert.deepEqual(contexts.map(context => context.id('field')), ['one-field', 'two-field'])
-    emitters[1]('hello')
+    dispatchers[1]('hello')
     stop(first)
-    emitters[0]('ignored')
-    emitters[1]('still active')
+    dispatchers[0]('ignored')
+    dispatchers[1]('still active')
     assert.deepEqual(messages, [['two', 'hello'], ['two', 'still active']])
     assert.deepEqual(cleaned, [a])
   } finally { stop(first); stop(second) }
