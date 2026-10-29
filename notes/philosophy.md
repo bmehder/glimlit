@@ -13,6 +13,8 @@ and storage choices remain application code.
 
 - Store the latest application model and dispatch messages through update.
 - Render the resulting model and run its requested effects.
+- Automatically hydrate matching initial Lit HTML when the page supplies it.
+- Provide instance context with scoped element IDs and access to the app’s root.
 - Manage subscription lifetimes and app cleanup.
 - Provide a straightforward development connection between Gleam and JavaScript.
 
@@ -20,6 +22,17 @@ Routing, forms, dialogs, application composition, and data fetching strategies
 can use browser APIs, application code, or other libraries. They do not all need
 Glimlit abstractions. A framework feature should earn its place by making the
 core loop easier to use and understand.
+
+Prefer one familiar concept over several overlapping ones. Additional API
+choices and abstractions should justify the decisions and maintenance they
+introduce. Views and subscriptions both receive `dispatch` because both send
+messages to update; the subscription manager guards its dispatcher for that
+source’s lifetime.
+
+Keep compatibility work isolated from the core loop. The temporary server-only
+Lit SSR adapter handles explicitly marked textarea defaults without adding
+control-specific behavior to update, effects, or the browser renderer. Its
+purpose and limits should stay documented so it can be revised or removed.
 
 ## Choose who owns each piece of state
 
@@ -48,6 +61,10 @@ writing a model value to `.value`, especially with lit-html's `live` directive,
 can overwrite a draft the user is editing. Use controlled bindings when the
 model is the intended owner, rather than treating them as a requirement.
 
+Server rendering supplies initial HTML; it does not decide who owns later edits.
+Hydration attaches behavior to that HTML using the matching initial model and
+view. Preserving edits made before hydration remains an unresolved limitation.
+
 ## Work with actual elements
 
 lit-html gives views direct access to element properties, DOM events, forms,
@@ -60,9 +77,15 @@ listeners as a side effect of rendering. Local UI behavior can happen in event
 handlers. Work requested by update—saving, fetching, or coordinating focus—uses
 effects. Ongoing message sources use subscriptions with cleanup.
 
-The runtime accepts a view callback; the repository uses lit-html for rendering.
-JSX or another renderer would need its own rendering and build integration.
-There is no built-in JSX support, and the examples do not require it.
+Views return lit-html templates. Glimlit handles browser rendering and
+hydrates marked initial HTML automatically, so application startup uses the
+same `main(root)` call in either case. The page or its integration supplies the
+root and any initial HTML; server and browser must agree on the initial model,
+template structure, and root ID.
+
+JSX or another renderer would need integration with Glimlit’s rendering layer
+and build setup. There is no built-in JSX support, and the examples do not
+require it.
 
 ## How the examples make these choices
 
