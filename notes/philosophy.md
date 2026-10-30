@@ -1,103 +1,69 @@
-# MVU structure, with the browser within reach
+# Philosophy
 
-Glimlit provides a small Model–View–Update loop for people who want Gleam's
-structure and HTML-like views. The aim is to make application decisions clear
-without requiring a large framework API to work with the browser.
+I find The Elm Architecture (TEA) an easy way to build, maintain, and expand web
+applications. Messages are sent to an update function, update returns the next model and requested work, and the view reflects the current model. One model and a clear direction of flow make it easy to understand what changed and why, even as an application grows. As it grows, it stays flat.
 
-Small interactive islands—forms, editors, filters, and widgets within a larger
-page—are its primary use case. The recipe box is a larger example: several
-screens, an editor, and shared data use the same loop and runtime. Its routing
-and storage choices remain application code.
+I want that structure without having to build a single-page application or adopt an entire application stack.
 
-## What the framework owns
+## Why Gleam and lit-html?
 
-- Store the latest application model and dispatch messages through update.
-- Render the resulting model and run its requested effects.
-- Automatically hydrate matching initial Lit HTML when the page supplies it.
-- Provide instance context with scoped element IDs and access to the app’s root.
-- Manage subscription lifetimes and app cleanup.
-- Provide a straightforward development connection between Gleam and JavaScript.
+Elm’s language is easy to learn. For me, the friction comes from working with
+JavaScript and the browser through ports, and accessing the integrations I want.
 
-Routing, forms, dialogs, application composition, and data fetching strategies
-can use browser APIs, application code, or other libraries. They do not all need
-Glimlit abstractions. A framework feature should earn its place by making the
-core loop easier to use and understand.
+Lustre brings TEA to Gleam, a language that feels a little Haskell-like and a
+little JavaScript-like. I like its functional structure, explicit data, and
+practical connection to JavaScript.
 
-Prefer one familiar concept over several overlapping ones. Additional API
-choices and abstractions should justify the decisions and maintenance they
-introduce. Views and subscriptions both receive `dispatch` because both send
-messages to update; the subscription manager guards its dispatcher for that
-source’s lifetime.
+The view is where I want another option. Gleam’s pipes help remove nested
+function calls from logic, while Elm and Lustre introduce nested calls to
+describe elements, attributes, and events. They push the awkward nesting nesting to the view. HTML is naturally nested, but its opening and closing tags give that structure a symmetry I find easier to read and write than layers of brackets and parentheses.
 
-Keep compatibility work isolated from the core loop. The temporary server-only
-Lit SSR adapter handles explicitly marked textarea defaults without adding
-control-specific behavior to update, effects, or the browser renderer. Its
-purpose and limits should stay documented so it can be revised or removed.
+lit-html provides HTML-like JavaScript tagged templates and direct access to
+browser elements, properties, and events. Gleam and lit-html let me keep the
+architecture I enjoy and write the view in a form that feels natural to me.
 
-## Choose who owns each piece of state
+## Values do the work
 
-The model holds state the application needs to reason about. The browser can
-keep local interaction state until the application needs it.
+Less is more. Gleam has few keywords and builds around expressions that produce
+values, including `case`. I don't have to choose between several language
+features for the same job. That makes it feel manageable without feeling
+limiting: a small vocabulary gives me enough to express everything I need.
 
-| State or behavior | A useful starting point |
-| --- | --- |
-| Saved data, selected filters, shared values, loading and error states | Application model |
-| A value that drives a live preview or cross-field calculation | Application model |
-| An unsubmitted field value used only on submission | Input element; read it with FormData on submit |
-| Focus, caret position, and text selection | Browser; explicitly coordinate them when the app needs to |
-| Native required/min/max validation | Browser, alongside application validation at the data boundary |
-| A simple confirmation | Browser confirmation; send the resulting decision to update |
-| A multi-step dialog that coordinates other parts of the app | Model its meaningful state as needed |
-| URL and history | Browser, with messages when the app needs to react |
+A pure function is itself a value representing a mapping from inputs to outputs,
+like a lookup table. It can describe a decision before anyone needs its answer.
+Passing that function around requires no special machinery beyond the language’s
+support for functions as values. Branching and repetition can be expressed
+through pattern matching, composition, and functions that operate on collections.
+Functions and pattern matching are enough to express these ideas clearly.
 
-These are choices, not restrictions. Keep a draft in the model when it needs
-validation feedback, restoration, coordination, or a preview. Leave it in the
-element when moving every keystroke through update adds no useful information.
-Do not keep two competing sources of truth for the same value.
+TEA supplies the organizing discipline: a model, messages, and an update cycle.
+Within that structure, values describe the rest. A message represents something
+that happened. A model represents the application’s current understanding. An
+effect can represent work to perform, and a subscription can represent an ongoing
+source of messages. Everything is a value.
 
-Browser-owned drafts survive only while their elements stay mounted. Deliberate
-resets, switching records, and restoring data need an explicit policy. Repeatedly
-writing a model value to `.value`, especially with lit-html's `live` directive,
-can overwrite a draft the user is editing. Use controlled bindings when the
-model is the intended owner, rather than treating them as a requirement.
+Describing work does not have to perform it. Update can decide what should happen
+and return that decision as a value. A small runner can handle the low-level
+details of carrying out effects, starting listeners, and cleaning them up. Their
+results become messages that start another cycle.
 
-Server rendering supplies initial HTML; it does not decide who owns later edits.
-Hydration attaches behavior to that HTML using the matching initial model and
-view. Preserving edits made before hydration remains an unresolved limitation.
+This is the appeal: a small language, a clear architectural discipline, and
+ordinary values that describe both decisions and work. The application can stay
+explicit without needing a growing vocabulary of special mechanisms.
 
-## Work with actual elements
+## Keep the browser within reach
 
-lit-html gives views direct access to element properties, DOM events, forms,
-and native controls. That is part of the motivation, alongside the familiar
-HTML-like syntax. Ordinary links can navigate. A form can collect values. An
-event handler can ask for browser confirmation and dispatch only the decision.
+I prefer one model and an explicit update cycle per app to coordinating
+application state spread across many components. Alongside component state and
+app state, the browser maintains state of its own: input values, focus,
+selection, and more. Coordinating that behavior with application updates can
+sometimes be awkward. I want it to be straightforward to work with the actual
+elements when that is useful, and keep browser behavior outside the model when
+there is no application decision to make.
 
-Render functions should describe the UI; do not open dialogs or attach new
-listeners as a side effect of rendering. Local UI behavior can happen in event
-handlers. Work requested by update—saving, fetching, or coordinating focus—uses
-effects. Ongoing message sources use subscriptions with cleanup.
+Choosing how to build an individual interactive UI should not also choose the
+framework for the whole site. Glimlit should fit into the surrounding page while
+leaving its pages, routing, styling, and libraries independent.
 
-Views return lit-html templates. Glimlit handles browser rendering and
-hydrates marked initial HTML automatically, so application startup uses the
-same `main(root)` call in either case. The page or its integration supplies the
-root and any initial HTML; server and browser must agree on the initial model,
-template structure, and root ID.
-
-JSX or another renderer would need integration with Glimlit’s rendering layer
-and build setup. There is no built-in JSX support, and the examples do not
-require it.
-
-## How the examples make these choices
-
-- The counter keeps its count in the model because the count is the application.
-- Todos keep edits in the model to demonstrate an explicit editing workflow.
-- Postcard Studio updates its model on input because the preview changes live.
-- The recipe box uses an editor model for validation and restoration, but
-  leaves removal confirmation to the browser. Cancelling it sends no message
-  and performs no storage write.
-- The homepage code tabs model selection while a focus effect coordinates the
-  browser's keyboard focus. Selection and focus are different responsibilities.
-
-These examples demonstrate alternatives, not rules to reproduce in every app.
-The useful boundary is a small amount of framework to understand, with room to
-use the platform directly.
+The goal is a small language and a clear update cycle, with familiar markup,
+the browser within reach, and fewer decisions between an idea and a working UI.
