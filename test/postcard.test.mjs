@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { from_list as toArray } from '#gleam/array';
 import { createRuntime, run, stop } from '../src/runtime/runner.mjs';
 import {
+  Shortcuts$Enabled, Shortcuts$isEnabled,
   init, update, Theme$Ocean, Theme$isOcean, Theme$isCoral, Theme$isMeadow,
   Notice$isSaving, Notice$isSaved, Notice$isSaveFailed, Notice$isRestoreFailed,
   Notice$isShortcutSetupFailed, Msg$KeyboardShortcutsFailed,
@@ -71,7 +72,7 @@ test('restoring saved JSON restores the design and preserves shortcut state', as
     },
   });
   const [initial] = init();
-  const [enabled] = update(initial, shortcutsChanged(true));
+  const [enabled] = update(initial, shortcutsChanged(Shortcuts$Enabled()));
   const [, effects] = update(enabled, Msg$UserClickedRestore());
   let message;
   await run(toArray(effects)[0], result => { message = result; });
@@ -79,7 +80,7 @@ test('restoring saved JSON restores the design and preserves shortcut state', as
   assert.equal(next.title, 'From the coast');
   assert.equal(next.message, 'See you soon');
   assert.equal(themeName(next.theme), 'meadow');
-  assert.equal(next.shortcuts, true);
+  assert.equal(Shortcuts$isEnabled(next.shortcuts), true);
   assert.deepEqual(toArray(followups), []);
 });
 
@@ -121,7 +122,7 @@ test('a missing storage entry produces an empty result', async t => {
 test('shortcut messages cycle every theme only while enabled', () => {
   const [initial] = init();
   assert.equal(update(initial, Msg$UserPressedNextTheme())[0], initial);
-  let [model] = update(initial, shortcutsChanged(true));
+  let [model] = update(initial, shortcutsChanged(Shortcuts$Enabled()));
   for (const expected of ['ocean', 'meadow', 'coral']) {
     [model] = update(model, Msg$UserPressedNextTheme());
     assert.equal(themeName(model.theme), expected);
@@ -161,7 +162,7 @@ test('shortcuts ignore editing and modifiers and clean up on disable and app sto
   }
   assert.equal(add.mock.callCount(), 0);
   await toggle();
-  assert.equal(model.shortcuts, true);
+  assert.equal(Shortcuts$isEnabled(model.shortcuts), true);
   assert.equal(add.mock.callCount(), 1);
   assert.equal(key().defaultPrevented, true);
   assert.equal(themeName(model.theme), 'ocean');

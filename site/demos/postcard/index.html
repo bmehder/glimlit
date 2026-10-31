@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="An advanced Postcard Studio example with distinct title and message types with save validation, saving, and keyboard shortcuts.">
+  <title>Postcard Studio example · Glimlit</title>
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="stylesheet" href="/shared/styles.css">
+  <link rel="stylesheet" href="/shared/navigation.css">
+  <link rel="stylesheet" href="/shared/footer.css">
+  <link rel="stylesheet" href="/home.css">
+  <link rel="stylesheet" href="/demos/styles.css">
+  <link rel="stylesheet" href="/tutorial/styles.css">
+</head>
+<body class="min-h-screen bg-slate-950 font-sans text-slate-100">
+  <a class="site-skip" href="#app">Skip to example</a>
+  <div class="site-shell"><!-- site-navigation --></div>
+  <main class="mx-auto my-12 max-w-6xl px-6">
+    <header class="demos-runner-heading"><a href="/demos/">← All examples</a><p class="site-eyebrow">Glimlit example</p><h1>Postcard Studio</h1><p>A more advanced version of the tutorial’s postcard editor. The model uses distinct Title and Message types, including for empty drafts. Saving validates their contents and rejects empty or whitespace-only values. The view shows validation feedback, and restoring validates saved data too.</p></header>
+    <p class="mb-8 text-slate-300">These types are an optional application design choice. The <a class="text-teal-200 underline" href="/tutorial/">tutorial</a> uses a simpler version to focus on MVU, effects, and subscriptions. Read the <a class="text-teal-200 underline" href="https://github.com/bmehder/glimlit/tree/main/src/postcard_advanced" target="_blank" rel="noopener noreferrer">advanced source ↗</a> for the validation boundary and its comments. Its opaque types and validating functions live in <code>text.gleam</code>, separate from the app’s model and update. The view also explores Ramda’s <code>cond</code> for mapping themes and notices to presentation values.</p>
+    <div id="app"></div>
+    <noscript>This example needs JavaScript.</noscript>
+  </main>
+  <div class="site-shell"><!-- site-footer --></div>
+  <script type="module">
+    import { main } from 'gleam:postcard_advanced/postcard_advanced'
+    const stop = main(document.getElementById('app'))
+    if (import.meta.hot) import.meta.hot.dispose(stop)
+  </script>
+</body>
+</html>

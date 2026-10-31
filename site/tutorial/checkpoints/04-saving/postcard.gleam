@@ -75,15 +75,17 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   }
 }
 
-// -- Browser boundaries --------------------------------------------------
+// -- Effects -------------------------------------------------------------
 
 @external(javascript, "./effects.mjs", "saveDesign")
 fn save_design(title: String, message: String, theme: String) -> Effect(Msg)
 
+// -- View ----------------------------------------------------------------
+
 @external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
-// -- Start ---------------------------------------------------------------
+// -- Entry point ---------------------------------------------------------
 
 pub fn main(root: Root) -> fn() -> Nil {
   mvu.start(init(), update, view, root)

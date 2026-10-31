@@ -1,5 +1,7 @@
 // @ts-check
 
+import { pipe } from 'ramda'
+
 /**
  * @template Msg
  * @param {(hash: string) => Msg} handleChange
@@ -7,9 +9,13 @@
  */
 export const hashRoute = handleChange => ({
 	start: dispatch => {
-		const changed = () => dispatch(handleChange(window.location.hash))
-		window.addEventListener('hashchange', changed)
-		changed()
-		return () => window.removeEventListener('hashchange', changed)
+		const handleHashChange = pipe(
+			() => window.location.hash,
+			handleChange,
+			dispatch,
+		)
+		window.addEventListener('hashchange', handleHashChange)
+		handleHashChange()
+		return () => window.removeEventListener('hashchange', handleHashChange)
 	},
 })

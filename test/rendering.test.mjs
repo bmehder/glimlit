@@ -46,7 +46,7 @@ test('initial HTML uses the same templates without executing browser effects', a
 
   const tabsHtml = await renderInitial(tabs.init(), tabsView, 'tabs')
   assert.equal((tabsHtml.match(/role="tabpanel"/g) ?? []).length, 3)
-  assert.equal((tabsHtml.match(/ hidden/g) ?? []).length, 2)
+  assert.equal((tabsHtml.match(/\shidden(?:\s|>)/g) ?? []).length, 2)
   assert.ok(tabsHtml.includes('syntax-function'))
   assert.ok(!tabsHtml.includes('data-static-tab'))
 })

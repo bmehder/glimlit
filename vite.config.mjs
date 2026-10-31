@@ -28,6 +28,7 @@ export default defineConfig({
         demos: local('./site/demos/index.html'),
         counter: local('./site/demos/counter/index.html'),
         todos: local('./site/demos/todos/index.html'),
+        postcard: local('./site/demos/postcard/index.html'),
         recipes: local('./site/recipes/index.html'),
         docs: local('./site/docs/index.html'),
         tutorial: local('./site/tutorial/index.html'),

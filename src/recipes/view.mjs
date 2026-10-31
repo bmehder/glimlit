@@ -1,138 +1,197 @@
 // @ts-check
 
+import { inputValue, preventDefault } from '#browser/events'
 import { html, nothing } from 'lit-html'
+import {
+	allPass,
+	always,
+	applySpec,
+	cond,
+	equals,
+	filter,
+	find,
+	flow,
+	ifElse,
+	includes,
+	isNotEmpty,
+	join,
+	juxt,
+	map,
+	pipe,
+	split,
+	T,
+	thunkify,
+	toLower,
+	trim,
+	when,
+} from 'ramda'
 import { live } from 'lit-html/directives/live.js'
 import { repeat } from 'lit-html/directives/repeat.js'
 import { from_list } from '#gleam/array'
 import {
-	// Model queries
-	screen,
-	can_import,
-	saving_message,
-	can_retry_save,
-	visible_recipes,
-
-	// Screen selection
-	Screen$isScreenLoading,
-	Screen$isScreenRecovery,
-	Screen$isScreenCollection,
-	Screen$isScreenNew,
-	Screen$isScreenDetail,
-	Screen$isScreenEdit,
-	Screen$isScreenNotFound,
-	Screen$ScreenRecovery$0,
-	Screen$ScreenNew$0,
-	Screen$ScreenDetail$0,
-	Screen$ScreenEdit$0,
-	Screen$ScreenEdit$1,
-
-	// Application state
-	RecipeFilter$isFavoritesOnly,
-	SampleImportState$isImportInProgress,
-	Model$Model$sample_import,
-	Model$Model$notice,
-	Model$Model$query,
-	Model$Model$filter,
-
-	// Recipe data
-	Recipe$Recipe$id,
-	Recipe$Recipe$title,
-	Recipe$Recipe$description,
-	Recipe$Recipe$minutes,
-	Recipe$Recipe$favorite,
-	Recipe$Recipe$ingredients,
-	Recipe$Recipe$instructions,
-
-	// Editor fields
-	Editor$Editor$title,
 	Editor$Editor$description,
-	Editor$Editor$minutes,
+	Editor$Editor$errors,
 	Editor$Editor$ingredients,
 	Editor$Editor$instructions,
-	Editor$Editor$errors,
-
-	// Messages
-	Msg$UserClickedRetryLoad,
-	Msg$UserClickedUseStarters,
-	Msg$UserClickedRetrySave,
-	Msg$UserClickedImportSamples,
+	Editor$Editor$minutes,
+	Editor$Editor$title,
+	Model$Model$editor,
+	Model$Model$filter,
+	Model$Model$notice,
+	Model$Model$query,
+	Model$Model$recipes,
+	Model$Model$route,
+	Model$Model$sample_import,
+	Model$Model$save_status,
+	Model$Model$storage,
 	Msg$UserCancelledImport,
-	Msg$UserSubmittedRecipe,
-	Msg$UserChangedQuery,
-	Msg$UserToggledFavorites,
-	Msg$UserToggledFavorite,
-	Msg$UserConfirmedDelete,
-	Msg$UserChangedTitle,
 	Msg$UserChangedDescription,
-	Msg$UserChangedMinutes,
 	Msg$UserChangedIngredients,
 	Msg$UserChangedInstructions,
+	Msg$UserChangedMinutes,
+	Msg$UserChangedQuery,
+	Msg$UserChangedTitle,
+	Msg$UserClickedImportSamples,
+	Msg$UserClickedRetryLoad,
+	Msg$UserClickedRetrySave,
+	Msg$UserClickedUseStarters,
+	Msg$UserConfirmedDelete,
+	Msg$UserSubmittedRecipe,
+	Msg$UserToggledFavorite,
+	Msg$UserToggledFavorites,
+	Recipe$Recipe$description,
+	Recipe$Recipe$favorite,
+	Recipe$Recipe$id,
+	Recipe$Recipe$ingredients,
+	Recipe$Recipe$instructions,
+	Recipe$Recipe$minutes,
+	Recipe$Recipe$title,
+	RecipeFilter$isFavoritesOnly,
+	Route$Detail$id,
+	Route$Edit$id,
+	Route$isCollection,
+	Route$isDetail,
+	Route$isEdit,
+	Route$isNew,
+	Route$isNotFound,
+	SampleImportState$isImportInProgress,
+	SaveStatus$SaveFailed$reason,
+	SaveStatus$isSaveFailed,
+	SaveStatus$isSaved,
+	SaveStatus$isSaving,
+	Storage$LoadFailed$reason,
+	Storage$isLoadFailed,
+	Storage$isLoading,
+	Storage$isReady,
 } from './recipes.mjs'
 
 /** @typedef {import('./recipes.mjs').Model$} Model */
 /** @typedef {import('./recipes.mjs').Recipe$} Recipe */
 /** @typedef {import('./recipes.mjs').Editor$} Editor */
-/** @typedef {import('./recipes.mjs').Screen$} Screen */
 /** @typedef {(msg: import('./recipes.mjs').Msg$) => void} Dispatch */
 
-// -- Page and screen selection -------------------------------------------
-
 /** @param {Model} model @param {Dispatch} dispatch @param {import('../runtime/instance.mjs').InstanceContext} context */
-export function view(model, dispatch, context) {
-	const { id } = context
-	return html`
-			${saveStatus(model, dispatch)} ${renderScreen(screen(model), model, dispatch)}
-			${can_import(model) ? sampleImport(model, dispatch) : nothing}
-		`
+export const view = (model, dispatch, { id }) => {
+	// -- DOM helpers ----------------------------------------------------
+	const nonEmptyLines = pipe(split('\n'), filter(pipe(trim, isNotEmpty)))
 
-	/** @param {Screen} screen @param {Model} model @param {Dispatch} dispatch */
-	function renderScreen(screen, model, dispatch) {
-		if (Screen$isScreenLoading(screen)) {
-			return html`<p class="recipe-empty" role="status">Opening your recipe box…</p>`
-		}
-		if (Screen$isScreenRecovery(screen))
-			return storageRecovery(Screen$ScreenRecovery$0(screen), dispatch)
-		if (Screen$isScreenCollection(screen)) return collection(model, dispatch)
-		if (Screen$isScreenNew(screen))
-			return editorView(Screen$ScreenNew$0(screen), dispatch, false, '#/')
-		if (Screen$isScreenDetail(screen))
-			return detail(Screen$ScreenDetail$0(screen), dispatch)
-		if (Screen$isScreenEdit(screen)) {
-			return editorView(
-				Screen$ScreenEdit$0(screen),
-				dispatch,
-				true,
-				Screen$ScreenEdit$1(screen),
-			)
-		}
-		if (Screen$isScreenNotFound(screen)) {
-			return html`
-				<section class="recipe-empty">
-					<h2>That recipe isn’t here.</h2>
-					<p>It may have been removed, or the address may be incomplete.</p>
-					<a class="recipe-button" href="#/">Back to collection</a>
-				</section>
-			`
-		}
-		throw new Error('Unknown recipe screen')
+	/** @param {string} line */
+	const listItem = line => html`<li>${line}</li>`
+
+	const favoriteSymbol = ifElse(Recipe$Recipe$favorite, always('★'), always('☆'))
+	const favoriteAction = ifElse(
+		Recipe$Recipe$favorite,
+		always('★ In favourites'),
+		always('☆ Add to favourites'),
+	)
+
+	// -- Collection -----------------------------------------------------
+
+	/** @param {boolean} filtered */
+	const emptyCollection = filtered => {
+		const heading = filtered
+			? 'No recipes match yet.'
+			: 'A fresh page for good food.'
+		const message = filtered
+			? 'Try another search or turn off the favourites filter.'
+			: 'Add your first recipe, or import the samples below.'
+
+		return html`<div class="recipe-empty">
+			<h3>${heading}</h3>
+			<p>${message}</p>
+		</div>`
 	}
 
-	// -- Collection ----------------------------------------------------------
-
-	/** @param {Model} model @param {Dispatch} dispatch */
-	function collection(model, dispatch) {
-		/** @param {Event} event */
-		const handleQueryInput = event => dispatch(Msg$UserChangedQuery(inputValue(event)))
-		const handleToggleFavorites = () => dispatch(Msg$UserToggledFavorites())
-		const query = Model$Model$query(model)
-		const favoritesOnly = RecipeFilter$isFavoritesOnly(Model$Model$filter(model))
-		const recipes = /** @type {Recipe[]} */ (from_list(visible_recipes(model)))
-		const filtered = Boolean(query || favoritesOnly)
-		const cards = repeat(
-			recipes,
-			recipe => Recipe$Recipe$id(recipe),
-			recipe => recipeCard(recipe, dispatch),
+	/** @param {Recipe} recipe */
+	const recipeCard = recipe => {
+		const { recipeId, title, description, minutes, isFavorite, favorite } =
+			applySpec({
+				recipeId: Recipe$Recipe$id,
+				title: Recipe$Recipe$title,
+				description: Recipe$Recipe$description,
+				minutes: Recipe$Recipe$minutes,
+				isFavorite: Recipe$Recipe$favorite,
+				favorite: favoriteSymbol,
+			})(recipe)
+		const handleToggleFavorite = thunkify(pipe(Msg$UserToggledFavorite, dispatch))(
+			recipeId,
 		)
+		const address = `#/recipe/${recipeId}`
+		const favoriteLabel = isFavorite
+			? `Remove ${title} from favourites`
+			: `Add ${title} to favourites`
+
+		return html`
+			<article class="recipe-card">
+				<div class="recipe-card-top">
+					<span>${minutes} min</span>
+					<button
+						type="button"
+						class="recipe-star"
+						aria-label=${favoriteLabel}
+						aria-pressed=${String(isFavorite)}
+						@click=${handleToggleFavorite}
+					>
+						${favorite}
+					</button>
+				</div>
+				<h3><a href=${address}>${title}</a></h3>
+				<p>${description}</p>
+				<a class="recipe-open" href=${address}>
+					Open recipe <span aria-hidden="true">↗</span>
+					<span class="sr-only">: ${title}</span>
+				</a>
+			</article>
+		`
+	}
+
+	const collection = () => {
+		/** @param {Event} event */
+		const handleQueryInput = pipe(inputValue, Msg$UserChangedQuery, dispatch)
+		const handleToggleFavorites = pipe(Msg$UserToggledFavorites, dispatch)
+		const { query, favoritesOnly, recipes } = applySpec({
+			query: Model$Model$query,
+			favoritesOnly: pipe(Model$Model$filter, RecipeFilter$isFavoritesOnly),
+			recipes: pipe(Model$Model$recipes, from_list),
+		})(model)
+		const search = flow(query, [trim, toLower])
+		const matchesSearch = pipe(
+			juxt([
+				Recipe$Recipe$title,
+				Recipe$Recipe$description,
+				Recipe$Recipe$ingredients,
+			]),
+			join(' '),
+			toLower,
+			includes(search),
+		)
+		const matchesFavorites = favoritesOnly ? Recipe$Recipe$favorite : T
+		const visibleRecipes = filter(
+			allPass([matchesSearch, matchesFavorites]),
+			recipes,
+		)
+		const filtered = query !== '' || favoritesOnly
+		const cards = repeat(visibleRecipes, Recipe$Recipe$id, recipeCard)
 
 		return html`
 			<section aria-labelledby=${id('collection-title')}>
@@ -163,95 +222,59 @@ export function view(model, dispatch, context) {
 					</button>
 				</div>
 				<p class="recipe-count" role="status">
-					${recipes.length}
-					${recipes.length === 1 ? 'recipe' : 'recipes'}${favoritesOnly
+					${visibleRecipes.length}
+					${visibleRecipes.length === 1 ? 'recipe' : 'recipes'}${favoritesOnly
 						? ' in favourites'
 						: ''}
 				</p>
-				${recipes.length
+				${visibleRecipes.length
 					? html` <div class="recipe-grid">${cards}</div> `
 					: emptyCollection(filtered)}
 			</section>
 		`
 	}
 
-	/** @param {Recipe} recipe @param {Dispatch} dispatch */
-	function recipeCard(recipe, dispatch) {
-		const handleToggleFavorite = () =>
-			dispatch(Msg$UserToggledFavorite(Recipe$Recipe$id(recipe)))
-		const title = Recipe$Recipe$title(recipe)
-		const isFavorite = Recipe$Recipe$favorite(recipe)
-		const address = `#/recipe/${Recipe$Recipe$id(recipe)}`
-		const favoriteLabel = isFavorite
-			? `Remove ${title} from favourites`
-			: `Add ${title} to favourites`
+	// -- Recipe details -------------------------------------------------
 
-		return html`
-			<article class="recipe-card">
-				<div class="recipe-card-top">
-					<span>${Recipe$Recipe$minutes(recipe)} min</span>
-					<button
-						type="button"
-						class="recipe-star"
-						aria-label=${favoriteLabel}
-						aria-pressed=${String(isFavorite)}
-						@click=${handleToggleFavorite}
-					>
-						${isFavorite ? '★' : '☆'}
-					</button>
-				</div>
-				<h3><a href=${address}>${title}</a></h3>
-				<p>${Recipe$Recipe$description(recipe)}</p>
-				<a class="recipe-open" href=${address}>
-					Open recipe <span aria-hidden="true">↗</span>
-					<span class="sr-only">: ${title}</span>
-				</a>
-			</article>
-		`
-	}
-
-	/** @param {boolean} filtered */
-	function emptyCollection(filtered) {
-		const heading = filtered ? 'No recipes match yet.' : 'A fresh page for good food.'
-		const message = filtered
-			? 'Try another search or turn off the favourites filter.'
-			: 'Add your first recipe, or import the samples below.'
-
-		return html`<div class="recipe-empty">
-			<h3>${heading}</h3>
-			<p>${message}</p>
-		</div>`
-	}
-
-	// -- Recipe details ------------------------------------------------------
-
-	/** @param {Recipe} recipe @param {Dispatch} dispatch */
-	function detail(recipe, dispatch) {
-		const title = Recipe$Recipe$title(recipe)
-		const isFavorite = Recipe$Recipe$favorite(recipe)
-		const editPath = `#/recipe/${Recipe$Recipe$id(recipe)}/edit`
-		const handleToggleFavorite = () =>
-			dispatch(Msg$UserToggledFavorite(Recipe$Recipe$id(recipe)))
-		const handleRemoveRecipe = () => {
-			if (window.confirm(`Remove “${title}” from your collection?`)) {
-				dispatch(Msg$UserConfirmedDelete(Recipe$Recipe$id(recipe)))
-			}
-		}
-		const ingredients = nonEmptyLines(Recipe$Recipe$ingredients(recipe)).map(
-			line => html`<li>${line}</li>`,
+	/** @param {Recipe} recipe */
+	const detail = recipe => {
+		const {
+			recipeId,
+			title,
+			description,
+			minutes,
+			isFavorite,
+			favoriteLabel,
+			ingredients,
+			instructions,
+		} = applySpec({
+			recipeId: Recipe$Recipe$id,
+			title: Recipe$Recipe$title,
+			description: Recipe$Recipe$description,
+			minutes: Recipe$Recipe$minutes,
+			isFavorite: Recipe$Recipe$favorite,
+			favoriteLabel: favoriteAction,
+			ingredients: pipe(Recipe$Recipe$ingredients, nonEmptyLines, map(listItem)),
+			instructions: pipe(Recipe$Recipe$instructions, nonEmptyLines, map(listItem)),
+		})(recipe)
+		const editPath = `#/recipe/${recipeId}/edit`
+		const handleToggleFavorite = thunkify(pipe(Msg$UserToggledFavorite, dispatch))(
+			recipeId,
 		)
-		const instructions = nonEmptyLines(Recipe$Recipe$instructions(recipe)).map(
-			line => html`<li>${line}</li>`,
+		const handleConfirmDelete = thunkify(pipe(Msg$UserConfirmedDelete, dispatch))(
+			recipeId,
+		)
+		const handleRemoveRecipe = when(
+			() => window.confirm(`Remove “${title}” from your collection?`),
+			handleConfirmDelete,
 		)
 
 		return html`
 			<article class="recipe-detail">
 				<a class="recipe-back" href="#/">← Back to collection</a>
-				<p class="recipe-eyebrow">
-					${Recipe$Recipe$minutes(recipe)} minutes · From your recipe box
-				</p>
+				<p class="recipe-eyebrow">${minutes} minutes · From your recipe box</p>
 				<h2>${title}</h2>
-				<p class="recipe-description">${Recipe$Recipe$description(recipe)}</p>
+				<p class="recipe-description">${description}</p>
 				<div class="recipe-actions">
 					<a class="recipe-button" href=${editPath}>Edit recipe</a>
 					<button
@@ -260,7 +283,7 @@ export function view(model, dispatch, context) {
 						aria-pressed=${String(isFavorite)}
 						@click=${handleToggleFavorite}
 					>
-						${isFavorite ? '★ In favourites' : '☆ Add to favourites'}
+						${favoriteLabel}
 					</button>
 				</div>
 				<div class="recipe-method">
@@ -286,41 +309,69 @@ export function view(model, dispatch, context) {
 		`
 	}
 
-	// -- Editor --------------------------------------------------------------
+	// -- Editor ---------------------------------------------------------
+
+	/** @param {string[]} errors */
+	const errorSummary = errors => {
+		const items = map(listItem, errors)
+
+		return html`
+			<div
+				class="recipe-errors"
+				data-recipe-errors
+				id=${id('recipe-errors')}
+				role="alert"
+				tabindex="-1"
+			>
+				<h3>Check your recipe</h3>
+				<ul>
+					${items}
+				</ul>
+			</div>
+		`
+	}
 
 	/**
-	 * @param {Editor} model
-	 * @param {Dispatch} dispatch
+	 * @param {Editor} editor
 	 * @param {boolean} editing
 	 * @param {string} cancelPath
 	 */
-	function editorView(model, dispatch, editing, cancelPath) {
-		/** @param {SubmitEvent} event */
-		const handleSubmit = event => {
-			event.preventDefault()
-			dispatch(Msg$UserSubmittedRecipe())
-		}
-		/** @param {Event} event */
-		const handleTitleInput = event => dispatch(Msg$UserChangedTitle(inputValue(event)))
-		/** @param {Event} event */
-		const handleDescriptionInput = event =>
-			dispatch(Msg$UserChangedDescription(inputValue(event)))
-		/** @param {Event} event */
-		const handleMinutesInput = event =>
-			dispatch(Msg$UserChangedMinutes(inputValue(event)))
-		/** @param {Event} event */
-		const handleIngredientsInput = event =>
-			dispatch(Msg$UserChangedIngredients(inputValue(event)))
-		/** @param {Event} event */
-		const handleInstructionsInput = event =>
-			dispatch(Msg$UserChangedInstructions(inputValue(event)))
-		const errors = /** @type {string[]} */ (from_list(Editor$Editor$errors(model)))
+	const editorView = (editor, editing, cancelPath) => {
+		const { title, description, minutes, ingredients, instructions, errors } =
+			applySpec({
+				title: Editor$Editor$title,
+				description: Editor$Editor$description,
+				minutes: Editor$Editor$minutes,
+				ingredients: Editor$Editor$ingredients,
+				instructions: Editor$Editor$instructions,
+				errors: pipe(Editor$Editor$errors, from_list),
+			})(editor)
+		const handleSubmit = pipe(preventDefault, Msg$UserSubmittedRecipe, dispatch)
+		const handleTitleInput = pipe(inputValue, Msg$UserChangedTitle, dispatch)
+		const handleDescriptionInput = pipe(
+			inputValue,
+			Msg$UserChangedDescription,
+			dispatch,
+		)
+		const handleMinutesInput = pipe(inputValue, Msg$UserChangedMinutes, dispatch)
+		const handleIngredientsInput = pipe(
+			inputValue,
+			Msg$UserChangedIngredients,
+			dispatch,
+		)
+		const handleInstructionsInput = pipe(
+			inputValue,
+			Msg$UserChangedInstructions,
+			dispatch,
+		)
 
 		return html`
 			<section class="recipe-editor" aria-labelledby=${id('editor-title')}>
 				<a class="recipe-back" href=${cancelPath}>← Discard changes and go back</a>
 				<p class="recipe-eyebrow">Something worth making again</p>
-				<h2 id=${id('editor-title')}>${editing ? 'Edit your recipe' : 'A new favourite'}</h2>
+				<h2 id=${id('editor-title')}>
+					${editing ? 'Edit your recipe' : 'A new favourite'}
+				</h2>
 				<p class="recipe-description">
 					A few ingredients. A little know-how. Keep it all here.
 				</p>
@@ -332,7 +383,7 @@ export function view(model, dispatch, context) {
 							required
 							name="title"
 							autocomplete="off"
-							.value=${live(Editor$Editor$title(model))}
+							.value=${live(title)}
 							@input=${handleTitleInput}
 						/>
 					</label>
@@ -341,7 +392,7 @@ export function view(model, dispatch, context) {
 						<textarea
 							name="description"
 							rows="2"
-							.value=${live(Editor$Editor$description(model))}
+							.value=${live(description)}
 							@input=${handleDescriptionInput}
 						></textarea>
 					</label>
@@ -354,7 +405,7 @@ export function view(model, dispatch, context) {
 							min="1"
 							max="1440"
 							step="1"
-							.value=${live(Editor$Editor$minutes(model))}
+							.value=${live(minutes)}
 							@input=${handleMinutesInput}
 						/>
 					</label>
@@ -366,7 +417,7 @@ export function view(model, dispatch, context) {
 								required
 								name="ingredients"
 								rows="7"
-								.value=${live(Editor$Editor$ingredients(model))}
+								.value=${live(ingredients)}
 								@input=${handleIngredientsInput}
 							></textarea>
 						</label>
@@ -377,7 +428,7 @@ export function view(model, dispatch, context) {
 								required
 								name="instructions"
 								rows="7"
-								.value=${live(Editor$Editor$instructions(model))}
+								.value=${live(instructions)}
 								@input=${handleInstructionsInput}
 							></textarea>
 						</label>
@@ -397,24 +448,12 @@ export function view(model, dispatch, context) {
 		`
 	}
 
-	/** @param {string[]} errors */
-	function errorSummary(errors) {
-		return html`
-			<div class="recipe-errors" data-recipe-errors id=${id('recipe-errors')} role="alert" tabindex="-1">
-				<h3>Check your recipe</h3>
-				<ul>
-					${errors.map(error => html`<li>${error}</li>`)}
-				</ul>
-			</div>
-		`
-	}
+	// -- Storage and sample imports -------------------------------------
 
-	// -- Storage and sample imports ------------------------------------------
-
-	/** @param {string} reason @param {Dispatch} dispatch */
-	function storageRecovery(reason, dispatch) {
-		const handleRetryLoad = () => dispatch(Msg$UserClickedRetryLoad())
-		const handleUseStarters = () => dispatch(Msg$UserClickedUseStarters())
+	/** @param {string} reason */
+	const storageRecovery = reason => {
+		const handleRetryLoad = pipe(Msg$UserClickedRetryLoad, dispatch)
+		const handleUseStarters = pipe(Msg$UserClickedUseStarters, dispatch)
 
 		return html`
 			<section class="recipe-empty">
@@ -429,32 +468,45 @@ export function view(model, dispatch, context) {
 					</button>
 				</div>
 				<p class="recipe-hint">
-					Replacing starts a new collection and attempts to save it over the old data.
-					Nothing is replaced until you choose this.
+					Replacing starts a new collection and attempts to save it over the old
+					data. Nothing is replaced until you choose this.
 				</p>
 			</section>
 		`
 	}
 
-	/** @param {Model} model @param {Dispatch} dispatch */
-	function saveStatus(model, dispatch) {
-		const handleRetrySave = () => dispatch(Msg$UserClickedRetrySave())
+	const saveStatus = () => {
+		const savingMessage = cond([
+			[SaveStatus$isSaved, always('Kept in this browser · No account needed')],
+			[SaveStatus$isSaving, always('Saving in this browser…')],
+			[SaveStatus$isSaveFailed, SaveStatus$SaveFailed$reason],
+		])
+		const { message, canRetry } = applySpec({
+			message: pipe(Model$Model$save_status, savingMessage),
+			canRetry: pipe(Model$Model$save_status, SaveStatus$isSaveFailed),
+		})(model)
+		const handleRetrySave = pipe(Msg$UserClickedRetrySave, dispatch)
 
 		return html`
 			<div class="recipe-save-status" role="status">
-				${saving_message(model)}
-				${can_retry_save(model)
+				${message}
+				${canRetry
 					? html`<button @click=${handleRetrySave}>Retry saving</button>`
 					: nothing}
 			</div>
 		`
 	}
 
-	/** @param {Model} model @param {Dispatch} dispatch */
-	function sampleImport(model, dispatch) {
-		const handleImport = () => dispatch(Msg$UserClickedImportSamples())
-		const handleCancelImport = () => dispatch(Msg$UserCancelledImport())
-		const isImporting = SampleImportState$isImportInProgress(Model$Model$sample_import(model))
+	const sampleImport = () => {
+		const handleImport = pipe(Msg$UserClickedImportSamples, dispatch)
+		const handleCancelImport = pipe(Msg$UserCancelledImport, dispatch)
+		const { isImporting, notice } = applySpec({
+			isImporting: pipe(
+				Model$Model$sample_import,
+				SampleImportState$isImportInProgress,
+			),
+			notice: Model$Model$notice,
+		})(model)
 		const label = isImporting ? 'Restart sample import' : 'Import sample recipes'
 
 		return html`
@@ -463,10 +515,10 @@ export function view(model, dispatch, context) {
 					<p class="recipe-eyebrow">A little inspiration</p>
 					<h2 id=${id('samples-title')}>Make room for something new.</h2>
 					<p>
-						Import two more recipes into your collection. Recipes with matching titles
-						are kept.
+						Import two more recipes into your collection. Recipes with matching
+						titles are kept.
 					</p>
-					<p class="recipe-notice" role="status">${Model$Model$notice(model)}</p>
+					<p class="recipe-notice" role="status">${notice}</p>
 				</div>
 				<div class="recipe-sample-actions">
 					<button
@@ -479,7 +531,11 @@ export function view(model, dispatch, context) {
 					</button>
 					${isImporting
 						? html`
-								<button type="button" class="recipe-back" @click=${handleCancelImport}>
+								<button
+									type="button"
+									class="recipe-back"
+									@click=${handleCancelImport}
+								>
 									Cancel import
 								</button>
 							`
@@ -489,20 +545,58 @@ export function view(model, dispatch, context) {
 		`
 	}
 
-	// -- DOM helpers ---------------------------------------------------------
+	// -- Page and screen selection --------------------------------------
 
-	/** @param {Event} event */
-	function inputValue(event) {
-		const target = event.currentTarget
+	const notFound = () => html`
+		<section class="recipe-empty">
+			<h2>That recipe isn’t here.</h2>
+			<p>It may have been removed, or the address may be incomplete.</p>
+			<a class="recipe-button" href="#/">Back to collection</a>
+		</section>
+	`
 
-		return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
-			? target.value
-			: ''
+	/** @param {import('./recipes.mjs').Route$} route */
+	const recipeScreen = route => {
+		const editing = Route$isEdit(route)
+		const recipeId = flow(route, [
+			ifElse(Route$isEdit, Route$Edit$id, Route$Detail$id),
+		])
+		const recipe = flow(model, [
+			Model$Model$recipes,
+			from_list,
+			find(pipe(Recipe$Recipe$id, equals(recipeId))),
+		])
+		if (!recipe) return notFound()
+		return editing
+			? editorView(Model$Model$editor(model), true, `#/recipe/${recipeId}`)
+			: detail(recipe)
 	}
 
-	/** @param {string} text */
-	function nonEmptyLines(text) {
-		return text.split('\n').filter(line => line.trim())
-	}
+	/** @type {(route: import('./recipes.mjs').Route$) => import('lit-html').TemplateResult} */
+	const renderRoute = cond([
+		[Route$isCollection, collection],
+		[Route$isNew, () => editorView(Model$Model$editor(model), false, '#/')],
+		[Route$isDetail, recipeScreen],
+		[Route$isEdit, recipeScreen],
+		[Route$isNotFound, notFound],
+	])
 
+	/** @type {(storage: import('./recipes.mjs').Storage$) => import('lit-html').TemplateResult} */
+	const renderScreen = cond([
+		[
+			Storage$isLoading,
+			always(
+				html`<p class="recipe-empty" role="status">Opening your recipe box…</p>`,
+			),
+		],
+		[Storage$isLoadFailed, pipe(Storage$LoadFailed$reason, storageRecovery)],
+		[Storage$isReady, () => flow(model, [Model$Model$route, renderRoute])],
+	])
+
+	const storage = Model$Model$storage(model)
+	const status = saveStatus()
+	const content = renderScreen(storage)
+	const samples = Storage$isReady(storage) ? sampleImport() : nothing
+
+	return html`${status} ${content} ${samples}`
 }

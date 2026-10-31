@@ -5,6 +5,7 @@ import {
   Msg$LocalStorageReturnedDesign,
   Msg$LocalStorageWasEmpty,
   Msg$KeyboardShortcutsChanged,
+  Shortcuts$isEnabled,
   Msg$KeyboardShortcutsFailed,
   Msg$UserPressedNextTheme,
 } from './postcard.mjs'
@@ -28,16 +29,16 @@ export function loadDesign() {
   }
 }
 
-export function setShortcuts(enabled) {
+export function setShortcuts(shortcuts) {
   return {
     perform: ({ subscriptions, root }) => {
-      if (enabled) {
+      if (Shortcuts$isEnabled(shortcuts)) {
         subscriptions.start('postcard-keys', nextThemeKey(Msg$UserPressedNextTheme, root))
       } else {
         subscriptions.stop('postcard-keys')
       }
     },
-    onSuccess: () => Msg$KeyboardShortcutsChanged(enabled),
+    onSuccess: () => Msg$KeyboardShortcutsChanged(shortcuts),
     onFailure: () => Msg$KeyboardShortcutsFailed(),
   }
 }

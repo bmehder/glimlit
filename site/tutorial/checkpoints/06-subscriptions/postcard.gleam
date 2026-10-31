@@ -12,6 +12,11 @@ pub type Theme {
   Meadow
 }
 
+pub type Shortcuts {
+  Enabled
+  Disabled
+}
+
 pub type Notice {
   Unsaved
   Saving
@@ -32,7 +37,7 @@ pub type Model {
     message: String,
     theme: Theme,
     notice: Notice,
-    shortcuts: Bool,
+    shortcuts: Shortcuts,
   )
 }
 
@@ -50,7 +55,7 @@ pub type Msg {
   LocalStorageReturnedDesign(String)
   LocalStorageWasEmpty
   UserToggledShortcuts
-  KeyboardShortcutsChanged(Bool)
+  KeyboardShortcutsChanged(Shortcuts)
   KeyboardShortcutsFailed
   UserPressedNextTheme
 }
@@ -64,7 +69,7 @@ pub fn init() -> #(Model, List(Effect(Msg))) {
       message: "Wish you were here. The days are slow and the coffee is good.",
       theme: Coral,
       notice: Unsaved,
-      shortcuts: False,
+      shortcuts: Disabled,
     ),
     [],
   )
@@ -128,10 +133,16 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
       }
     }
 
-    UserToggledShortcuts -> #(model, [set_shortcuts(!model.shortcuts)])
+    UserToggledShortcuts -> {
+      let shortcuts = case model.shortcuts {
+        Enabled -> Disabled
+        Disabled -> Enabled
+      }
+      #(model, [set_shortcuts(shortcuts)])
+    }
 
-    KeyboardShortcutsChanged(enabled) -> #(
-      Model(..model, shortcuts: enabled),
+    KeyboardShortcutsChanged(shortcuts) -> #(
+      Model(..model, shortcuts: shortcuts),
       [],
     )
 
@@ -142,7 +153,7 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
 
     UserPressedNextTheme -> {
       case model.shortcuts {
-        True -> {
+        Enabled -> {
           let theme = case model.theme {
             Coral -> Ocean
             Ocean -> Meadow
@@ -150,13 +161,13 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
           }
           #(Model(..model, theme: theme), [])
         }
-        False -> #(model, [])
+        Disabled -> #(model, [])
       }
     }
   }
 }
 
-// -- Browser boundaries --------------------------------------------------
+// -- Effects -------------------------------------------------------------
 
 @external(javascript, "./effects.mjs", "saveDesign")
 fn save_design(title: String, message: String, theme: String) -> Effect(Msg)
@@ -165,12 +176,14 @@ fn save_design(title: String, message: String, theme: String) -> Effect(Msg)
 fn load_design() -> Effect(Msg)
 
 @external(javascript, "./effects.mjs", "setShortcuts")
-fn set_shortcuts(enabled: Bool) -> Effect(Msg)
+fn set_shortcuts(shortcuts: Shortcuts) -> Effect(Msg)
+
+// -- View ----------------------------------------------------------------
 
 @external(javascript, "./view.mjs", "view")
 fn view(model: Model, dispatch: fn(Msg) -> Nil, context: Context) -> View
 
-// -- Start ---------------------------------------------------------------
+// -- Entry point ---------------------------------------------------------
 
 pub fn main(root: Root) -> fn() -> Nil {
   mvu.start(init(), update, view, root)

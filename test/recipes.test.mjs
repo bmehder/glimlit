@@ -2,9 +2,13 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { from_list as toArray } from '#gleam/array'
 import * as app from '../build/dev/javascript/glimlit/recipes/recipes.mjs'
+import { view } from '../build/dev/javascript/glimlit/recipes/view.mjs'
+import { renderInitial } from '../src/runtime/server.mjs'
 import { run } from '../src/runtime/runner.mjs'
 import { load, save, fetchSamples, storageKey } from '../build/dev/javascript/glimlit/recipes/effects.mjs'
 import { hashRoute } from '../build/dev/javascript/glimlit/recipes/subscriptions.mjs'
+
+const render = model => renderInitial([model, []], view, 'recipes-test')
 
 const ready = () => app.update(app.init()[0], app.Msg$LocalStorageHadNoRecipes())[0]
 const update = (model, message) => app.update(model, message)[0]
@@ -56,17 +60,18 @@ test('editor validation blocks submission and update commits trimmed recipes', (
   assert.equal(toArray(app.starter_recipes()).length,3)
 })
 
-test('editing preserves IDs and favourites; filters and deletions share the parent collection', () => {
+test('editing preserves IDs and favourites; filters and deletions share the parent collection', async () => {
   let model = update(ready(),app.Msg$BrowserHashChanged('#/recipe/1/edit'))
   assert.equal(model.editor.title,toArray(model.recipes)[0].title)
   model = update(model,app.Msg$UserChangedTitle('Changed title'))
   model = update(model,app.Msg$UserSubmittedRecipe())
   assert.equal(toArray(model.recipes)[0].id,1)
   assert.equal(toArray(model.recipes)[0].favorite, true)
+  model=update(model,app.Msg$BrowserHashChanged('#/'))
   model=update(model,app.Msg$UserChangedQuery(' TOMATO '))
-  assert.equal(toArray(app.visible_recipes(model)).length,1)
+  assert.equal(((await render(model)).match(/class="recipe-card"/g) ?? []).length, 1)
   model=update(model,app.Msg$UserToggledFavorites())
-  assert.equal(toArray(app.visible_recipes(model)).length,0)
+  assert.equal(((await render(model)).match(/class="recipe-card"/g) ?? []).length, 0)
   // The view sends a confirmed decision; a nonexistent recipe remains a no-op.
   assert.equal(update(model, app.Msg$UserConfirmedDelete(999)), model)
   model=update(model,app.Msg$UserConfirmedDelete(1))
@@ -189,45 +194,49 @@ test('editor time validation rejects invalid input and accepts both duration bou
   }
 })
 
-test('screen selection resolves loading, recovery, routes, and missing recipes in Gleam', () => {
-  const initial = app.init()[0]
-  const deepLink = update(initial, app.Msg$BrowserHashChanged('#/recipe/1'))
-  assert.ok(app.Screen$isScreenLoading(app.screen(deepLink)))
-  assert.equal(app.can_import(deepLink), false)
+test('the view resolves loading, recovery, routes, and missing recipes', async () => {
+  const deepLink = update(app.init()[0], app.Msg$BrowserHashChanged('#/recipe/1'))
+  const loading = await render(deepLink)
+  assert.match(loading, /Opening your recipe box/)
+  assert.doesNotMatch(loading, /Import sample recipes/)
   const failed = update(deepLink, app.Msg$LocalStorageLoadFailed('Storage unavailable'))
-  assert.equal(app.Screen$ScreenRecovery$0(app.screen(failed)), 'Storage unavailable')
-  assert.equal(app.can_import(failed), false)
+  const recovery = await render(failed)
+  assert.match(recovery, /Storage unavailable/)
+  assert.doesNotMatch(recovery, /Import sample recipes/)
 
   const model = update(deepLink, app.Msg$LocalStorageHadNoRecipes())
-  assert.ok(app.Screen$isScreenDetail(app.screen(model)))
-  assert.equal(app.Recipe$Recipe$id(app.Screen$ScreenDetail$0(app.screen(model))), 1)
-  assert.equal(app.can_import(model), true)
-  assert.ok(app.Screen$isScreenCollection(app.screen(ready())))
+  assert.match(await render(model), /class="recipe-detail"/)
+  assert.match(await render(model), /Import sample recipes/)
+  assert.match(await render(ready()), /Your collection/)
   const creating = update(model, app.Msg$BrowserHashChanged('#/new'))
-  assert.deepEqual(app.Screen$ScreenNew$0(app.screen(creating)), creating.editor)
+  assert.match(await render(creating), /A new favourite/)
   const editing = update(model, app.Msg$BrowserHashChanged('#/recipe/1/edit'))
-  assert.deepEqual(app.Screen$ScreenEdit$0(app.screen(editing)), editing.editor)
-  assert.equal(app.Screen$ScreenEdit$1(app.screen(editing)), '#/recipe/1')
+  const editor = await render(editing)
+  assert.match(editor, /Edit your recipe/)
+  assert.match(editor, /href="#\/recipe\/1"/)
   for (const hash of ['#/recipe/999', '#/recipe/999/edit', '#/unknown']) {
-    assert.ok(app.Screen$isScreenNotFound(app.screen(update(model, app.Msg$BrowserHashChanged(hash)))))
+    assert.match(await render(update(model, app.Msg$BrowserHashChanged(hash))), /That recipe isn’t here/)
   }
   const removed = update(model, app.Msg$UserConfirmedDelete(1))
   const staleLink = update(removed, app.Msg$BrowserHashChanged('#/recipe/1'))
-  assert.ok(app.Screen$isScreenNotFound(app.screen(staleLink)))
+  assert.match(await render(staleLink), /That recipe isn’t here/)
 })
 
-test('save presentation exposes the current message and retry availability', () => {
+test('save presentation shows the current message and offers retry only after failure', async () => {
   const model = ready()
-  assert.equal(app.can_retry_save(model), false)
-  assert.equal(app.saving_message(model), 'Kept in this browser · No account needed')
+  const initial = await render(model)
+  assert.match(initial, /Kept in this browser · No account needed/)
+  assert.doesNotMatch(initial, /Retry saving/)
   const saving = update(model, app.Msg$UserToggledFavorite(1))
-  assert.equal(app.saving_message(saving), 'Saving in this browser…')
-  assert.equal(app.can_retry_save(saving), false)
+  const pending = await render(saving)
+  assert.match(pending, /Saving in this browser…/)
+  assert.doesNotMatch(pending, /Retry saving/)
   const failed = update(saving, app.Msg$LocalStorageSaveFailed(saving.save_id, 'Storage full'))
-  assert.equal(app.saving_message(failed), 'Storage full')
-  assert.equal(app.can_retry_save(failed), true)
+  const failure = await render(failed)
+  assert.match(failure, /Storage full/)
+  assert.match(failure, /Retry saving/)
   const saved = update(failed, app.Msg$LocalStorageSavedRecipes(failed.save_id))
-  assert.equal(app.can_retry_save(saved), false)
+  assert.doesNotMatch(await render(saved), /Retry saving/)
 })
 
 test('loading and failed storage block application messages without blocking routing or recovery', () => {

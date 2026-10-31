@@ -27,6 +27,7 @@ import {
   Msg$UserClickedRestore,
   Msg$UserToggledShortcuts,
   Model$Model$shortcuts,
+  Shortcuts$isEnabled,
 } from './postcard.mjs'
 
 export function view(model, dispatch, context) {
@@ -70,7 +71,7 @@ export function view(model, dispatch, context) {
         <p class="studio-status" role="status">${noticeText(Model$Model$notice(model))}</p>
         <label class="shortcut-toggle" for=${id('postcard-shortcuts')}>
           <input id=${id('postcard-shortcuts')} type="checkbox"
-            .checked=${Model$Model$shortcuts(model)}
+            .checked=${Shortcuts$isEnabled(Model$Model$shortcuts(model))}
             @change=${handleShortcutsChange}>
           Enable keyboard shortcuts
         </label>

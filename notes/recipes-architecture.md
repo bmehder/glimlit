@@ -36,23 +36,24 @@ The JavaScript views live together in `view.mjs`, with section comments for the
 page, collection, recipe details, editor, shared storage/import status, and DOM
 helpers. Each screen has its own template function, with local `handle…` callbacks
 and display preparation above its markup. Imports retain their exported names,
-grouped by role.
+alphabetized by exported name.
 
 The source bridge resolves these modules by location. Only the new HTML page
 was added to Vite's production page list; no recipe-specific aliases were added.
 
 ## Model and messages
 
-The app derives a `Screen` from storage readiness, the route, and the current
-collection. It resolves missing recipes and editor return paths in Gleam; the
-JavaScript view only selects a template for that screen. Screen values are
-derived on demand, not stored alongside the model. Save messages, retry
-availability, and import availability are also derived in Gleam.
+The JavaScript view selects screens directly from storage readiness, the route,
+and the current collection, using generated accessors and predicates. It handles
+missing-recipe presentation, editor return links, search and favourites filtering,
+save messages, and retry/import visibility locally. Gleam keeps the model,
+messages, state transitions, validation, and effect requests; update independently
+blocks actions while storage is unavailable and validates edits before saving.
 
 The Gleam types name numeric roles explicitly: `RecipeId`, `SaveId`,
 `ImportRequestId`, and `CookingMinutes`. `RouteHash` names hash-based locations.
 These are aliases for readability; they do not enforce distinct runtime types or
-validate values. Constructor labels make recipe fields and screen payloads
+validate values. Constructor labels make recipe fields and route payloads
 explicit without changing the stored JSON schema.
 
 The model names save tracking explicitly: `save_status: SaveStatus`,

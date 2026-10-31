@@ -67,7 +67,7 @@ and Tailwind styles also update during development.
 
 ## Examples
 
-The [Demos page](http://127.0.0.1:3000/demos/) introduces three runnable examples:
+The [Demos page](http://127.0.0.1:3000/demos/) introduces four runnable examples:
 
 - [Counter](http://127.0.0.1:3000/demos/counter/): the smallest working loop.
 - [Todos](http://127.0.0.1:3000/demos/todos/): saved todos, a keyboard shortcut for adding a new todo,
@@ -75,6 +75,12 @@ The [Demos page](http://127.0.0.1:3000/demos/) introduces three runnable example
 - [Recipe box](http://127.0.0.1:3000/recipes/): a larger app with browsing, search,
   editing, routing, local storage, and sample imports. It uses the same runtime
   and model–message–update structure as the smaller examples.
+- [Postcard Studio](http://127.0.0.1:3000/demos/postcard/): an advanced variation
+  with distinct title and message types with save validation, saving, restoration, and shortcuts.
+
+The demo views also explore Ramda for composing handlers and deriving presentation
+values. This is an example-app choice; the runtime does not depend on Ramda, and
+the tutorial’s Postcard view stays plain JavaScript.
 
 Each page starts its own Gleam module directly. The tutorial has its own
 page for building Postcard Studio.
@@ -127,7 +133,10 @@ introduces Gleam, lit-html, and Model–View–Update as you go.
 
 Six complete checkpoints in `site/tutorial/checkpoints/` start with a static view, add
 editing and themes without effects, then introduce saving, restoring, and
-subscriptions. The finished app lives in `src/postcard/`. The tutorial page is
+subscriptions. The tutorial’s finished app lives in `src/postcard/`. The optional advanced demo
+in `src/postcard_advanced/` adds distinct title and message types with save validation, defined with
+their constructors in `text.gleam`; the tutorial
+checkpoints and preview keep the simpler design. The tutorial page is
 also included in production builds and linked from the Demos page.
 
 Each chapter explains the ideas first, then provides complete replacement files
@@ -548,8 +557,10 @@ src/
   counter/               Small example app: model, update, and view
   todos/                 Todo list with storage and a keyboard shortcut
   recipes/               Multi-screen recipe box with an editor
-  postcard/              Finished Postcard Studio app that readers edit
+  postcard/              Simple tutorial app that readers edit
+  postcard_advanced/     Demo variation with distinct title and message types with save validation
   code_tabs/             Homepage tabs: a small Glimlit app
+browser/                 Shared browser event helpers for the example apps
 site/                    Website root served by Vite
   index.html             Homepage
   home.mjs               Homepage tabs entry point

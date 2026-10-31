@@ -1,0 +1,61 @@
+// @ts-nocheck
+
+import {
+	Msg$LocalStorageSavedDesign,
+	Msg$LocalStorageSaveFailed,
+	Msg$LocalStorageRestoreFailed,
+	Msg$LocalStorageReturnedDesign,
+	Msg$LocalStorageWasEmpty,
+	Msg$KeyboardShortcutsChanged,
+	Msg$KeyboardShortcutsFailed,
+	Msg$UserPressedNextTheme,
+	Shortcuts$isEnabled,
+} from './postcard_advanced.mjs'
+import { title_text, message_text } from './text.mjs'
+import { nextThemeKey } from './subscriptions.mjs'
+
+const key = 'glimlit.postcard.advanced.v1'
+
+export function saveDesign(title, message, theme) {
+	return {
+		perform: ({ root }) =>
+			localStorage.setItem(
+				root?.dataset.storageKey ?? key,
+				JSON.stringify({
+					title: title_text(title),
+					message: message_text(message),
+					theme,
+				}),
+			),
+		onSuccess: () => Msg$LocalStorageSavedDesign(),
+		onFailure: () => Msg$LocalStorageSaveFailed(),
+	}
+}
+
+export function loadDesign() {
+	return {
+		perform: ({ root }) => localStorage.getItem(root?.dataset.storageKey ?? key),
+		onSuccess: saved =>
+			saved === null
+				? Msg$LocalStorageWasEmpty()
+				: Msg$LocalStorageReturnedDesign(saved),
+		onFailure: () => Msg$LocalStorageRestoreFailed(),
+	}
+}
+
+export function setShortcuts(shortcuts) {
+	return {
+		perform: ({ subscriptions, root }) => {
+			if (Shortcuts$isEnabled(shortcuts)) {
+				subscriptions.start(
+					'postcard-keys',
+					nextThemeKey(Msg$UserPressedNextTheme, root),
+				)
+			} else {
+				subscriptions.stop('postcard-keys')
+			}
+		},
+		onSuccess: () => Msg$KeyboardShortcutsChanged(shortcuts),
+		onFailure: () => Msg$KeyboardShortcutsFailed(),
+	}
+}

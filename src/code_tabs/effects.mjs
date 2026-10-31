@@ -1,17 +1,20 @@
 // @ts-nocheck
 
-import { Tab$isView, Tab$isModelAndUpdate, Tab$isEffects } from './code_tabs.mjs'
+import { always, cond, flow, T } from 'ramda'
+import { Tab$isEffects, Tab$isModelAndUpdate, Tab$isView } from './code_tabs.mjs'
 
 export const focusTab = tab => ({
 	perform: ({ root, id: scopedId }) => {
-		const id = Tab$isView(tab)
-			? 'view-tab'
-			: Tab$isModelAndUpdate(tab)
-				? 'model-tab'
-				: Tab$isEffects(tab)
-					? 'effects-tab'
-					: null
-		if (id === null) throw new Error('Unknown homepage tab')
-		root?.querySelector(`[id="${scopedId(id)}"]`)?.focus()
+		const tabId = cond([
+			[Tab$isView, always('view-tab')],
+			[Tab$isModelAndUpdate, always('model-tab')],
+			[Tab$isEffects, always('effects-tab')],
+			[T, () => {
+				throw new Error('Unknown homepage tab')
+			}],
+		])
+		const id = flow(tab, [tabId, scopedId])
+
+		root?.querySelector(`[id="${id}"]`)?.focus()
 	},
 })

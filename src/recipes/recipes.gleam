@@ -78,17 +78,6 @@ pub type SaveStatus {
   SaveFailed(reason: String)
 }
 
-// Derived from the model rather than stored as another source of state.
-pub type Screen {
-  ScreenLoading
-  ScreenRecovery(reason: String)
-  ScreenCollection
-  ScreenNew(editor: Editor)
-  ScreenDetail(recipe: Recipe)
-  ScreenEdit(editor: Editor, cancel_path: RouteHash)
-  ScreenNotFound
-}
-
 // -- Model ---------------------------------------------------------------
 
 pub type Model {
@@ -388,21 +377,6 @@ pub fn next_recipe_id(recipes: List(Recipe)) -> RecipeId {
   list.fold(recipes, 1, fn(next, recipe) { int.max(next, recipe.id + 1) })
 }
 
-pub fn filter_recipes(
-  recipes: List(Recipe),
-  query query: String,
-  filter filter: RecipeFilter,
-) -> List(Recipe) {
-  let query = query |> string.trim |> string.lowercase
-  list.filter(recipes, fn(recipe) {
-    let text =
-      recipe.title <> " " <> recipe.description <> " " <> recipe.ingredients
-    let matches_search = text |> string.lowercase |> string.contains(query)
-    let matches_filter = filter == AllRecipes || recipe.favorite
-    matches_search && matches_filter
-  })
-}
-
 pub fn valid_minutes(minutes: CookingMinutes) -> Bool {
   minutes > 0 && minutes <= 1440
 }
@@ -670,63 +644,10 @@ fn encode_recipe(recipe: Recipe) -> json.Json {
   ])
 }
 
-// -- View helpers --------------------------------------------------------
-
-pub fn screen(model: Model) -> Screen {
-  case model.storage {
-    Loading -> ScreenLoading
-    LoadFailed(reason) -> ScreenRecovery(reason)
-    Ready -> {
-      case model.route {
-        Collection -> ScreenCollection
-        New -> ScreenNew(model.editor)
-        Detail(_) ->
-          case current_recipe(model) {
-            Ok(recipe) -> ScreenDetail(recipe)
-            Error(_) -> ScreenNotFound
-          }
-        Edit(id) ->
-          case current_recipe(model) {
-            Ok(_) ->
-              ScreenEdit(
-                editor: model.editor,
-                cancel_path: route_path(Detail(id)),
-              )
-            Error(_) -> ScreenNotFound
-          }
-        NotFound -> ScreenNotFound
-      }
-    }
-  }
-}
-
-pub fn visible_recipes(model: Model) -> List(Recipe) {
-  filter_recipes(model.recipes, query: model.query, filter: model.filter)
-}
-
-pub fn current_recipe(model: Model) -> Result(Recipe, Nil) {
+fn current_recipe(model: Model) -> Result(Recipe, Nil) {
   case model.route {
     Detail(id) | Edit(id) -> find_recipe(model.recipes, id: id)
     _ -> Error(Nil)
-  }
-}
-
-pub fn can_import(model: Model) -> Bool {
-  model.storage == Ready
-}
-
-pub fn saving_message(model: Model) -> String {
-  case model.save_status {
-    Saved -> "Kept in this browser · No account needed"
-    Saving -> "Saving in this browser…"
-    SaveFailed(reason) -> reason
-  }
-}
-
-pub fn can_retry_save(model: Model) -> Bool {
-  case model.save_status {
-    SaveFailed(_) -> True
-    Saved | Saving -> False
   }
 }
 

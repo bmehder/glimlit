@@ -497,10 +497,11 @@
 			</p>
 			<h3>Start and stop through effects</h3>
 			<p>
-				Add <code>shortcuts: Bool</code> to the model. <code>Bool</code> has
-				the values <code>True</code> and <code>False</code>. Toggling the
-				checkbox returns <code>[set_shortcuts(!model.shortcuts)]</code>;
-				<code>!</code> flips the boolean.
+				Add a <code>Shortcuts</code> type with <code>Enabled</code> and
+				<code>Disabled</code> variants, and a <code>shortcuts: Shortcuts</code>
+				field to the model. Toggling the checkbox chooses the opposite variant
+				and requests <code>[set_shortcuts(shortcuts)]</code>. The view uses
+				<code>Shortcuts$isEnabled</code> to set the checkbox’s checked state.
 			</p>
 			<p>
 				The <code>setShortcuts</code> effect receives the app’s <code>root</code>
@@ -514,7 +515,7 @@
 			<!-- code:subscribe -->
 			<p>
 				The start/stop effect reports success with
-				<code>KeyboardShortcutsChanged(enabled)</code>. That message updates the
+				<code>KeyboardShortcutsChanged(shortcuts)</code>. That message updates the
 				checkbox’s model field. A setup failure produces
 				<code>KeyboardShortcutsFailed</code>; update records
 				<code>ShortcutSetupFailed</code> in the notice, and the view explains it.

@@ -42,21 +42,17 @@ pub fn update(model: Model, msg: Msg) -> #(Model, List(Effect(Msg))) {
   case msg {
     UserSelectedTab(tab) -> #(Model(selected: tab), [])
     UserNavigatedTab(direction) -> {
-      let tab = case direction {
-        First -> View
-        Last -> Effects
-        Next ->
-          case model.selected {
-            View -> ModelAndUpdate
-            ModelAndUpdate -> Effects
-            Effects -> View
-          }
-        Previous ->
-          case model.selected {
-            View -> Effects
-            ModelAndUpdate -> View
-            Effects -> ModelAndUpdate
-          }
+      let tab = case direction, model.selected {
+        First, _ -> View
+        Last, _ -> Effects
+
+        Next, View -> ModelAndUpdate
+        Next, ModelAndUpdate -> Effects
+        Next, Effects -> View
+
+        Previous, View -> Effects
+        Previous, ModelAndUpdate -> View
+        Previous, Effects -> ModelAndUpdate
       }
       #(Model(selected: tab), [focus_tab(tab)])
     }
